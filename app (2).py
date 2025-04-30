@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import io
@@ -8,9 +7,13 @@ from datetime import datetime
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 st.title("📊 INTERSOFT Analyzer")
 
-# Load users and logs
+# Load users file (users.csv)
 users_df = pd.read_csv("users.csv")
+
+# Initialize logs file
 logs_file = "logs.csv"
+if logs_file not in st.session_state:
+    st.session_state.logs_df = pd.DataFrame(columns=["username", "action", "timestamp", "filename"])
 
 # Session state for login
 if "logged_in" not in st.session_state:
@@ -77,6 +80,7 @@ if uploaded_file:
     else:
         df['Note_Type'] = df['NOTE'].apply(classify_note)
         df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
+
         st.success("✅ File processed successfully!")
 
         # Save log entry
@@ -86,7 +90,7 @@ if uploaded_file:
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "filename": uploaded_file.name
         }])
-        log_entry.to_csv(logs_file, mode='a', header=not pd.read_csv(logs_file).shape[0], index=False)
+        st.session_state.logs_df = pd.concat([st.session_state.logs_df, log_entry], ignore_index=True)
 
         # Charts and tables
         st.subheader("📈 Notes per Technician")
@@ -117,5 +121,4 @@ if uploaded_file:
 # View logs
 if st.sidebar.checkbox("📚 View Logs"):
     st.sidebar.write("User Activity Log")
-    logs_df = pd.read_csv(logs_file)
-    st.dataframe(logs_df)
+    st.dataframe(st.session_state.logs_df)
