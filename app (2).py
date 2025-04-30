@@ -7,32 +7,10 @@ from datetime import datetime
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 st.title("📊 INTERSOFT Analyzer")
 
-# Load users file (users.csv)
-users_df = pd.read_csv("users.csv")
-
 # Initialize logs file
 logs_file = "logs.csv"
 if logs_file not in st.session_state:
     st.session_state.logs_df = pd.DataFrame(columns=["username", "action", "timestamp", "filename"])
-
-# Session state for login
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-    st.session_state.username = ""
-
-# Login form
-if not st.session_state.logged_in:
-    st.subheader("🔐 Login")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-    if st.button("Login"):
-        if ((users_df["username"] == username) & (users_df["password"] == password)).any():
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            st.success(f"Welcome, {username}!")
-        else:
-            st.error("Invalid credentials")
-    st.stop()
 
 # File uploader
 uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
@@ -85,7 +63,7 @@ if uploaded_file:
 
         # Save log entry
         log_entry = pd.DataFrame([{
-            "username": st.session_state.username,
+            "username": "Anonymous",  # No login required, so we'll use "Anonymous"
             "action": "Uploaded and analyzed file",
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "filename": uploaded_file.name
