@@ -1,31 +1,19 @@
 import streamlit as st
 import pandas as pd
 import io
-import os
+import matplotlib.pyplot as plt
 from datetime import datetime
-import uuid
 
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 st.title("📊 INTERSOFT Analyzer")
 
-# Ensure uploads folder exists
-if not os.path.exists("uploads"):
-    os.makedirs("uploads")
-
+# Initialize logs file
 logs_file = "logs.csv"
-if not os.path.exists(logs_file):
-    pd.DataFrame(columns=["username", "action", "timestamp", "filename", "saved_path"]).to_csv(logs_file, index=False)
+if logs_file not in st.session_state:
+    st.session_state.logs_df = pd.DataFrame(columns=["username", "action", "timestamp", "filename"])
 
-# --- USERNAME INPUT AT TOP ---
-st.markdown("""
-    <div style='text-align: center;'>
-        <h3>👤 Enter your name to start</h3>
-    </div>
-""", unsafe_allow_html=True)
-username = st.text_input("Your Name:", key="user_input")
-
-uploaded_file = st.file_uploader("📤 Upload Excel File", type=["xlsx"])
-
+# File uploader
+uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
 def classify_note(note):
@@ -59,7 +47,7 @@ def classify_note(note):
     else:
         return "MISSING INFORMATION"
 
-if uploaded_file and username.strip():
+if uploaded_file:
     try:
         df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
     except:
@@ -70,25 +58,19 @@ if uploaded_file and username.strip():
     else:
         df['Note_Type'] = df['NOTE'].apply(classify_note)
         df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
+
         st.success("✅ File processed successfully!")
 
-        # Save uploaded file
-        unique_filename = f"{uuid.uuid4().hex}_{uploaded_file.name}"
-        saved_path = os.path.join("uploads", unique_filename)
-        with open(saved_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-
-        # Save log
+        # Save log entry
         log_entry = pd.DataFrame([{
-            "username": username,
+            "username": "Anonymous",  # No login required, so we'll use "Anonymous"
             "action": "Uploaded and analyzed file",
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "filename": uploaded_file.name,
-            "saved_path": saved_path
+            "filename": uploaded_file.name
         }])
-        log_entry.to_csv(logs_file, mode='a', header=False, index=False)
+        st.session_state.logs_df = pd.concat([st.session_state.logs_df, log_entry], ignore_index=True)
 
-        # Charts
+        # Charts and tables
         st.subheader("📈 Notes per Technician")
         tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
         st.bar_chart(tech_counts)
@@ -114,23 +96,7 @@ if uploaded_file and username.strip():
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# --- View Logs ---
-if st.sidebar.checkbox("📚 View Upload History"):
-    st.sidebar.subheader("📁 Uploaded Files Log")
-    logs_df = pd.read_csv(logs_file)
-    st.write("### 📜 Upload Log History")
-    st.dataframe(logs_df)
-
-    for idx, row in logs_df.iterrows():
-        st.markdown(f"**🧍‍♂️ {row['username']}** | 🕒 {row['timestamp']} | 📄 {row['filename']}")
-        if os.path.exists(row['saved_path']):
-            with open(row['saved_path'], "rb") as f:
-                st.download_button(
-                    label=f"⬇️ Download {row['filename']}",
-                    data=f,
-                    file_name=row['filename'],
-                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                    key=f"download_{idx}"
-                )
-        else:
-            st.warning("File not found on server.")
+# View logs
+if st.sidebar.checkbox("📚 View Logs"):
+    st.sidebar.write("User Activity Log")
+    st.dataframe(st.session_state.logs_df)
