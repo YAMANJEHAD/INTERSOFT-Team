@@ -1,19 +1,26 @@
 import streamlit as st
 import pandas as pd
 import io
-import matplotlib.pyplot as plt
+import os
 from datetime import datetime
 
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 st.title("📊 INTERSOFT Analyzer")
 
-# Initialize logs file
+# ملف السجلات
 logs_file = "logs.csv"
-if logs_file not in st.session_state:
-    st.session_state.logs_df = pd.DataFrame(columns=["username", "action", "timestamp", "filename"])
 
-# File uploader
+# التأكد من وجود ملف السجلات
+if not os.path.exists(logs_file):
+    pd.DataFrame(columns=["username", "action", "timestamp", "filename"]).to_csv(logs_file, index=False)
+
+# يطلب اسم المستخدم
+st.sidebar.subheader("👤 User Info")
+username = st.sidebar.text_input("Enter your name:")
+
+# رفع الملف
 uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
+
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
 def classify_note(note):
@@ -47,7 +54,7 @@ def classify_note(note):
     else:
         return "MISSING INFORMATION"
 
-if uploaded_file:
+if uploaded_file and username.strip() != "":
     try:
         df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
     except:
@@ -61,16 +68,16 @@ if uploaded_file:
 
         st.success("✅ File processed successfully!")
 
-        # Save log entry
+        # حفظ السجل
         log_entry = pd.DataFrame([{
-            "username": "Anonymous",  # No login required, so we'll use "Anonymous"
+            "username": username,
             "action": "Uploaded and analyzed file",
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "filename": uploaded_file.name
         }])
-        st.session_state.logs_df = pd.concat([st.session_state.logs_df, log_entry], ignore_index=True)
+        log_entry.to_csv(logs_file, mode='a', header=False, index=False)
 
-        # Charts and tables
+        # رسوم وتحليلات
         st.subheader("📈 Notes per Technician")
         tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
         st.bar_chart(tech_counts)
@@ -86,7 +93,7 @@ if uploaded_file:
         tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
         st.dataframe(tech_note_group)
 
-        # Export Excel
+        # تصدير ملف إكسل
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
@@ -94,9 +101,16 @@ if uploaded_file:
                 subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
             note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
+
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# View logs
-if st.sidebar.checkbox("📚 View Logs"):
-    st.sidebar.write("User Activity Log")
-    st.dataframe(st.session_state.logs_df)
+# عرض السجلات في الشريط الجانبي
+if st.sidebar.checkbox("📚 View Upload History"):
+    st.sidebar.subheader("📁 Uploaded Files Log")
+    logs_df = pd.read_csv(logs_file)
+    st.dataframe(logs_df)
+
+    for idx, row in logs_df.iterrows():
+        st.markdown(f"🧍‍♂️ **{row['username']}** | 🕒 {row['timestamp']} | 📄 {row['filename']}")
+        # ملاحظة: تحميل الملف من سجل قد يتطلب حفظ الملفات فعليًا في مجلد (حاليًا نعرض فقط الاسم)
+
