@@ -3,23 +3,28 @@ import pandas as pd
 import io
 import os
 from datetime import datetime
+import uuid
 
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 st.title("📊 INTERSOFT Analyzer")
 
-# ملف السجلات
+# Ensure uploads folder exists
+if not os.path.exists("uploads"):
+    os.makedirs("uploads")
+
 logs_file = "logs.csv"
-
-# التأكد من وجود ملف السجلات
 if not os.path.exists(logs_file):
-    pd.DataFrame(columns=["username", "action", "timestamp", "filename"]).to_csv(logs_file, index=False)
+    pd.DataFrame(columns=["username", "action", "timestamp", "filename", "saved_path"]).to_csv(logs_file, index=False)
 
-# يطلب اسم المستخدم
-st.sidebar.subheader("👤 User Info")
-username = st.sidebar.text_input("Enter your name:")
+# --- USERNAME INPUT AT TOP ---
+st.markdown("""
+    <div style='text-align: center;'>
+        <h3>👤 Enter your name to start</h3>
+    </div>
+""", unsafe_allow_html=True)
+username = st.text_input("Your Name:", key="user_input")
 
-# رفع الملف
-uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
+uploaded_file = st.file_uploader("📤 Upload Excel File", type=["xlsx"])
 
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
@@ -54,7 +59,7 @@ def classify_note(note):
     else:
         return "MISSING INFORMATION"
 
-if uploaded_file and username.strip() != "":
+if uploaded_file and username.strip():
     try:
         df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
     except:
@@ -65,19 +70,25 @@ if uploaded_file and username.strip() != "":
     else:
         df['Note_Type'] = df['NOTE'].apply(classify_note)
         df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
-
         st.success("✅ File processed successfully!")
 
-        # حفظ السجل
+        # Save uploaded file
+        unique_filename = f"{uuid.uuid4().hex}_{uploaded_file.name}"
+        saved_path = os.path.join("uploads", unique_filename)
+        with open(saved_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+
+        # Save log
         log_entry = pd.DataFrame([{
             "username": username,
             "action": "Uploaded and analyzed file",
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "filename": uploaded_file.name
+            "filename": uploaded_file.name,
+            "saved_path": saved_path
         }])
         log_entry.to_csv(logs_file, mode='a', header=False, index=False)
 
-        # رسوم وتحليلات
+        # Charts
         st.subheader("📈 Notes per Technician")
         tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
         st.bar_chart(tech_counts)
@@ -93,7 +104,7 @@ if uploaded_file and username.strip() != "":
         tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
         st.dataframe(tech_note_group)
 
-        # تصدير ملف إكسل
+        # Export Excel
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
@@ -101,16 +112,25 @@ if uploaded_file and username.strip() != "":
                 subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
             note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
-
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# عرض السجلات في الشريط الجانبي
+# --- View Logs ---
 if st.sidebar.checkbox("📚 View Upload History"):
     st.sidebar.subheader("📁 Uploaded Files Log")
     logs_df = pd.read_csv(logs_file)
+    st.write("### 📜 Upload Log History")
     st.dataframe(logs_df)
 
     for idx, row in logs_df.iterrows():
-        st.markdown(f"🧍‍♂️ **{row['username']}** | 🕒 {row['timestamp']} | 📄 {row['filename']}")
-        # ملاحظة: تحميل الملف من سجل قد يتطلب حفظ الملفات فعليًا في مجلد (حاليًا نعرض فقط الاسم)
-
+        st.markdown(f"**🧍‍♂️ {row['username']}** | 🕒 {row['timestamp']} | 📄 {row['filename']}")
+        if os.path.exists(row['saved_path']):
+            with open(row['saved_path'], "rb") as f:
+                st.download_button(
+                    label=f"⬇️ Download {row['filename']}",
+                    data=f,
+                    file_name=row['filename'],
+                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    key=f"download_{idx}"
+                )
+        else:
+            st.warning("File not found on server.")
