@@ -11,7 +11,6 @@ st.set_page_config(page_title="Note Analyzer", layout="wide")
 # Add custom animation styles and clock to the page
 clock_html = """
 <style>
-/* Animation for the clock */
 .clock-container {
     font-family: 'Courier New', monospace;
     font-size: 24px;
@@ -27,21 +26,15 @@ clock_html = """
     right: 10px;
     z-index: 9999;
 }
-
-/* Keyframe for pulse animation */
 @keyframes pulse {
     0% { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.4); }
     70% { box-shadow: 0 0 0 10px rgba(243, 156, 18, 0); }
     100% { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0); }
 }
-
-/* Page animation */
 @keyframes slideIn {
     0% { transform: translateX(100%); opacity: 0; }
     100% { transform: translateX(0); opacity: 1; }
 }
-
-/* Apply sliding effect to the page */
 .page-container {
     animation: slideIn 1s ease-out;
     overflow: hidden;
@@ -59,19 +52,16 @@ setInterval(updateClock, 1000);
 updateClock();
 </script>
 """
-
-# Embed the clock animation and page effect
 components.html(clock_html, height=100)
 
-# Page title and other content
-st.title("📊 INTERSOFT Analyzer ")
+st.title("📊 INTERSOFT Analyzer")
 
 # File uploader
 uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 
-# Function to classify the note
+# Note classification function
 def classify_note(note):
-    note = str(note).strip().upper()  # Convert the note to uppercase
+    note = str(note).strip().upper()
     if "TERMINAL ID - WRONG DATE" in note:
         return "TERMINAL ID - WRONG DATE"
     elif "NO IMAGE FOR THE DEVICE" in note:
@@ -99,33 +89,28 @@ def classify_note(note):
     elif "MISSING INFORMATION" in note:
         return "MISSING INFORMATION"
     else:
-        return "MISSING INFORMATION"
+        return "OTHERS"
 
-# If a file is uploaded, process it
+# File processing
 if uploaded_file:
     try:
-        df = pd.read_excel(uploaded_file, sheet_name=None)  # Read all sheets
+        df = pd.read_excel(uploaded_file, sheet_name=None)
     except Exception as e:
         st.error(f"Error reading the Excel file: {e}")
     
-    if isinstance(df, dict):  # In case the file has multiple sheets
+    if isinstance(df, dict):
         sheet_names = list(df.keys())
         st.write(f"Sheets found: {sheet_names}")
-        df = df[sheet_names[0]]  # We'll just process the first sheet for now
+        df = df[sheet_names[0]]  # Process the first sheet
     
-    # Convert all column names to uppercase
-    df.columns = [col.upper() for col in df.columns]
+    df.columns = [str(col).upper() for col in df.columns]
 
-    # Find the columns containing notes
+    # Find NOTE column
     note_columns = [col for col in df.columns if 'NOTE' in col]
-
     if not note_columns:
         st.error("No 'NOTE' columns found in the file.")
     else:
-        # Use the first 'NOTE' column found if multiple exist
         note_column = note_columns[0]
-
-        # Apply note classification
         df['Note_Type'] = df[note_column].apply(classify_note)
 
         st.success("✅ File processed successfully!")
@@ -141,7 +126,10 @@ if uploaded_file:
         st.bar_chart(note_counts)
 
         st.subheader("📋 Data Table")
-        st.dataframe(df[['TECHNICIAN_NAME', 'Note_Type']])
+        if 'TECHNICIAN_NAME' in df.columns:
+            st.dataframe(df[['TECHNICIAN_NAME', 'Note_Type']])
+        else:
+            st.dataframe(df[['Note_Type']])
 
         # Group by technician and note type
         st.subheader("📑 Notes per Technician by Type")
@@ -149,12 +137,17 @@ if uploaded_file:
             tech_note_group = df.groupby(['TECHNICIAN_NAME', 'Note_Type']).size().reset_index(name='Count')
             st.dataframe(tech_note_group)
 
-        # Downloadable summary Excel
+        # Prepare downloadable summary
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
                 subset = df[df['Note_Type'] == note_type]
-                subset[['TECHNICIAN_NAME', 'Note_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
+                cols_to_export = ['TECHNICIAN_NAME', note_column, 'Note_Type'] if 'TECHNICIAN_NAME' in df.columns else [note_column, 'Note_Type']
+                subset[cols_to_export].to_excel(writer, sheet_name=note_type[:31], index=False)
+            
             note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
-            tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
+            
+            if 'TECHNICIAN_NAME' in df.columns:
+                tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
+        
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
