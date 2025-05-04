@@ -8,7 +8,7 @@ from datetime import datetime
 # Set the page config
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-# Add custom animation styles and clock to the page
+# Clock and animation styles
 clock_html = """
 <style>
 .clock-container {
@@ -59,32 +59,31 @@ st.title("📊 INTERSOFT Analyzer")
 
 uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 
-# تصنيف الملاحظات
+# Define known cases
+known_cases = [
+    "TERMINAL ID - WRONG DATE",
+    "NO IMAGE FOR THE DEVICE",
+    "WRONG DATE",
+    "TERMINAL ID",
+    "NO J.O",
+    "DONE",
+    "NO RETAILERS SIGNATURE",
+    "UNCLEAR IMAGE",
+    "NO ENGINEER SIGNATURE",
+    "NO SIGNATURE",
+    "PENDING",
+    "NO INFORMATIONS",
+    "MISSING INFORMATION",
+    "NOT ACTIVE"
+]
+
+# Note classification function
 def classify_note(note):
     note = str(note).strip().upper()
-
-    known_cases = [
-        "TERMINAL ID - WRONG DATE",
-        "NO IMAGE FOR THE DEVICE",
-        "WRONG DATE",
-        "TERMINAL ID",
-        "NO J.O",
-        "DONE",
-        "NO RETAILERS SIGNATURE",
-        "UNCLEAR IMAGE",
-        "NO ENGINEER SIGNATURE",
-        "NO SIGNATURE",
-        "PENDING",
-        "NO INFORMATIONS",
-        "MISSING INFORMATION",
-        "NOT ACTIVE"
-    ]
-
     for case in known_cases:
         if case in note:
             return case
-
-    return "UNKNOWN"  # أي شيء غير معروف
+    return "OTHERS"
 
 if uploaded_file:
     try:
@@ -127,6 +126,7 @@ if uploaded_file:
             tech_note_group = df.groupby(['TECHNICIAN_NAME', 'Note_Type']).size().reset_index(name='Count')
             st.dataframe(tech_note_group)
 
+        # Prepare Excel output
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
