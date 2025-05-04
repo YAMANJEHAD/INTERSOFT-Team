@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 import streamlit.components.v1 as components
 from datetime import datetime
 
-# إعداد الصفحة
+# Page configuration
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-# مكونات الساعة المتحركة
+# Animated Clock HTML/CSS
 clock_html = """
 <style>
 .clock-container {
@@ -45,23 +45,22 @@ updateClock();
 </script>
 """
 
-# عرض الساعة
 components.html(clock_html, height=100)
 
-st.title("📊 INTERSOFT Analyzer")
+st.title("📊 INTERSOFT Note Analyzer")
 
-# نموذج إدخال الاسم والتاريخ
+# Input form for name, date, and file upload
 with st.form("upload_form", clear_on_submit=False):
-    name = st.text_input("اسم المستخدم")
-    date = st.date_input("تاريخ التحميل", datetime.today())
-    uploaded_file = st.file_uploader("📁 اختر ملف Excel", type=["xlsx"])
-    submit = st.form_submit_button("🔼 رفع الملف")
+    name = st.text_input("Your Name")
+    date = st.date_input("Upload Date", datetime.today())
+    uploaded_file = st.file_uploader("📁 Select Excel File", type=["xlsx"])
+    submit = st.form_submit_button("🔼 Upload")
 
-# تأكد من وجود حالة للجلسة لتخزين السجل
+# Initialize session log
 if 'upload_log' not in st.session_state:
     st.session_state.upload_log = []
 
-# الدالة لتصنيف الملاحظات
+# Note classification function
 def classify_note(note):
     note = str(note).strip().upper()
     if "TERMINAL ID - WRONG DATE" in note:
@@ -95,12 +94,12 @@ def classify_note(note):
 
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
-# معالجة الملف عند الضغط على زر الرفع
+# Process upload
 if submit and uploaded_file and name:
     try:
         df = pd.read_excel(uploaded_file)
     except:
-        st.error("❌ فشل في قراءة الملف.")
+        st.error("❌ Failed to read the Excel file.")
         df = None
 
     if df is not None and all(col in df.columns for col in required_cols):
@@ -111,7 +110,7 @@ if submit and uploaded_file and name:
         note_counts = df['Note_Type'].value_counts()
         tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
 
-        # إنشاء ملخص Excel
+        # Create Excel summary
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
@@ -124,7 +123,7 @@ if submit and uploaded_file and name:
         if isinstance(excel_bytes, str):
             excel_bytes = excel_bytes.encode()
 
-        # حفظ السجل
+        # Save to log
         st.session_state.upload_log.append({
             "Name": name,
             "Date": date.strftime("%Y-%m-%d"),
@@ -132,13 +131,13 @@ if submit and uploaded_file and name:
             "Uploaded File Content": excel_bytes
         })
 
-        st.success("✅ تم رفع الملف بنجاح!")
+        st.success("✅ File uploaded and processed successfully.")
 
     else:
-        st.error("❌ الملف لا يحتوي على الأعمدة المطلوبة!")
+        st.error("❌ The file does not contain the required columns!")
 
-# عرض جدول السجل
-st.subheader("📂 سجل الملفات المرفوعة")
+# Upload history
+st.subheader("📂 Upload History")
 if st.session_state.upload_log:
     log_df = pd.DataFrame([
         {
@@ -148,7 +147,7 @@ if st.session_state.upload_log:
         }
         for entry in st.session_state.upload_log
     ])
-    selected_index = st.selectbox("اختر ملف", options=range(len(log_df)), format_func=lambda i: f'{log_df.iloc[i]["File Name"]} - {log_df.iloc[i]["Name"]} ({log_df.iloc[i]["Date"]})')
+    selected_index = st.selectbox("Select file", options=range(len(log_df)), format_func=lambda i: f'{log_df.iloc[i]["File Name"]} - {log_df.iloc[i]["Name"]} ({log_df.iloc[i]["Date"]})')
 
     st.dataframe(log_df)
 
@@ -157,15 +156,15 @@ if st.session_state.upload_log:
     col1, col2 = st.columns(2)
     with col1:
         st.download_button(
-            "⬇️ تنزيل الملف المحدد",
+            "⬇️ Download selected file",
             data=selected_entry["Uploaded File Content"] if isinstance(selected_entry["Uploaded File Content"], bytes)
             else selected_entry["Uploaded File Content"].encode(),
             file_name=selected_entry["File Name"],
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
     with col2:
-        if st.button("🗑️ حذف الملف المحدد"):
+        if st.button("🗑️ Delete selected file"):
             st.session_state.upload_log.pop(selected_index)
             st.experimental_rerun()
 else:
-    st.info("📭 لم يتم رفع أي ملفات بعد.")
+    st.info("📭 No files uploaded yet.")
