@@ -73,7 +73,7 @@ required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
 # Function to classify the note
 def classify_note(note):
-    note = str(note).strip().upper()  # تحويل النص إلى أحرف كبيرة
+    note = str(note).strip().upper()  # Convert the note to uppercase
     if "TERMINAL ID - WRONG DATE" in note:
         return "TERMINAL ID - WRONG DATE"
     elif "NO IMAGE FOR THE DEVICE" in note:
@@ -110,21 +110,24 @@ if uploaded_file:
     except:
         df = pd.read_excel(uploaded_file)
 
-    # تحويل أسماء الأعمدة إلى أحرف صغيرة للتأكد من التعامل مع الأسماء بشكل غير حساس لحالة الأحرف
-    df.columns = [col.lower() for col in df.columns]
+    # Convert all column names to uppercase
+    df.columns = [col.upper() for col in df.columns]
 
-    if not all(col in df.columns for col in [col.lower() for col in required_cols]):
+    # Ensure all values in the columns are in uppercase
+    df = df.apply(lambda x: x.astype(str).str.upper())
+
+    if not all(col in df.columns for col in required_cols):
         st.error(f"Missing required columns. Available: {list(df.columns)}")
     else:
-        # التأكد من التعامل مع القيم في الأعمدة بشكل غير حساس لحالة الأحرف
-        df['Note_Type'] = df['note'].apply(classify_note)
+        # Apply note classification
+        df['Note_Type'] = df['NOTE'].apply(classify_note)
         df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
 
         st.success("✅ File processed successfully!")
 
         # Show charts
         st.subheader("📈 Notes per Technician")
-        tech_counts = df.groupby('technician_name')['Note_Type'].count().sort_values(ascending=False)
+        tech_counts = df.groupby('TECHNICIAN_NAME')['Note_Type'].count().sort_values(ascending=False)
         st.bar_chart(tech_counts)
 
         st.subheader("📊 Notes by Type")
@@ -132,11 +135,11 @@ if uploaded_file:
         st.bar_chart(note_counts)
 
         st.subheader("📋 Data Table")
-        st.dataframe(df[['terminal_id', 'technician_name', 'Note_Type', 'ticket_type']])
+        st.dataframe(df[['TERMINAL_ID', 'TECHNICIAN_NAME', 'Note_Type', 'TICKET_TYPE']])
 
         # Group by technician and note type
         st.subheader("📑 Notes per Technician by Type")
-        tech_note_group = df.groupby(['technician_name', 'Note_Type']).size().reset_index(name='Count')
+        tech_note_group = df.groupby(['TECHNICIAN_NAME', 'Note_Type']).size().reset_index(name='Count')
         st.dataframe(tech_note_group)
 
         # Downloadable summary Excel
@@ -144,7 +147,7 @@ if uploaded_file:
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
                 subset = df[df['Note_Type'] == note_type]
-                subset[['terminal_id', 'technician_name', 'Note_Type', 'ticket_type']].to_excel(writer, sheet_name=note_type[:31], index=False)
+                subset[['TERMINAL_ID', 'TECHNICIAN_NAME', 'Note_Type', 'TICKET_TYPE']].to_excel(writer, sheet_name=note_type[:31], index=False)
             note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
