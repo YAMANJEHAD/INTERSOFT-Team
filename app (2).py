@@ -1,14 +1,22 @@
 import streamlit as st
 import pandas as pd
 import io
-import matplotlib.pyplot as plt
-import streamlit.components.v1 as components
-from datetime import datetime
 import os
-import json
 import uuid
+import json
+from datetime import datetime
 
-# Set the page config
+# Define constants
+HISTORY_FILE = "upload_history.json"
+
+# Load the upload history from file, or initialize if it doesn't exist
+if os.path.exists(HISTORY_FILE):
+    with open(HISTORY_FILE, "r") as f:
+        upload_history = json.load(f)
+else:
+    upload_history = []
+
+# Set the page configuration
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
 # Add custom animation styles and clock to the page
@@ -49,18 +57,6 @@ clock_html = """
     animation: slideIn 1s ease-out;
     overflow: hidden;
 }
-
-/* Centering uploader info and reducing font size */
-.upload-info {
-    text-align: center;
-    font-size: 12px;
-    margin-top: 20px;
-}
-
-/* Adjusting table history style */
-.history-table {
-    margin-top: 40px;
-}
 </style>
 <div class="clock-container">
     <span id="clock"></span>
@@ -76,6 +72,7 @@ updateClock();
 """
 
 # Embed the clock animation and page effect
+import streamlit.components.v1 as components
 components.html(clock_html, height=100)
 
 # Page title and other content
@@ -84,7 +81,9 @@ st.title("📊 INTERSOFT Analyzer ")
 # File uploader
 uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 
-required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
+# User name and date inputs
+uploader_name = st.text_input("Enter your name")
+upload_date = datetime.now()
 
 # Function to classify the note
 def classify_note(note):
@@ -118,52 +117,35 @@ def classify_note(note):
     else:
         return "MISSING INFORMATION"
 
-# Load upload history from a JSON file
-HISTORY_FILE = "upload_history.json"
-if os.path.exists(HISTORY_FILE):
-    with open(HISTORY_FILE, "r") as f:
-        upload_history = json.load(f)
-else:
-    upload_history = []
-
-st.markdown("---")
-st.header("📂 File Upload History")
-
-# Input uploader name and date before uploading
-with st.form("upload_form"):
-    uploader_name = st.text_input("Enter your name", "")
-    upload_date = st.date_input("Select upload date", datetime.today())
-    submitted = st.form_submit_button("Submit Info")
-
-if submitted and not uploader_name:
-    st.warning("Please enter your name before uploading a file.")
-    st.stop()
-
-# Save upload log after successful file upload
+# Handle file upload and add it to history
 if uploaded_file and uploader_name:
-    file_id = str(uuid.uuid4())  # unique identifier for the file
-    filename = uploaded_file.name
-    log_entry = {
-        "id": file_id,
-        "filename": filename,
-        "uploader": uploader_name,
-        "date": str(upload_date)
-    }
-    if not any(item["filename"] == filename for item in upload_history):
-        upload_history.append(log_entry)
-        with open(HISTORY_FILE, "w") as f:
-            json.dump(upload_history, f)
-
-# If a file is uploaded, process it
-if uploaded_file:
     try:
-        df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
-    except:
-        df = pd.read_excel(uploaded_file)
+        file_id = str(uuid.uuid4())  # unique identifier for the file
+        filename = uploaded_file.name
+        file_path = f"uploads/{filename}"
 
-    if not all(col in df.columns for col in required_cols):
-        st.error(f"Missing required columns. Available: {list(df.columns)}")
-    else:
+        # Save file temporarily
+        with open(file_path, "wb") as f:
+            f.write(uploaded_file.getvalue())
+
+        # Log entry
+        log_entry = {
+            "id": file_id,
+            "filename": filename,
+            "uploader": uploader_name,
+            "date": str(upload_date)
+        }
+
+        # Check if file already exists in history
+        if not any(item["filename"] == filename for item in upload_history):
+            upload_history.append(log_entry)
+            with open(HISTORY_FILE, "w") as f:
+                json.dump(upload_history, f)
+
+        # Read file content
+        df = pd.read_excel(file_path, sheet_name="Sheet2")  # Adjust the sheet name as per your data
+
+        # Process the file and classify the note types
         df['Note_Type'] = df['NOTE'].apply(classify_note)
         df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
 
@@ -196,40 +178,16 @@ if uploaded_file:
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# Show history table
-if upload_history:
-    st.subheader("📝 Uploaded Files")
-    df_history = pd.DataFrame(upload_history)
-    selected_row = st.radio("Select a file", df_history["filename"])
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
+else:
+    st.warning("Please upload a file and enter your name.")
 
-    st.dataframe(df_history, use_container_width=True, height=400)
+# Display upload history
+st.subheader("Upload History")
+history_data = [{"Filename": entry["filename"], "Uploader": entry["uploader"], "Date": entry["date"]} for entry in upload_history]
+st.table(history_data)
 
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        if st.button("🧾 Preview File"):
-            try:
-                df_selected = pd.read_excel(selected_row)
-                st.dataframe(df_selected.head())
-            except Exception as e:
-                st.error(f"Could not open file: {e}")
-
-    with col2:
-        if st.button("❌ Delete File"):
-            upload_history = [entry for entry in upload_history if entry["filename"] != selected_row]
-            try:
-                os.remove(selected_row)
-            except FileNotFoundError:
-                pass
-            with open(HISTORY_FILE, "w") as f:
-                json.dump(upload_history, f)
-            st.success(f"File '{selected_row}' deleted successfully.")
-            st.experimental_rerun()
-
-# Display uploader info centered and small font
-if uploader_name:
-    st.markdown(f"""
-    <div class="upload-info">
-        <p><strong>Uploader: </strong>{uploader_name}</p>
-        <p><strong>Date: </strong>{upload_date}</p>
-    </div>
-    """, unsafe_allow_html=True)
+# Option to download the uploaded file
+if uploaded_file:
+    st.download_button("Download File", uploaded_file, file_name=filename)
