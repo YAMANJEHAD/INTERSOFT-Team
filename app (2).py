@@ -5,14 +5,10 @@ import matplotlib.pyplot as plt
 import streamlit.components.v1 as components
 from datetime import datetime
 
-# Set page config
+# إعداد الصفحة
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-# Store uploaded file metadata in session_state
-if "upload_log" not in st.session_state:
-    st.session_state.upload_log = []
-
-# HTML & CSS clock
+# HTML للساعة المتحركة
 clock_html = """
 <style>
 .clock-container {
@@ -52,22 +48,20 @@ components.html(clock_html, height=100)
 
 st.title("📊 INTERSOFT Analyzer")
 
-# Require user name and date before upload
-st.subheader("🔐 User Info")
-user_name = st.text_input("Enter your name")
-upload_date = st.date_input("Select upload date", value=datetime.today())
+# حفظ سجل الملفات المرفوعة
+if "upload_log" not in st.session_state:
+    st.session_state.upload_log = []
 
-# File uploader (enabled only after name and date)
-uploaded_file = None
-if user_name and upload_date:
-    uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
-else:
-    st.warning("Please enter your name and select a date to proceed.")
+# اسم المستخدم والتاريخ
+st.subheader("👤 User Information")
+user_name = st.text_input("Enter your name:")
+upload_date = st.date_input("Select date:", value=datetime.today())
 
-# Required columns
+# رفع الملف
+uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
-# Classifier function
+# تصنيف الملاحظات
 def classify_note(note):
     note = str(note).strip().upper()
     if "TERMINAL ID - WRONG DATE" in note:
@@ -97,10 +91,13 @@ def classify_note(note):
     elif "MISSING INFORMATION" in note:
         return "MISSING INFORMATION"
     else:
-        return "OTHER"
+        return "MISSING INFORMATION"
 
-if uploaded_file:
-    # Log the upload
+if uploaded_file and user_name:
+    file_bytes = uploaded_file.read()
+    st.session_state["Uploaded File Content"] = file_bytes  # Save for download
+
+    # سجل الرفع
     st.session_state.upload_log.append({
         "Name": user_name,
         "File Name": uploaded_file.name,
@@ -108,23 +105,19 @@ if uploaded_file:
     })
 
     try:
-        df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
-    except:
-        df = pd.read_excel(uploaded_file)
+        excel_file = pd.ExcelFile(io.BytesIO(file_bytes))
+        df = pd.read_excel(io.BytesIO(file_bytes), sheet_name="Sheet2") if "Sheet2" in excel_file.sheet_names else pd.read_excel(io.BytesIO(file_bytes))
+    except Exception as e:
+        st.error(f"❌ Error reading Excel file: {e}")
+        st.stop()
 
     if not all(col in df.columns for col in required_cols):
         st.error(f"Missing required columns. Available: {list(df.columns)}")
     else:
         df['Note_Type'] = df['NOTE'].apply(classify_note)
         df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
-
         st.success("✅ File processed successfully!")
 
-        # Preview Button
-        if st.button("🔍 Preview Uploaded Data"):
-            st.dataframe(df.head(30))
-
-        # Charts
         st.subheader("📈 Notes per Technician")
         tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
         st.bar_chart(tech_counts)
@@ -136,12 +129,11 @@ if uploaded_file:
         st.subheader("📋 Data Table")
         st.dataframe(df[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']])
 
-        # Grouped
         st.subheader("📑 Notes per Technician by Type")
         tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
         st.dataframe(tech_note_group)
 
-        # Excel summary
+        # تنزيل Excel
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
@@ -149,10 +141,40 @@ if uploaded_file:
                 subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
             note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
-
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# Display all uploaded files
+# عرض سجل الملفات المرفوعة
 if st.session_state.upload_log:
     st.subheader("📁 Uploaded Files Log")
-    st.dataframe(pd.DataFrame(st.session_state.upload_log))
+
+    log_df = pd.DataFrame(st.session_state.upload_log)
+
+    selected_row = st.selectbox(
+        "Select a file to manage it:", 
+        options=log_df.index, 
+        format_func=lambda x: f"{log_df.loc[x, 'File Name']} (by {log_df.loc[x, 'Name']} on {log_df.loc[x, 'Date']})"
+    )
+
+    st.dataframe(log_df)
+
+    if selected_row is not None:
+        selected_entry = log_df.loc[selected_row]
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            if "Uploaded File Content" in st.session_state:
+                st.download_button(
+                    "🔄 Download Selected File",
+                    st.session_state["Uploaded File Content"],
+                    selected_entry["File Name"],
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+            else:
+                st.info("⚠️ File not available in memory for download.")
+
+        with col2:
+            if st.button("❌ Delete Selected Entry"):
+                st.session_state.upload_log.pop(selected_row)
+                st.success("✅ Entry deleted from session history.")
+                st.rerun()
