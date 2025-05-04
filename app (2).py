@@ -102,11 +102,11 @@ if uploaded_file:
         note_column = note_columns[0]
         df['Note_Type'] = df[note_column].apply(classify_note)
 
-        # Separate out the "MISSING INFORMATION" rows without altering the original notes
-        missing_info_df = df[df['Note_Type'] == "MISSING INFORMATION"]
+        # Separate out the "OTHERS" rows (ملاحظات غير معروفة)
+        others_df = df[~df['Note_Type'].isin(known_cases)]  # تحديد الملاحظات غير الموجودة ضمن الكيسيس المعروفة
 
-        # Create a new dataframe for known notes
-        known_notes_df = df[df['Note_Type'] != "MISSING INFORMATION"]
+        # Create a new dataframe for known notes (الملاحظات المعروفة)
+        known_notes_df = df[df['Note_Type'].isin(known_cases)]  # تصنيف الملاحظات المعروفة
 
         st.success("✅ File processed successfully!")
 
@@ -136,10 +136,14 @@ if uploaded_file:
                 sheet_name = note_type[:31]  # Ensure Excel sheet name is valid
                 subset.to_excel(writer, sheet_name=sheet_name, index=False)
 
-            # Write the MISSING INFORMATION notes
+            # Write the MISSING INFORMATION notes (الملاحظات المفقودة التي تم تصنيفها)
+            missing_info_df = df[df['Note_Type'] == "MISSING INFORMATION"]
             missing_info_df.to_excel(writer, sheet_name="MISSING INFORMATION", index=False)
 
-            # Summary sheets
+            # Write the OTHERS notes (الملاحظات الغير معروفة)
+            others_df.to_excel(writer, sheet_name="OTHERS", index=False)
+
+            # Summary sheets (مُلخص الأنواع والملاحظات)
             note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
             if 'TECHNICIAN_NAME' in df.columns:
                 tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
