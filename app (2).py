@@ -69,8 +69,6 @@ st.title("📊 INTERSOFT Analyzer ")
 # File uploader
 uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 
-required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
-
 # Function to classify the note
 def classify_note(note):
     note = str(note).strip().upper()  # Convert the note to uppercase
@@ -106,52 +104,57 @@ def classify_note(note):
 # If a file is uploaded, process it
 if uploaded_file:
     try:
-        df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
-    except:
-        df = pd.read_excel(uploaded_file)
-
+        df = pd.read_excel(uploaded_file, sheet_name=None)  # Read all sheets
+    except Exception as e:
+        st.error(f"Error reading the Excel file: {e}")
+    
+    if isinstance(df, dict):  # In case the file has multiple sheets
+        sheet_names = list(df.keys())
+        st.write(f"Sheets found: {sheet_names}")
+        df = df[sheet_names[0]]  # We'll just process the first sheet for now
+    
     # Convert all column names to uppercase
     df.columns = [col.upper() for col in df.columns]
 
-    # Ensure all values in the columns are in uppercase
-    df = df.apply(lambda x: x.astype(str).str.upper())
+    # Find the columns containing notes
+    note_columns = [col for col in df.columns if 'NOTE' in col]
 
-    # Check if the required columns exist
-    missing_cols = [col for col in required_cols if col not in df.columns]
-    
-    if missing_cols:
-        st.error(f"Missing required columns. Missing columns: {missing_cols}")
-        st.write(f"Available columns: {list(df.columns)}")
+    if not note_columns:
+        st.error("No 'NOTE' columns found in the file.")
     else:
+        # Use the first 'NOTE' column found if multiple exist
+        note_column = note_columns[0]
+
         # Apply note classification
-        df['Note_Type'] = df['NOTE'].apply(classify_note)
-        df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
+        df['Note_Type'] = df[note_column].apply(classify_note)
 
         st.success("✅ File processed successfully!")
 
         # Show charts
         st.subheader("📈 Notes per Technician")
-        tech_counts = df.groupby('TECHNICIAN_NAME')['Note_Type'].count().sort_values(ascending=False)
-        st.bar_chart(tech_counts)
+        if 'TECHNICIAN_NAME' in df.columns:
+            tech_counts = df.groupby('TECHNICIAN_NAME')['Note_Type'].count().sort_values(ascending=False)
+            st.bar_chart(tech_counts)
 
         st.subheader("📊 Notes by Type")
         note_counts = df['Note_Type'].value_counts()
         st.bar_chart(note_counts)
 
         st.subheader("📋 Data Table")
-        st.dataframe(df[['TERMINAL_ID', 'TECHNICIAN_NAME', 'Note_Type', 'TICKET_TYPE']])
+        st.dataframe(df[['TECHNICIAN_NAME', 'Note_Type']])
 
         # Group by technician and note type
         st.subheader("📑 Notes per Technician by Type")
-        tech_note_group = df.groupby(['TECHNICIAN_NAME', 'Note_Type']).size().reset_index(name='Count')
-        st.dataframe(tech_note_group)
+        if 'TECHNICIAN_NAME' in df.columns:
+            tech_note_group = df.groupby(['TECHNICIAN_NAME', 'Note_Type']).size().reset_index(name='Count')
+            st.dataframe(tech_note_group)
 
         # Downloadable summary Excel
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
                 subset = df[df['Note_Type'] == note_type]
-                subset[['TERMINAL_ID', 'TECHNICIAN_NAME', 'Note_Type', 'TICKET_TYPE']].to_excel(writer, sheet_name=note_type[:31], index=False)
+                subset[['TECHNICIAN_NAME', 'Note_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
             note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
