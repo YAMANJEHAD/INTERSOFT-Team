@@ -110,6 +110,13 @@ if uploaded_file:
 
         st.success("✅ File processed successfully!")
 
+        # Display the "OTHERS" notes in a table
+        st.subheader("🚫 Notes in 'OTHERS' Category")
+        if not others_df.empty:
+            st.dataframe(others_df)  # عرض الجدول للملاحظات الغير معروفة
+        else:
+            st.write("No unknown notes found.")
+
         st.subheader("📈 Notes per Technician")
         if 'TECHNICIAN_NAME' in df.columns:
             tech_counts = df.groupby('TECHNICIAN_NAME')['Note_Type'].count().sort_values(ascending=False)
