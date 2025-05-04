@@ -60,6 +60,8 @@ clock_html = """
 /* Adjusting table history style */
 .history-table {
     margin-top: 40px;
+    float: right;
+    width: 70%;
 }
 </style>
 <div class="clock-container">
@@ -200,30 +202,20 @@ if uploaded_file:
 if upload_history:
     st.subheader("📝 Uploaded Files")
     df_history = pd.DataFrame(upload_history)
-    selected_row = st.radio("Select a file", df_history["filename"])
+    
+    # Choose file using selectbox
+    selected_file = st.selectbox("Select a file to preview", df_history["filename"])
+    
+    st.dataframe(df_history, use_container_width=True, height=300)  # Adjust the height and width of the table
 
-    st.dataframe(df_history, use_container_width=True, height=400)
-
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        if st.button("🧾 Preview File"):
-            try:
-                df_selected = pd.read_excel(selected_row)
-                st.dataframe(df_selected.head())
-            except Exception as e:
-                st.error(f"Could not open file: {e}")
-
-    with col2:
-        if st.button("❌ Delete File"):
-            upload_history = [entry for entry in upload_history if entry["filename"] != selected_row]
-            try:
-                os.remove(selected_row)
-            except FileNotFoundError:
-                pass
-            with open(HISTORY_FILE, "w") as f:
-                json.dump(upload_history, f)
-            st.success(f"File '{selected_row}' deleted successfully.")
-            st.experimental_rerun()
+    # Preview the selected file
+    if selected_file:
+        try:
+            df_selected = pd.read_excel(selected_file)
+            st.subheader("📄 Preview of Selected File")
+            st.dataframe(df_selected.head())
+        except Exception as e:
+            st.error(f"Could not open file: {e}")
 
 # Display uploader info centered and small font
 if uploader_name:
