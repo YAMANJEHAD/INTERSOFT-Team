@@ -102,6 +102,12 @@ if uploaded_file:
         note_column = note_columns[0]
         df['Note_Type'] = df[note_column].apply(classify_note)
 
+        # Separate out the "MISSING INFORMATION" rows without altering the original notes
+        missing_info_df = df[df['Note_Type'] == "MISSING INFORMATION"]
+
+        # Create a new dataframe for known notes
+        known_notes_df = df[df['Note_Type'] != "MISSING INFORMATION"]
+
         st.success("✅ File processed successfully!")
 
         st.subheader("📈 Notes per Technician")
@@ -124,10 +130,14 @@ if uploaded_file:
         # Excel export
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            for note_type in df['Note_Type'].unique():
-                subset = df[df['Note_Type'] == note_type]
+            # Write the known notes
+            for note_type in known_notes_df['Note_Type'].unique():
+                subset = known_notes_df[known_notes_df['Note_Type'] == note_type]
                 sheet_name = note_type[:31]  # Ensure Excel sheet name is valid
                 subset.to_excel(writer, sheet_name=sheet_name, index=False)
+
+            # Write the MISSING INFORMATION notes
+            missing_info_df.to_excel(writer, sheet_name="MISSING INFORMATION", index=False)
 
             # Summary sheets
             note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
