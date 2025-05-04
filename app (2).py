@@ -80,7 +80,7 @@ def classify_note(note):
     for case in known_cases:
         if case in note:
             return case
-    return "OTHERS"
+    return "MISSING INFORMATION"
 
 # File processing
 if uploaded_file:
@@ -126,12 +126,8 @@ if uploaded_file:
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
                 subset = df[df['Note_Type'] == note_type]
-                subset.to_excel(writer, sheet_name=note_type[:31], index=False)
-
-            # Create explicit OTHERS sheet
-            others_df = df[df['Note_Type'] == "OTHERS"]
-            if not others_df.empty:
-                others_df.to_excel(writer, sheet_name="OTHERS", index=False)
+                sheet_name = note_type[:31]  # Ensure Excel sheet name is valid
+                subset.to_excel(writer, sheet_name=sheet_name, index=False)
 
             # Summary sheets
             note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
