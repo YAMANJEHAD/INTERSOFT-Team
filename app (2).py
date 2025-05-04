@@ -8,7 +8,7 @@ from datetime import datetime
 # إعداد الصفحة
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-# HTML للساعة المتحركة
+# HTML مخصص للساعة والتنقل
 clock_html = """
 <style>
 .clock-container {
@@ -31,6 +31,14 @@ clock_html = """
     70% { box-shadow: 0 0 0 10px rgba(243, 156, 18, 0); }
     100% { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0); }
 }
+@keyframes slideIn {
+    0% { transform: translateX(100%); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
+}
+.page-container {
+    animation: slideIn 1s ease-out;
+    overflow: hidden;
+}
 </style>
 <div class="clock-container">
     <span id="clock"></span>
@@ -44,78 +52,59 @@ setInterval(updateClock, 1000);
 updateClock();
 </script>
 """
+
 components.html(clock_html, height=100)
 
 st.title("📊 INTERSOFT Analyzer")
 
-# حفظ سجل الملفات المرفوعة
+# معلومات المستخدم
+name = st.text_input("🧑‍💻 Enter Your Name:")
+date = st.date_input("📅 Select Date:", datetime.today())
+
+uploaded_file = st.file_uploader("📤 Upload Excel File", type=["xlsx"])
+
+required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
+
+# وظيفة التصنيف
+def classify_note(note):
+    note = str(note).strip().upper()
+    cases = {
+        "TERMINAL ID - WRONG DATE": "TERMINAL ID - WRONG DATE",
+        "NO IMAGE FOR THE DEVICE": "NO IMAGE FOR THE DEVICE",
+        "WRONG DATE": "WRONG DATE",
+        "TERMINAL ID": "TERMINAL ID",
+        "NO J.O": "NO J.O",
+        "DONE": "DONE",
+        "NO RETAILERS SIGNATURE": "NO RETAILERS SIGNATURE",
+        "UNCLEAR IMAGE": "UNCLEAR IMAGE",
+        "NO ENGINEER SIGNATURE": "NO ENGINEER SIGNATURE",
+        "NO SIGNATURE": "NO SIGNATURE",
+        "PENDING": "PENDING",
+        "NO INFORMATIONS": "NO INFORMATIONS",
+        "MISSING INFORMATION": "MISSING INFORMATION"
+    }
+    for key in cases:
+        if key in note:
+            return cases[key]
+    return "MISSING INFORMATION"
+
+# سجل التحميلات
 if "upload_log" not in st.session_state:
     st.session_state.upload_log = []
 
-# اسم المستخدم والتاريخ
-st.subheader("👤 User Information")
-user_name = st.text_input("Enter your name:")
-upload_date = st.date_input("Select date:", value=datetime.today())
-
-# رفع الملف
-uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
-required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
-
-# تصنيف الملاحظات
-def classify_note(note):
-    note = str(note).strip().upper()
-    if "TERMINAL ID - WRONG DATE" in note:
-        return "TERMINAL ID - WRONG DATE"
-    elif "NO IMAGE FOR THE DEVICE" in note:
-        return "NO IMAGE FOR THE DEVICE"
-    elif "WRONG DATE" in note:
-        return "WRONG DATE"
-    elif "TERMINAL ID" in note:
-        return "TERMINAL ID"
-    elif "NO J.O" in note:
-        return "NO J.O"
-    elif "DONE" in note:
-        return "DONE"
-    elif "NO RETAILERS SIGNATURE" in note:
-        return "NO RETAILERS SIGNATURE"
-    elif "UNCLEAR IMAGE" in note:
-        return "UNCLEAR IMAGE"
-    elif "NO ENGINEER SIGNATURE" in note:
-        return "NO ENGINEER SIGNATURE"
-    elif "NO SIGNATURE" in note:
-        return "NO SIGNATURE"
-    elif "PENDING" in note:
-        return "PENDING"
-    elif "NO INFORMATIONS" in note:
-        return "NO INFORMATIONS"
-    elif "MISSING INFORMATION" in note:
-        return "MISSING INFORMATION"
-    else:
-        return "MISSING INFORMATION"
-
-if uploaded_file and user_name:
-    file_bytes = uploaded_file.read()
-    st.session_state["Uploaded File Content"] = file_bytes  # Save for download
-
-    # سجل الرفع
-    st.session_state.upload_log.append({
-        "Name": user_name,
-        "File Name": uploaded_file.name,
-        "Date": str(upload_date)
-    })
-
+# معالجة الملف
+if uploaded_file and name and date:
     try:
-        excel_file = pd.ExcelFile(io.BytesIO(file_bytes))
-        df = pd.read_excel(io.BytesIO(file_bytes), sheet_name="Sheet2") if "Sheet2" in excel_file.sheet_names else pd.read_excel(io.BytesIO(file_bytes))
-    except Exception as e:
-        st.error(f"❌ Error reading Excel file: {e}")
-        st.stop()
+        df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
+    except:
+        df = pd.read_excel(uploaded_file)
 
     if not all(col in df.columns for col in required_cols):
-        st.error(f"Missing required columns. Available: {list(df.columns)}")
+        st.error(f"❌ Missing required columns. Found columns: {list(df.columns)}")
     else:
         df['Note_Type'] = df['NOTE'].apply(classify_note)
         df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
+
         st.success("✅ File processed successfully!")
 
         st.subheader("📈 Notes per Technician")
@@ -133,7 +122,6 @@ if uploaded_file and user_name:
         tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
         st.dataframe(tech_note_group)
 
-        # تنزيل Excel
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
@@ -143,38 +131,52 @@ if uploaded_file and user_name:
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# عرض سجل الملفات المرفوعة
+        # حفظ معلومات التحميل في الجلسة
+        st.session_state.upload_log.append({
+            "Name": name,
+            "Date": date.strftime("%Y-%m-%d"),
+            "File Name": uploaded_file.name,
+            "Uploaded File Content": output.getvalue()
+        })
+
+# عرض سجل التحميلات
 if st.session_state.upload_log:
     st.subheader("📁 Uploaded Files Log")
-
     log_df = pd.DataFrame(st.session_state.upload_log)
 
-    selected_row = st.selectbox(
-        "Select a file to manage it:", 
-        options=log_df.index, 
-        format_func=lambda x: f"{log_df.loc[x, 'File Name']} (by {log_df.loc[x, 'Name']} on {log_df.loc[x, 'Date']})"
+    log_df['entry_id'] = log_df.apply(lambda row: f"{row['File Name']}_{row['Name']}_{row['Date']}", axis=1)
+    unique_ids = log_df['entry_id'].tolist()
+
+    selected_id = st.selectbox(
+        "📌 Select a file to preview/download/delete:",
+        options=unique_ids,
+        format_func=lambda x: f"{x.split('_')[0]} (by {x.split('_')[1]} on {x.split('_')[2]})"
     )
 
-    st.dataframe(log_df)
+    st.dataframe(log_df.drop(columns='entry_id'))
 
-    if selected_row is not None:
-        selected_entry = log_df.loc[selected_row]
+    selected_entry = log_df[log_df['entry_id'] == selected_id].iloc[0]
 
-        col1, col2 = st.columns(2)
+    st.markdown("### 📂 File Preview:")
+    try:
+        file_df = pd.read_excel(io.BytesIO(selected_entry["Uploaded File Content"]), sheet_name="Sheet2")
+        st.dataframe(file_df.head(10))
+    except Exception as e:
+        st.error("⚠️ Error reading file preview: " + str(e))
 
-        with col1:
-            if "Uploaded File Content" in st.session_state:
-                st.download_button(
-                    "🔄 Download Selected File",
-                    st.session_state["Uploaded File Content"],
-                    selected_entry["File Name"],
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-            else:
-                st.info("⚠️ File not available in memory for download.")
-
-        with col2:
-            if st.button("❌ Delete Selected Entry"):
-                st.session_state.upload_log.pop(selected_row)
-                st.success("✅ Entry deleted from session history.")
-                st.rerun()
+    col1, col2 = st.columns(2)
+    with col1:
+        st.download_button(
+            "⬇️ Download Selected File",
+            selected_entry["Uploaded File Content"],
+            selected_entry["File Name"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    with col2:
+        if st.button("🗑️ Delete Selected Entry"):
+            st.session_state.upload_log = [
+                entry for entry in st.session_state.upload_log
+                if f"{entry['File Name']}_{entry['Name']}_{entry['Date']}" != selected_id
+            ]
+            st.success("✅ Entry deleted successfully.")
+            st.rerun()
