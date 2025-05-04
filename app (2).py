@@ -49,6 +49,18 @@ clock_html = """
     animation: slideIn 1s ease-out;
     overflow: hidden;
 }
+
+/* Centering uploader info and reducing font size */
+.upload-info {
+    text-align: center;
+    font-size: 12px;
+    margin-top: 20px;
+}
+
+/* Adjusting table history style */
+.history-table {
+    margin-top: 40px;
+}
 </style>
 <div class="clock-container">
     <span id="clock"></span>
@@ -190,7 +202,7 @@ if upload_history:
     df_history = pd.DataFrame(upload_history)
     selected_row = st.radio("Select a file", df_history["filename"])
 
-    st.dataframe(df_history)
+    st.dataframe(df_history, use_container_width=True, height=400)
 
     col1, col2 = st.columns([1, 1])
     with col1:
@@ -212,3 +224,12 @@ if upload_history:
                 json.dump(upload_history, f)
             st.success(f"File '{selected_row}' deleted successfully.")
             st.experimental_rerun()
+
+# Display uploader info centered and small font
+if uploader_name:
+    st.markdown(f"""
+    <div class="upload-info">
+        <p><strong>Uploader: </strong>{uploader_name}</p>
+        <p><strong>Date: </strong>{upload_date}</p>
+    </div>
+    """, unsafe_allow_html=True)
