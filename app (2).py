@@ -5,13 +5,16 @@ import matplotlib.pyplot as plt
 import streamlit.components.v1 as components
 from datetime import datetime
 
-# Set the page config
+# Set page config
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-# Add custom animation styles and clock to the page
+# Store uploaded file metadata in session_state
+if "upload_log" not in st.session_state:
+    st.session_state.upload_log = []
+
+# HTML & CSS clock
 clock_html = """
 <style>
-/* Animation for the clock */
 .clock-container {
     font-family: 'Courier New', monospace;
     font-size: 24px;
@@ -27,24 +30,10 @@ clock_html = """
     right: 10px;
     z-index: 9999;
 }
-
-/* Keyframe for pulse animation */
 @keyframes pulse {
     0% { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.4); }
     70% { box-shadow: 0 0 0 10px rgba(243, 156, 18, 0); }
     100% { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0); }
-}
-
-/* Page animation */
-@keyframes slideIn {
-    0% { transform: translateX(100%); opacity: 0; }
-    100% { transform: translateX(0); opacity: 1; }
-}
-
-/* Apply sliding effect to the page */
-.page-container {
-    animation: slideIn 1s ease-out;
-    overflow: hidden;
 }
 </style>
 <div class="clock-container">
@@ -59,19 +48,26 @@ setInterval(updateClock, 1000);
 updateClock();
 </script>
 """
-
-# Embed the clock animation and page effect
 components.html(clock_html, height=100)
 
-# Page title and other content
-st.title("📊 INTERSOFT Analyzer ")
+st.title("📊 INTERSOFT Analyzer")
 
-# File uploader
-uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
+# Require user name and date before upload
+st.subheader("🔐 User Info")
+user_name = st.text_input("Enter your name")
+upload_date = st.date_input("Select upload date", value=datetime.today())
 
+# File uploader (enabled only after name and date)
+uploaded_file = None
+if user_name and upload_date:
+    uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
+else:
+    st.warning("Please enter your name and select a date to proceed.")
+
+# Required columns
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
-# Function to classify the note
+# Classifier function
 def classify_note(note):
     note = str(note).strip().upper()
     if "TERMINAL ID - WRONG DATE" in note:
@@ -101,10 +97,16 @@ def classify_note(note):
     elif "MISSING INFORMATION" in note:
         return "MISSING INFORMATION"
     else:
-        return "MISSING INFORMATION"
+        return "OTHER"
 
-# If a file is uploaded, process it
 if uploaded_file:
+    # Log the upload
+    st.session_state.upload_log.append({
+        "Name": user_name,
+        "File Name": uploaded_file.name,
+        "Date": str(upload_date)
+    })
+
     try:
         df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
     except:
@@ -118,7 +120,11 @@ if uploaded_file:
 
         st.success("✅ File processed successfully!")
 
-        # Show charts
+        # Preview Button
+        if st.button("🔍 Preview Uploaded Data"):
+            st.dataframe(df.head(30))
+
+        # Charts
         st.subheader("📈 Notes per Technician")
         tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
         st.bar_chart(tech_counts)
@@ -130,12 +136,12 @@ if uploaded_file:
         st.subheader("📋 Data Table")
         st.dataframe(df[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']])
 
-        # Group by technician and note type
+        # Grouped
         st.subheader("📑 Notes per Technician by Type")
         tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
         st.dataframe(tech_note_group)
 
-        # Downloadable summary Excel
+        # Excel summary
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
@@ -143,4 +149,10 @@ if uploaded_file:
                 subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
             note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
+
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+# Display all uploaded files
+if st.session_state.upload_log:
+    st.subheader("📁 Uploaded Files Log")
+    st.dataframe(pd.DataFrame(st.session_state.upload_log))
