@@ -4,9 +4,6 @@ import io
 import matplotlib.pyplot as plt
 import streamlit.components.v1 as components
 from datetime import datetime
-import os
-import json
-import uuid
 
 # Set the page config
 st.set_page_config(page_title="Note Analyzer", layout="wide")
@@ -48,20 +45,6 @@ clock_html = """
 .page-container {
     animation: slideIn 1s ease-out;
     overflow: hidden;
-}
-
-/* Centering uploader info and reducing font size */
-.upload-info {
-    text-align: center;
-    font-size: 12px;
-    margin-top: 20px;
-}
-
-/* Adjusting table history style */
-.history-table {
-    margin-top: 40px;
-    float: right;
-    width: 70%;
 }
 </style>
 <div class="clock-container">
@@ -120,42 +103,6 @@ def classify_note(note):
     else:
         return "MISSING INFORMATION"
 
-# Load upload history from a JSON file
-HISTORY_FILE = "upload_history.json"
-if os.path.exists(HISTORY_FILE):
-    with open(HISTORY_FILE, "r") as f:
-        upload_history = json.load(f)
-else:
-    upload_history = []
-
-st.markdown("---")
-st.header("📂 File Upload History")
-
-# Input uploader name and date before uploading
-with st.form("upload_form"):
-    uploader_name = st.text_input("Enter your name", "")
-    upload_date = st.date_input("Select upload date", datetime.today())
-    submitted = st.form_submit_button("Submit Info")
-
-if submitted and not uploader_name:
-    st.warning("Please enter your name before uploading a file.")
-    st.stop()
-
-# Save upload log after successful file upload
-if uploaded_file and uploader_name:
-    file_id = str(uuid.uuid4())  # unique identifier for the file
-    filename = uploaded_file.name
-    log_entry = {
-        "id": file_id,
-        "filename": filename,
-        "uploader": uploader_name,
-        "date": str(upload_date)
-    }
-    if not any(item["filename"] == filename for item in upload_history):
-        upload_history.append(log_entry)
-        with open(HISTORY_FILE, "w") as f:
-            json.dump(upload_history, f)
-
 # If a file is uploaded, process it
 if uploaded_file:
     try:
@@ -197,31 +144,3 @@ if uploaded_file:
             note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-# Show history table
-if upload_history:
-    st.subheader("📝 Uploaded Files")
-    df_history = pd.DataFrame(upload_history)
-    
-    # Choose file using selectbox
-    selected_file = st.selectbox("Select a file to preview", df_history["filename"])
-    
-    st.dataframe(df_history, use_container_width=True, height=300)  # Adjust the height and width of the table
-
-    # Preview the selected file
-    if selected_file:
-        try:
-            df_selected = pd.read_excel(selected_file)
-            st.subheader("📄 Preview of Selected File")
-            st.dataframe(df_selected.head())
-        except Exception as e:
-            st.error(f"Could not open file: {e}")
-
-# Display uploader info centered and small font
-if uploader_name:
-    st.markdown(f"""
-    <div class="upload-info">
-        <p><strong>Uploader: </strong>{uploader_name}</p>
-        <p><strong>Date: </strong>{upload_date}</p>
-    </div>
-    """, unsafe_allow_html=True)
