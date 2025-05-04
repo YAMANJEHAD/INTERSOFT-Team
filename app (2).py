@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import streamlit.components.v1 as components
 from datetime import datetime
 
-# Set the page config
+# Page config
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
 # Clock and animation styles
@@ -55,12 +55,14 @@ updateClock();
 
 components.html(clock_html, height=100)
 
+# App title
 st.title("📊 INTERSOFT Analyzer")
 
+# Upload file
 uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 
-# Define known cases
-known_cases = [
+# Default known cases
+default_known_cases = [
     "TERMINAL ID - WRONG DATE",
     "NO IMAGE FOR THE DEVICE",
     "WRONG DATE",
@@ -76,6 +78,12 @@ known_cases = [
     "MISSING INFORMATION",
     "NOT ACTIVE"
 ]
+
+# Show editable table
+st.subheader("✏️ Edit Known Cases Before Analysis")
+known_cases_df = pd.DataFrame(default_known_cases, columns=["Known_Cases"])
+edited_cases_df = st.data_editor(known_cases_df, num_rows="dynamic", use_container_width=True)
+known_cases = edited_cases_df["Known_Cases"].dropna().str.upper().tolist()
 
 # Note classification function
 def classify_note(note):
