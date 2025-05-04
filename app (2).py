@@ -1,14 +1,12 @@
 import streamlit as st
 import pandas as pd
 import io
-import matplotlib.pyplot as plt
 import streamlit.components.v1 as components
-from datetime import datetime
 
-# Page config
+# Page setup
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-# Clock and animation styles
+# Clock
 clock_html = """
 <style>
 .clock-container {
@@ -31,14 +29,6 @@ clock_html = """
     70% { box-shadow: 0 0 0 10px rgba(243, 156, 18, 0); }
     100% { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0); }
 }
-@keyframes slideIn {
-    0% { transform: translateX(100%); opacity: 0; }
-    100% { transform: translateX(0); opacity: 1; }
-}
-.page-container {
-    animation: slideIn 1s ease-out;
-    overflow: hidden;
-}
 </style>
 <div class="clock-container">
     <span id="clock"></span>
@@ -52,13 +42,12 @@ setInterval(updateClock, 1000);
 updateClock();
 </script>
 """
-
 components.html(clock_html, height=100)
 
-# App title
+# Title
 st.title("📊 INTERSOFT Analyzer")
 
-# Upload file
+# Upload Excel
 uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 
 # Default known cases
@@ -79,13 +68,13 @@ default_known_cases = [
     "NOT ACTIVE"
 ]
 
-# Show editable table
-st.subheader("✏️ Edit Known Cases Before Analysis")
+# Editable known cases
+st.subheader("✏️ Edit Known Note Types Before Analysis")
 known_cases_df = pd.DataFrame(default_known_cases, columns=["Known_Cases"])
 edited_cases_df = st.data_editor(known_cases_df, num_rows="dynamic", use_container_width=True)
-known_cases = edited_cases_df["Known_Cases"].dropna().str.upper().tolist()
+known_cases = edited_cases_df["Known_Cases"].dropna().str.strip().str.upper().tolist()
 
-# Note classification function
+# Note classification
 def classify_note(note):
     note = str(note).strip().upper()
     for case in known_cases:
@@ -93,6 +82,7 @@ def classify_note(note):
             return case
     return "OTHERS"
 
+# File processing
 if uploaded_file:
     try:
         df = pd.read_excel(uploaded_file, sheet_name=None)
@@ -101,15 +91,13 @@ if uploaded_file:
 
     if isinstance(df, dict):
         sheet_names = list(df.keys())
-        st.write(f"Sheets found: {sheet_names}")
         df = df[sheet_names[0]]
 
     df.columns = [col.upper() for col in df.columns]
-
     note_columns = [col for col in df.columns if 'NOTE' in col]
 
     if not note_columns:
-        st.error("No 'NOTE' columns found in the file.")
+        st.error("No 'NOTE' column found.")
     else:
         note_column = note_columns[0]
         df['Note_Type'] = df[note_column].apply(classify_note)
@@ -125,21 +113,27 @@ if uploaded_file:
         note_counts = df['Note_Type'].value_counts()
         st.bar_chart(note_counts)
 
-        st.subheader("📋 Data Table")
-        display_cols = ['TECHNICIAN_NAME', 'Note_Type'] if 'TECHNICIAN_NAME' in df.columns else ['Note_Type']
-        st.dataframe(df[display_cols])
+        st.subheader("📋 Full Table")
+        st.dataframe(df)
 
         st.subheader("📑 Notes per Technician by Type")
         if 'TECHNICIAN_NAME' in df.columns:
             tech_note_group = df.groupby(['TECHNICIAN_NAME', 'Note_Type']).size().reset_index(name='Count')
             st.dataframe(tech_note_group)
 
-        # Prepare Excel output
+        # Excel export
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
                 subset = df[df['Note_Type'] == note_type]
-                subset[display_cols].to_excel(writer, sheet_name=note_type[:31], index=False)
+                subset.to_excel(writer, sheet_name=note_type[:31], index=False)
+
+            # Create explicit OTHERS sheet
+            others_df = df[df['Note_Type'] == "OTHERS"]
+            if not others_df.empty:
+                others_df.to_excel(writer, sheet_name="OTHERS", index=False)
+
+            # Summary sheets
             note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
             if 'TECHNICIAN_NAME' in df.columns:
                 tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
