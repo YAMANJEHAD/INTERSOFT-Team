@@ -5,10 +5,8 @@ import matplotlib.pyplot as plt
 import streamlit.components.v1 as components
 from datetime import datetime
 
-# إعداد الصفحة
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-# HTML مخصص للساعة والتنقل
 clock_html = """
 <style>
 .clock-container {
@@ -57,7 +55,6 @@ components.html(clock_html, height=100)
 
 st.title("📊 INTERSOFT Analyzer")
 
-# معلومات المستخدم
 name = st.text_input("🧑‍💻 Enter Your Name:")
 date = st.date_input("📅 Select Date:", datetime.today())
 
@@ -65,7 +62,6 @@ uploaded_file = st.file_uploader("📤 Upload Excel File", type=["xlsx"])
 
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
-# وظيفة التصنيف
 def classify_note(note):
     note = str(note).strip().upper()
     cases = {
@@ -88,11 +84,9 @@ def classify_note(note):
             return cases[key]
     return "MISSING INFORMATION"
 
-# سجل التحميلات
 if "upload_log" not in st.session_state:
     st.session_state.upload_log = []
 
-# معالجة الملف
 if uploaded_file and name and date:
     try:
         df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
@@ -131,7 +125,6 @@ if uploaded_file and name and date:
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-        # حفظ معلومات التحميل في الجلسة
         st.session_state.upload_log.append({
             "Name": name,
             "Date": date.strftime("%Y-%m-%d"),
@@ -139,7 +132,6 @@ if uploaded_file and name and date:
             "Uploaded File Content": output.getvalue()
         })
 
-# عرض سجل التحميلات
 if st.session_state.upload_log:
     st.subheader("📁 Uploaded Files Log")
     log_df = pd.DataFrame(st.session_state.upload_log)
@@ -148,7 +140,7 @@ if st.session_state.upload_log:
     unique_ids = log_df['entry_id'].tolist()
 
     selected_id = st.selectbox(
-        "📌 Select a file to preview/download/delete:",
+        "📌 Select a file to download/delete:",
         options=unique_ids,
         format_func=lambda x: f"{x.split('_')[0]} (by {x.split('_')[1]} on {x.split('_')[2]})"
     )
@@ -156,13 +148,6 @@ if st.session_state.upload_log:
     st.dataframe(log_df.drop(columns='entry_id'))
 
     selected_entry = log_df[log_df['entry_id'] == selected_id].iloc[0]
-
-    st.markdown("### 📂 File Preview:")
-    try:
-        file_df = pd.read_excel(io.BytesIO(selected_entry["Uploaded File Content"]), sheet_name="Sheet2")
-        st.dataframe(file_df.head(10))
-    except Exception as e:
-        st.error("⚠️ Error reading file preview: " + str(e))
 
     col1, col2 = st.columns(2)
     with col1:
