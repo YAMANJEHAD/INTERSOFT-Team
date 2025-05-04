@@ -4,9 +4,6 @@ import io
 import matplotlib.pyplot as plt
 import streamlit.components.v1 as components
 from datetime import datetime
-import os
-import json
-import uuid
 
 # Set the page config
 st.set_page_config(page_title="Note Analyzer", layout="wide")
@@ -147,55 +144,3 @@ if uploaded_file:
             note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-# Add file upload history and download history functionality
-UPLOAD_FOLDER = "uploaded_files"
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
-
-# Save uploaded files and log them
-def save_uploaded_file(uploaded_file):
-    file_id = str(uuid.uuid4())  # unique identifier for the file
-    file_path = os.path.join(UPLOAD_FOLDER, f"{file_id}_{uploaded_file.name}")
-    with open(file_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-    return file_path
-
-# Track upload history in a JSON file
-HISTORY_FILE = "upload_history.json"
-if os.path.exists(HISTORY_FILE):
-    with open(HISTORY_FILE, "r") as f:
-        upload_history = json.load(f)
-else:
-    upload_history = []
-
-# If a file is uploaded, save it and log
-if uploaded_file:
-    file_path = save_uploaded_file(uploaded_file)
-    upload_history.append({
-        "id": str(uuid.uuid4()),
-        "filename": uploaded_file.name,
-        "file_path": file_path
-    })
-    with open(HISTORY_FILE, "w") as f:
-        json.dump(upload_history, f)
-    st.success(f"File '{uploaded_file.name}' uploaded successfully!")
-
-# Display upload history as a table
-if upload_history:
-    st.subheader("📝 Uploaded Files History", anchor="uploaded-files-history")
-    df_history = pd.DataFrame(upload_history)
-
-    # Show files in a table
-    st.dataframe(df_history[['filename']], use_container_width=True)
-
-    # Let the user choose a file to download
-    selected_file = st.selectbox("Select a file to download", df_history['filename'])
-
-    # Provide the option to download the selected file
-    if selected_file:
-        selected_file_path = df_history[df_history['filename'] == selected_file]['file_path'].values[0]
-        with open(selected_file_path, "rb") as f:
-            file_data = f.read()
-        st.download_button("📥 Download File", file_data, selected_file)
-
