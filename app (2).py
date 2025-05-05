@@ -8,33 +8,40 @@ from datetime import datetime
 # Page config
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-# Custom HTML & CSS: Enhanced design for clock
-clock_html = """
+# Custom CSS and HTML
+custom_css = """
 <style>
 body {
-    background: #f4f7f9;
+    background-color: #f2f6fa;
 }
-.clock-container {
-    font-family: 'Courier New', monospace;
-    font-size: 22px;
-    color: #fff;
-    background: linear-gradient(135deg, #1abc9c, #16a085);
-    padding: 12px 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    animation: pulse 2s infinite;
-    position: fixed;
-    top: 15px;
-    right: 25px;
-    z-index: 9999;
+h1, h2, h3 {
+    color: #2c3e50;
 }
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0.4); }
-    70% { box-shadow: 0 0 0 15px rgba(26, 188, 156, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0); }
+.stButton>button {
+    background-color: #16a085;
+    color: white;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 16px;
+}
+.stDownloadButton>button {
+    background-color: #2980b9;
+    color: white;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 16px;
+}
+.stDataFrame {
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 10px;
 }
 </style>
-<div class="clock-container">
+"""
+
+# Clock HTML
+clock_html = """
+<div class="clock-container" style="font-family:'Courier New', monospace;font-size:22px;color:#fff;background: linear-gradient(135deg, #1abc9c, #16a085);padding: 12px 25px;border-radius: 12px;box-shadow: 0 4px 12px rgba(0,0,0,0.15);animation: pulse 2s infinite;position: fixed;top: 15px;right: 25px;z-index: 9999;">
     <span id="clock"></span>
 </div>
 <script>
@@ -47,18 +54,20 @@ updateClock();
 </script>
 """
 
-# Embed HTML
-components.html(clock_html, height=100)
+# Embed HTML and CSS
+components.html(custom_css + clock_html, height=100)
 
 # Page title
-st.title("📊 INTERSOFT Analyzer")
+st.markdown("<h1 style='text-align: center;'>📊 INTERSOFT Note Analyzer</h1>", unsafe_allow_html=True)
+st.markdown("---")
 
-# File uploader
-uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
+# File uploader section
+st.subheader("📤 Upload Excel File")
+uploaded_file = st.file_uploader("Choose a file (.xlsx)", type=["xlsx"])
 
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
-# Updated classification function
+# Classification function
 def classify_note(note):
     note = str(note).strip().upper()
     if "TERMINAL ID - WRONG DATE" in note:
@@ -104,23 +113,28 @@ if uploaded_file:
         df = pd.read_excel(uploaded_file)
 
     if not all(col in df.columns for col in required_cols):
-        st.error(f"Missing required columns. Available: {list(df.columns)}")
+        st.error(f"❌ Missing required columns. Found: {list(df.columns)}")
     else:
         df['Note_Type'] = df['NOTE'].apply(classify_note)
         df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
 
         st.success("✅ File processed successfully!")
 
-        # Charts
-        st.subheader("📈 Notes per Technician")
-        tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
-        st.bar_chart(tech_counts)
+        # Layout in columns
+        col1, col2 = st.columns(2)
 
-        st.subheader("📊 Notes by Type")
-        note_counts = df['Note_Type'].value_counts()
-        st.bar_chart(note_counts)
+        with col1:
+            st.subheader("📈 Notes per Technician")
+            tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
+            st.bar_chart(tech_counts)
 
-        st.subheader("📋 Data Table")
+        with col2:
+            st.subheader("📊 Notes by Type")
+            note_counts = df['Note_Type'].value_counts()
+            st.bar_chart(note_counts)
+
+        st.markdown("---")
+        st.subheader("📋 Detailed Data Table")
         st.dataframe(df[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']])
 
         st.subheader("📑 Notes per Technician by Type")
