@@ -80,7 +80,7 @@ def classify_note(note):
     for case in known_cases:
         if case in note:
             return case
-    return "OTHERS"
+    return "MISSING INFORMATION"
 
 # File processing
 if uploaded_file:
@@ -103,54 +103,20 @@ if uploaded_file:
         df['Note_Type'] = df[note_column].apply(classify_note)
 
         # Separate out the "OTHERS" rows (ملاحظات غير معروفة)
-        others_df = df[df['Note_Type'] == "OTHERS"].copy()  # تحديد الملاحظات غير المعروفة
-        
-        # Display the "OTHERS" notes in a styled table
-        if not others_df.empty:
-            st.subheader("🚨 Unknown Notes (OTHERS)")
-            st.markdown("""
-            <style>
-            .unknown-notes {
-                background-color: #fff3cd;
-                border-radius: 10px;
-                padding: 15px;
-                margin-bottom: 20px;
-                border-left: 5px solid #ffc107;
-            }
-            </style>
-            <div class="unknown-notes">
-                <h4 style='color: #856404;'>The following notes were not recognized and classified as 'OTHERS':</h4>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # عرض الجدول مع خيارات التصفية
-            cols_to_display = [note_column, 'Note_Type'] + [col for col in others_df.columns if col not in [note_column, 'Note_Type']]
-            st.dataframe(
-                others_df[cols_to_display],
-                use_container_width=True,
-                height=400,
-                column_config={
-                    note_column: st.column_config.TextColumn(
-                        "Original Note",
-                        help="The original note text that wasn't recognized"
-                    ),
-                    'Note_Type': st.column_config.TextColumn(
-                        "Classification",
-                        help="Automatically classified as 'OTHERS'"
-                    )
-                }
-            )
-            
-            # إضافة إحصائية بعدد الملاحظات غير المعروفة
-            st.markdown(f"""
-            <div style="background-color: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin: 10px 0;">
-                <strong>Total Unknown Notes:</strong> {len(others_df)} ({(len(others_df)/len(df)*100):.1f}% of total notes)
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.success("🎉 All notes were successfully classified! No unknown notes found.")
+        others_df = df[~df['Note_Type'].isin(known_cases)]  # تحديد الملاحظات غير الموجودة ضمن الكيسيس المعروفة
 
-        # باقي التحليلات...
+        # Create a new dataframe for known notes (الملاحظات المعروفة)
+        known_notes_df = df[df['Note_Type'].isin(known_cases)]  # تصنيف الملاحظات المعروفة
+
+        st.success("✅ File processed successfully!")
+
+        # Display the "OTHERS" notes in a table
+        st.subheader("🚫 Notes in 'OTHERS' Category")
+        if not others_df.empty:
+            st.dataframe(others_df)  # عرض الجدول للملاحظات الغير معروفة
+        else:
+            st.write("No unknown notes found.")
+
         st.subheader("📈 Notes per Technician")
         if 'TECHNICIAN_NAME' in df.columns:
             tech_counts = df.groupby('TECHNICIAN_NAME')['Note_Type'].count().sort_values(ascending=False)
@@ -160,12 +126,33 @@ if uploaded_file:
         note_counts = df['Note_Type'].value_counts()
         st.bar_chart(note_counts)
 
+        st.subheader("📋 Full Table")
+        st.dataframe(df)
+
+        st.subheader("📑 Notes per Technician by Type")
+        if 'TECHNICIAN_NAME' in df.columns:
+            tech_note_group = df.groupby(['TECHNICIAN_NAME', 'Note_Type']).size().reset_index(name='Count')
+            st.dataframe(tech_note_group)
+
         # Excel export
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name="All Data", index=False)
-            if not others_df.empty:
-                others_df.to_excel(writer, sheet_name="Unknown Notes", index=False)
-            note_counts.to_excel(writer, sheet_name="Note Counts")
+            # Write the known notes
+            for note_type in known_notes_df['Note_Type'].unique():
+                subset = known_notes_df[known_notes_df['Note_Type'] == note_type]
+                sheet_name = note_type[:31]  # Ensure Excel sheet name is valid
+                subset.to_excel(writer, sheet_name=sheet_name, index=False)
 
-        st.download_button("📥 Download Analysis Results", output.getvalue(), "note_analysis.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            # Write the MISSING INFORMATION notes (الملاحظات المفقودة التي تم تصنيفها)
+            missing_info_df = df[df['Note_Type'] == "MISSING INFORMATION"]
+            missing_info_df.to_excel(writer, sheet_name="MISSING INFORMATION", index=False)
+
+            # Write the OTHERS notes (الملاحظات الغير معروفة)
+            others_df.to_excel(writer, sheet_name="OTHERS", index=False)
+
+            # Summary sheets (مُلخص الأنواع والملاحظات)
+            note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
+            if 'TECHNICIAN_NAME' in df.columns:
+                tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
+
+        st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
