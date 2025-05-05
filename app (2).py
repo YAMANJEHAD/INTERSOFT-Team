@@ -5,46 +5,33 @@ import matplotlib.pyplot as plt
 import streamlit.components.v1 as components
 from datetime import datetime
 
-# Set the page config
+# Page config
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-# Add custom animation styles and clock to the page
+# Custom HTML & CSS: Enhanced design for clock
 clock_html = """
 <style>
-/* Animation for the clock */
+body {
+    background: #f4f7f9;
+}
 .clock-container {
     font-family: 'Courier New', monospace;
-    font-size: 24px;
-    color: #ffffff;
-    background: linear-gradient(90deg, #f39c12, #e67e22);
-    padding: 10px 20px;
+    font-size: 22px;
+    color: #fff;
+    background: linear-gradient(135deg, #1abc9c, #16a085);
+    padding: 12px 25px;
     border-radius: 12px;
-    width: fit-content;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     animation: pulse 2s infinite;
-    margin-bottom: 20px;
-    position: absolute;
-    top: 10px;
-    right: 10px;
+    position: fixed;
+    top: 15px;
+    right: 25px;
     z-index: 9999;
 }
-
-/* Keyframe for pulse animation */
 @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.4); }
-    70% { box-shadow: 0 0 0 10px rgba(243, 156, 18, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0); }
-}
-
-/* Page animation */
-@keyframes slideIn {
-    0% { transform: translateX(100%); opacity: 0; }
-    100% { transform: translateX(0); opacity: 1; }
-}
-
-/* Apply sliding effect to the page */
-.page-container {
-    animation: slideIn 1s ease-out;
-    overflow: hidden;
+    0% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0.4); }
+    70% { box-shadow: 0 0 0 15px rgba(26, 188, 156, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0); }
 }
 </style>
 <div class="clock-container">
@@ -60,24 +47,26 @@ updateClock();
 </script>
 """
 
-# Embed the clock animation and page effect
+# Embed HTML
 components.html(clock_html, height=100)
 
-# Page title and other content
-st.title("📊 INTERSOFT Analyzer ")
+# Page title
+st.title("📊 INTERSOFT Analyzer")
 
 # File uploader
 uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
-# Function to classify the note
+# Updated classification function
 def classify_note(note):
     note = str(note).strip().upper()
     if "TERMINAL ID - WRONG DATE" in note:
         return "TERMINAL ID - WRONG DATE"
     elif "NO IMAGE FOR THE DEVICE" in note:
         return "NO IMAGE FOR THE DEVICE"
+    elif "IMAGE FOR THE DEVICE ONLY" in note:
+        return "IMAGE FOR THE DEVICE ONLY"
     elif "WRONG DATE" in note:
         return "WRONG DATE"
     elif "TERMINAL ID" in note:
@@ -100,10 +89,14 @@ def classify_note(note):
         return "NO INFORMATIONS"
     elif "MISSING INFORMATION" in note:
         return "MISSING INFORMATION"
+    elif "NO BILL" in note:
+        return "NO BILL"
+    elif "NOT ACTIVE" in note:
+        return "NOT ACTIVE"
     else:
         return "MISSING INFORMATION"
 
-# If a file is uploaded, process it
+# Process file
 if uploaded_file:
     try:
         df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
@@ -118,7 +111,7 @@ if uploaded_file:
 
         st.success("✅ File processed successfully!")
 
-        # Show charts
+        # Charts
         st.subheader("📈 Notes per Technician")
         tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
         st.bar_chart(tech_counts)
@@ -130,12 +123,11 @@ if uploaded_file:
         st.subheader("📋 Data Table")
         st.dataframe(df[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']])
 
-        # Group by technician and note type
         st.subheader("📑 Notes per Technician by Type")
         tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
         st.dataframe(tech_note_group)
 
-        # Downloadable summary Excel
+        # Excel export
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
