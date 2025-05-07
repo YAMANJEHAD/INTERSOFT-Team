@@ -184,6 +184,14 @@ if uploaded_file:
         done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
         st.dataframe(done_terminals_table)
 
+        # 📑 جدول ملاحظات كل فني بشكل منفصل
+        st.subheader("📑 Detailed Notes for Top 5 Technicians")
+        for tech in top_5_technicians.index:
+            st.subheader(f"Notes for Technician: {tech}")
+            technician_data = top_5_data[top_5_data['Technician_Name'] == tech]
+            technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
+            st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']])
+
         # 📥 تصدير إلى Excel
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
