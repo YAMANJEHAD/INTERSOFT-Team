@@ -155,26 +155,26 @@ if uploaded_file:
         note_counts = df['Note_Type'].value_counts()
         st.bar_chart(note_counts)
 
-        # 🥧 رسم دائري لتوزيع الأنواع مع تمييز "DONE"
+        # 🥧 رسم دائري لتوزيع الأنواع
         st.subheader("🥧 Note Types Distribution (Pie Chart)")
         pie_data = note_counts.reset_index()
         pie_data.columns = ['Note_Type', 'Count']
-        colors = ['#2ecc71' if note == 'DONE' else '#16a085' for note in pie_data['Note_Type']]
-        fig = px.pie(pie_data, names='Note_Type', values='Count', title='Note Type Distribution', color_discrete_sequence=colors)
+        fig = px.pie(pie_data, names='Note_Type', values='Count', title='Note Type Distribution')
         st.plotly_chart(fig)
 
-        # 📋 جدول البيانات مع تمييز "DONE"
+        # 📋 جدول البيانات كامل
         st.subheader("📋 Data Table")
-        def highlight_done(row):
-            color = 'background-color: lightgreen' if row['Note_Type'] == 'DONE' else ''
-            return [color] * len(row)
-        styled_df = df[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].style.apply(highlight_done, axis=1)
-        st.dataframe(styled_df)
+        st.dataframe(df[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']])
 
         # 📑 جدول ملاحظات لكل فني حسب النوع
         st.subheader("📑 Notes per Technician by Type")
         tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
         st.dataframe(tech_note_group)
+
+        # ✅ جدول TERMINAL ID لـ "DONE"
+        st.subheader("✅ Terminal IDs for 'DONE' Notes")
+        done_terminals = df[df['Note_Type'] == 'DONE'][['Terminal_Id', 'Technician_Name', 'Ticket_Type']]
+        st.dataframe(done_terminals)
 
         # 📥 تصدير إلى Excel
         output = io.BytesIO()
@@ -184,6 +184,7 @@ if uploaded_file:
                 subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
             note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
+            done_terminals.to_excel(writer, sheet_name="DONE_Terminals", index=False)
 
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
