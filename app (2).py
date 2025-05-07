@@ -147,8 +147,10 @@ if uploaded_file:
 
         # 🔝 أعلى 5 فنيين مع ملاحظاتم
         st.subheader("🔝 Top 5 Technicians with Most Notes (with Note Type and Terminal Id)")
-        top_5_technicians = tech_counts.head(5).index.tolist()
-        top_5_data = df[df['Technician_Name'].isin(top_5_technicians)]
+        # نختار أول 5 فنيين بناءً على عدد الملاحظات
+        top_5_technicians = tech_counts.head(5)
+        # تصفية البيانات الخاصة بالفنيين الأعلى 5
+        top_5_data = df[df['Technician_Name'].isin(top_5_technicians.index.tolist())]
         technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
         st.dataframe(technician_notes_table)
 
@@ -208,8 +210,8 @@ if uploaded_file:
             c.drawString(70, height - 180 - i * 20, f"{note}: {count}")
 
         c.drawString(50, height - 300, "Top 5 Technicians:")
-        for i, (tech, count) in enumerate(top_5_technicians):
-            c.drawString(70, height - 320 - i * 20, f"{tech}: {count}")
+        for i, tech in enumerate(top_5_technicians.index.tolist()):
+            c.drawString(70, height - 320 - i * 20, f"{tech}: {top_5_technicians[tech]}")
 
         c.showPage()
         c.save()
