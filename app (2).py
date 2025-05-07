@@ -182,15 +182,6 @@ if uploaded_file:
         fig.update_traces(textinfo='percent+label', pull=[0.1, 0.1, 0.1, 0.1, 0.1])
         st.plotly_chart(fig)
 
-        # 📋 جدول البيانات كامل
-        st.subheader("📋 Data Table")
-        st.dataframe(df[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']])
-
-        # 📑 جدول ملاحظات لكل فني حسب النوع
-        st.subheader("📑 Notes per Technician by Type")
-        tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
-        st.dataframe(tech_note_group)
-
         # ✅ جدول TERMINAL ID لـ "DONE"
         st.subheader("✅ Terminal IDs for 'DONE' Notes")
         done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
@@ -242,6 +233,8 @@ if uploaded_file:
         for i, tech in enumerate(top_5_technicians.index.tolist()):
             c.drawString(70, height - 320 - i * 20, f"{tech}: {top_5_technicians[tech]} Notes")
 
+        c.showPage()
         c.save()
 
         st.download_button("📥 Download PDF Report", pdf_buffer.getvalue(), "summary_report.pdf", "application/pdf")
+
