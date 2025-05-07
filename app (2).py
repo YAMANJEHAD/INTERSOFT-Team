@@ -195,13 +195,17 @@ if uploaded_file:
         st.subheader("✅ Terminal IDs for 'DONE' Notes")
         done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
         done_terminals_counts = done_terminals['Technician_Name'].value_counts()
+        
+        # عرض فقط الفنيين الذين لديهم أكبر عدد من ملاحظات DONE
         done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
-        st.dataframe(done_terminals_table)
+        done_terminals_summary = done_terminals_counts.head(5).reset_index()
+        done_terminals_summary.columns = ['Technician_Name', 'DONE_Notes_Count']
+        st.dataframe(done_terminals_summary)
 
         # 📑 جدول ملاحظات كل فني بشكل منفصل
         st.subheader("📑 Detailed Notes for Top 5 Technicians")
         for tech in top_5_technicians.index:
-            st.subheader(f"Notes for Technician: {tech}")
+            st.subheader(f"Notes for Technician: {tech} (Total Notes: {top_5_technicians[tech]})")
             technician_data = top_5_data[top_5_data['Technician_Name'] == tech]
             technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
             st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']])
@@ -236,10 +240,8 @@ if uploaded_file:
 
         c.drawString(50, height - 300, "Top 5 Technicians:")
         for i, tech in enumerate(top_5_technicians.index.tolist()):
-            c.drawString(70, height - 320 - i * 20, f"{tech}: {top_5_technicians[tech]}")
+            c.drawString(70, height - 320 - i * 20, f"{tech}: {top_5_technicians[tech]} Notes")
 
-        c.showPage()
         c.save()
-        pdf_buffer.seek(0)
 
-        st.download_button("📄 Download PDF Report", pdf_buffer.getvalue(), file_name="report.pdf", mime="application/pdf")
+        st.download_button("📥 Download PDF Report", pdf_buffer.getvalue(), "summary_report.pdf", "application/pdf")
