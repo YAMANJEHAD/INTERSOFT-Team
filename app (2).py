@@ -147,12 +147,26 @@ if uploaded_file:
 
         # 🔝 أعلى 5 فنيين مع ملاحظاتم
         st.subheader("🔝 Top 5 Technicians with Most Notes (with Note Type and Terminal Id)")
-        # نختار أول 5 فنيين بناءً على عدد الملاحظات
-        top_5_technicians = tech_counts.head(5)
+
+        # تصفية البيانات واستبعاد DONE و NO J.O
+        filtered_df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
+
+        # حساب الملاحظات لكل فني بعد الاستبعاد
+        tech_counts_filtered = filtered_df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
+
+        # تصفية أول 5 فنيين
+        top_5_technicians = tech_counts_filtered.head(5)
+
         # تصفية البيانات الخاصة بالفنيين الأعلى 5
-        top_5_data = df[df['Technician_Name'].isin(top_5_technicians.index.tolist())]
-        top_5_data_filtered = top_5_data[~top_5_data['Note_Type'].isin(['DONE', 'NO J.O'])]
-        technician_notes_table = top_5_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
+        top_5_data = filtered_df[filtered_df['Technician_Name'].isin(top_5_technicians.index.tolist())]
+
+        technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
+        technician_notes_count = top_5_technicians.reset_index()
+        technician_notes_count.columns = ['Technician_Name', 'Notes_Count']
+
+        # عرض جدول مع عدد الملاحظات لكل فني
+        st.dataframe(technician_notes_count)
+        st.subheader("Technician Notes Details")
         st.dataframe(technician_notes_table)
 
         # 📊 عدد كل نوع من الملاحظات
