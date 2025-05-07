@@ -164,6 +164,9 @@ if uploaded_file:
         technician_notes_count = top_5_technicians.reset_index()
         technician_notes_count.columns = ['Technician_Name', 'Notes_Count']
 
+        # إنشاء جدول للملاحظات الخاصة بكل فني
+        tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
+
         # عرض جدول مع عدد الملاحظات لكل فني
         st.dataframe(technician_notes_count)
         st.subheader("Technician Notes Details")
@@ -218,23 +221,13 @@ if uploaded_file:
         c = canvas.Canvas(pdf_buffer, pagesize=A4)
         width, height = A4
 
-        c.setFont("Helvetica-Bold", 16)
-        c.drawString(50, height - 50, "INERSOFT Notes Summary Report")
+        c.setFont("Helvetica-Bold", 14)
+        c.drawString(100, height - 50, "Summary Report")
 
+        # إضافة تفاصيل التقرير
         c.setFont("Helvetica", 12)
-        c.drawString(50, height - 100, f"Total Notes: {len(df)}")
-        c.drawString(50, height - 120, f"Unique Technicians: {df['Technician_Name'].nunique()}")
-
-        c.drawString(50, height - 160, "Top 5 Note Types:")
-        for i, (note, count) in enumerate(note_counts.head(5).items()):
-            c.drawString(70, height - 180 - i * 20, f"{note}: {count}")
-
-        c.drawString(50, height - 300, "Top 5 Technicians:")
-        for i, tech in enumerate(top_5_technicians.index.tolist()):
-            c.drawString(70, height - 320 - i * 20, f"{tech}: {top_5_technicians[tech]} Notes")
-
+        c.drawString(100, height - 100, f"Top 5 Technicians: {', '.join(top_5_technicians.index)}")
         c.showPage()
         c.save()
 
         st.download_button("📥 Download PDF Report", pdf_buffer.getvalue(), "summary_report.pdf", "application/pdf")
-
