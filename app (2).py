@@ -8,7 +8,6 @@ from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
-
 # إعداد صفحة Streamlit
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
@@ -139,9 +138,6 @@ if uploaded_file:
         df['Note_Type'] = note_types
         progress_bar.empty()
 
-        # حذف بعض الأنواع غير المرغوبة
-        df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
-
         st.success("✅ File processed successfully!")
 
         # 📈 عدد الملاحظات حسب الفني
@@ -159,16 +155,21 @@ if uploaded_file:
         note_counts = df['Note_Type'].value_counts()
         st.bar_chart(note_counts)
 
-        # 🥧 رسم دائري لتوزيع الأنواع
+        # 🥧 رسم دائري لتوزيع الأنواع مع تمييز "DONE"
         st.subheader("🥧 Note Types Distribution (Pie Chart)")
         pie_data = note_counts.reset_index()
         pie_data.columns = ['Note_Type', 'Count']
-        fig = px.pie(pie_data, names='Note_Type', values='Count', title='Note Type Distribution')
+        colors = ['#2ecc71' if note == 'DONE' else '#16a085' for note in pie_data['Note_Type']]
+        fig = px.pie(pie_data, names='Note_Type', values='Count', title='Note Type Distribution', color_discrete_sequence=colors)
         st.plotly_chart(fig)
 
-        # 📋 جدول البيانات
+        # 📋 جدول البيانات مع تمييز "DONE"
         st.subheader("📋 Data Table")
-        st.dataframe(df[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']])
+        def highlight_done(row):
+            color = 'background-color: lightgreen' if row['Note_Type'] == 'DONE' else ''
+            return [color] * len(row)
+        styled_df = df[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].style.apply(highlight_done, axis=1)
+        st.dataframe(styled_df)
 
         # 📑 جدول ملاحظات لكل فني حسب النوع
         st.subheader("📑 Notes per Technician by Type")
