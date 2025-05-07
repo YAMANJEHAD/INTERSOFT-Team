@@ -151,7 +151,8 @@ if uploaded_file:
         top_5_technicians = tech_counts.head(5)
         # تصفية البيانات الخاصة بالفنيين الأعلى 5
         top_5_data = df[df['Technician_Name'].isin(top_5_technicians.index.tolist())]
-        technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
+        top_5_data_filtered = top_5_data[~top_5_data['Note_Type'].isin(['DONE', 'NO J.O'])]
+        technician_notes_table = top_5_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
         st.dataframe(technician_notes_table)
 
         # 📊 عدد كل نوع من الملاحظات
@@ -178,8 +179,10 @@ if uploaded_file:
 
         # ✅ جدول TERMINAL ID لـ "DONE"
         st.subheader("✅ Terminal IDs for 'DONE' Notes")
-        done_terminals = df[df['Note_Type'] == 'DONE'][['Terminal_Id', 'Technician_Name', 'Ticket_Type']]
-        st.dataframe(done_terminals)
+        done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
+        done_terminals_counts = done_terminals['Technician_Name'].value_counts()
+        done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
+        st.dataframe(done_terminals_table)
 
         # 📥 تصدير إلى Excel
         output = io.BytesIO()
@@ -189,7 +192,7 @@ if uploaded_file:
                 subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
             note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
-            done_terminals.to_excel(writer, sheet_name="DONE_Terminals", index=False)
+            done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
 
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
