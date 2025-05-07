@@ -146,7 +146,7 @@ if uploaded_file:
         st.bar_chart(tech_counts)
 
         # 🔝 أعلى 5 فنيين مع ملاحظاتم
-        st.subheader("🔝 Top 5 Technicians with Most Notes (with Note Type and Terminal Id)")
+        st.subheader("🔝 Top 5 Technicians with Most Notes")
 
         # تصفية البيانات واستبعاد DONE و NO J.O
         filtered_df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
