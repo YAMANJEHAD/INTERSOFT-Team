@@ -145,21 +145,24 @@ if uploaded_file:
         tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
         st.bar_chart(tech_counts)
 
-        # 🔝 أعلى 5 فنيين
-        st.subheader("🔝 Top 5 Technicians with Most Notes")
-        top_5 = tech_counts.head(5).reset_index()
-        st.dataframe(top_5.rename(columns={'Technician_Name': 'Technician', 'Note_Type': 'Note Count'}))
+        # 🔝 أعلى 5 فنيين مع ملاحظاتم
+        st.subheader("🔝 Top 5 Technicians with Most Notes (with Note Type and Terminal Id)")
+        top_5_technicians = tech_counts.head(5).index.tolist()
+        top_5_data = df[df['Technician_Name'].isin(top_5_technicians)]
+        technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
+        st.dataframe(technician_notes_table)
 
         # 📊 عدد كل نوع من الملاحظات
         st.subheader("📊 Notes by Type")
         note_counts = df['Note_Type'].value_counts()
         st.bar_chart(note_counts)
 
-        # 🥧 رسم دائري لتوزيع الأنواع
+        # 🥧 تحسين رسم دائري لتوزيع الأنواع
         st.subheader("🥧 Note Types Distribution (Pie Chart)")
         pie_data = note_counts.reset_index()
         pie_data.columns = ['Note_Type', 'Count']
         fig = px.pie(pie_data, names='Note_Type', values='Count', title='Note Type Distribution')
+        fig.update_traces(textinfo='percent+label', pull=[0.1, 0.1, 0.1, 0.1, 0.1])
         st.plotly_chart(fig)
 
         # 📋 جدول البيانات كامل
@@ -205,7 +208,7 @@ if uploaded_file:
             c.drawString(70, height - 180 - i * 20, f"{note}: {count}")
 
         c.drawString(50, height - 300, "Top 5 Technicians:")
-        for i, (tech, count) in enumerate(top_5.values):
+        for i, (tech, count) in enumerate(top_5_technicians):
             c.drawString(70, height - 320 - i * 20, f"{tech}: {count}")
 
         c.showPage()
