@@ -4,3 +4,9 @@ pandas
 openpyxl
 xlsxwriter
 matplotlib
+streamlit
+pandas
+openpyxl
+matplotlib
+plotly
+reportlab
