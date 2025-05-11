@@ -78,9 +78,10 @@ uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
-# دالة تصنيف الملاحظات
+# ✅ دالة تصنيف الملاحظات (محدثة)
 def classify_note(note):
     note = str(note).strip().upper()
+
     if "TERMINAL ID - WRONG DATE" in note:
         return "TERMINAL ID - WRONG DATE"
     elif "NO IMAGE FOR THE DEVICE" in note:
@@ -113,6 +114,12 @@ def classify_note(note):
         return "NO BILL"
     elif "NOT ACTIVE" in note:
         return "NOT ACTIVE"
+    elif "UNCLEAR RECEIPT" in note:
+        return "UNCLEAR RECEIPT"
+    elif "NO RECEIPT" in note:
+        return "NO RECEIPT"
+    elif "ANOTHER TERMINAL RECEIPT" in note or "RECEIPT" in note:
+        return "RECEIPT"
     else:
         return "MISSING INFORMATION"
 
@@ -148,55 +155,40 @@ if uploaded_file:
         # 🔝 أعلى 5 فنيين مع ملاحظاتم
         st.subheader("🔝 Top 5 Technicians with Most Notes")
 
-        # تصفية البيانات واستبعاد DONE و NO J.O
         filtered_df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
-
-        # حساب الملاحظات لكل فني بعد الاستبعاد
         tech_counts_filtered = filtered_df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
-
-        # تصفية أول 5 فنيين
         top_5_technicians = tech_counts_filtered.head(5)
-
-        # تصفية البيانات الخاصة بالفنيين الأعلى 5
         top_5_data = filtered_df[filtered_df['Technician_Name'].isin(top_5_technicians.index.tolist())]
 
         technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
         technician_notes_count = top_5_technicians.reset_index()
         technician_notes_count.columns = ['Technician_Name', 'Notes_Count']
 
-        # إنشاء جدول للملاحظات الخاصة بكل فني
         tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
 
-        # عرض جدول مع عدد الملاحظات لكل فني
         st.dataframe(technician_notes_count)
         st.subheader("Technician Notes Details")
         st.dataframe(technician_notes_table)
 
-        # 📊 عدد كل نوع من الملاحظات
         st.subheader("📊 Notes by Type")
         note_counts = df['Note_Type'].value_counts()
         st.bar_chart(note_counts)
 
-        # 🥧 تحسين رسم دائري لتوزيع الأنواع
         st.subheader("🥧 Note Types Distribution (Pie Chart)")
         pie_data = note_counts.reset_index()
         pie_data.columns = ['Note_Type', 'Count']
         fig = px.pie(pie_data, names='Note_Type', values='Count', title='Note Type Distribution')
-        fig.update_traces(textinfo='percent+label', pull=[0.1, 0.1, 0.1, 0.1, 0.1])
+        fig.update_traces(textinfo='percent+label', pull=[0.1]*len(pie_data))
         st.plotly_chart(fig)
 
-        # ✅ جدول TERMINAL ID لـ "DONE"
         st.subheader("✅ Terminal IDs for 'DONE' Notes")
         done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
         done_terminals_counts = done_terminals['Technician_Name'].value_counts()
-        
-        # عرض فقط الفنيين الذين لديهم أكبر عدد من ملاحظات DONE
         done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
         done_terminals_summary = done_terminals_counts.head(5).reset_index()
         done_terminals_summary.columns = ['Technician_Name', 'DONE_Notes_Count']
         st.dataframe(done_terminals_summary)
 
-        # 📑 جدول ملاحظات كل فني بشكل منفصل
         st.subheader("📑 Detailed Notes for Top 5 Technicians")
         for tech in top_5_technicians.index:
             st.subheader(f"Notes for Technician: {tech} (Total Notes: {top_5_technicians[tech]})")
@@ -224,7 +216,6 @@ if uploaded_file:
         c.setFont("Helvetica-Bold", 14)
         c.drawString(100, height - 50, "Summary Report")
 
-        # إضافة تفاصيل التقرير
         c.setFont("Helvetica", 12)
         c.drawString(100, height - 100, f"Top 5 Technicians: {', '.join(top_5_technicians.index)}")
         c.showPage()
