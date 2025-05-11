@@ -7,7 +7,6 @@ import streamlit.components.v1 as components
 from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-import zipfile
 
 # إعداد صفحة Streamlit
 st.set_page_config(page_title="Note Analyzer", layout="wide")
