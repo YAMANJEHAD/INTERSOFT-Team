@@ -220,15 +220,16 @@ if uploaded_file:
 
         st.download_button("📥 Download Full Analysis Excel", output_full.getvalue(), "full_analysis.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-        # 📥 تنزيل التحليل حسب نوع الـ Ticket Type
-        ticket_type_selected = st.selectbox("Select Ticket Type", df['Ticket_Type'].unique())
-        filtered_ticket_type_df = df[df['Ticket_Type'] == ticket_type_selected]
+        # 📥 تنزيل التحليل حسب نوع الـ Ticket Type (اختيار متعدد)
+        ticket_types_selected = st.multiselect("Select Ticket Types", df['Ticket_Type'].unique())
+        if ticket_types_selected:
+            filtered_ticket_types_df = df[df['Ticket_Type'].isin(ticket_types_selected)]
 
-        output_ticket_type = io.BytesIO()
-        with pd.ExcelWriter(output_ticket_type, engine='xlsxwriter') as writer:
-            filtered_ticket_type_df.to_excel(writer, sheet_name=ticket_type_selected[:31], index=False)
+            output_ticket_types = io.BytesIO()
+            with pd.ExcelWriter(output_ticket_types, engine='xlsxwriter') as writer:
+                filtered_ticket_types_df.to_excel(writer, sheet_name="Selected_Ticket_Types", index=False)
 
-        st.download_button("📥 Download Excel for Selected Ticket Type", output_ticket_type.getvalue(), f"{ticket_type_selected}_summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            st.download_button("📥 Download Excel for Selected Ticket Types", output_ticket_types.getvalue(), "selected_ticket_types_summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
         # 📄 تصدير تقرير PDF
         pdf_buffer = io.BytesIO()
