@@ -210,17 +210,21 @@ if uploaded_file:
             technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
             st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']])
 
-        # 📥 تصدير إلى Excel
+        # اختيار نوع Ticket Type
+        ticket_type_selected = st.selectbox("Select Ticket Type", df['Ticket_Type'].unique())
+
+        # تصفية البيانات حسب Ticket Type المحدد
+        filtered_ticket_type_df = df[df['Ticket_Type'] == ticket_type_selected]
+
+        # 📥 تصدير إلى Excel لتيكت تايب محدد
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            for note_type in df['Note_Type'].unique():
-                subset = df[df['Note_Type'] == note_type]
-                subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
+            filtered_ticket_type_df.to_excel(writer, sheet_name=ticket_type_selected[:31], index=False)
             note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
             done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
 
-        st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        st.download_button("📥 Download Excel for Selected Ticket Type", output.getvalue(), f"{ticket_type_selected}_summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
         # 📄 تصدير تقرير PDF
         pdf_buffer = io.BytesIO()
