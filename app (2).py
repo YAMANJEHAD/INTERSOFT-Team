@@ -119,7 +119,7 @@ def classify_note(note):
     elif "NO RECEIPT" in note:
         return "NO RECEIPT"
     elif "ANOTHER TERMINAL RECEIPT" in note or "RECEIPT" in note:
-        return "RECEIPT"
+        return "ANOTHER TERMINAL RECEIPT"
     else:
         return "MISSING INFORMATION"
 
