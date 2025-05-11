@@ -215,7 +215,7 @@ if uploaded_file:
         note_types_selected = st.multiselect("Select Note Types", df['Note_Type'].unique())
 
         if ticket_types_selected or note_types_selected:
-            filtered_df = df[ 
+            filtered_df = df[
                 (df['Ticket_Type'].isin(ticket_types_selected)) |
                 (df['Note_Type'].isin(note_types_selected))
             ]
