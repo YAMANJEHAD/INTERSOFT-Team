@@ -210,7 +210,23 @@ if uploaded_file:
             technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
             st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']])
 
-        # 📥 تصدير إلى Excel
+        # 📥 تصدير التحليل كامل بناءً على الفلاتر
+        ticket_types_selected = st.multiselect("Select Ticket Types", df['Ticket_Type'].unique())
+        note_types_selected = st.multiselect("Select Note Types", df['Note_Type'].unique())
+
+        if ticket_types_selected or note_types_selected:
+            filtered_df = df[
+                (df['Ticket_Type'].isin(ticket_types_selected)) |
+                (df['Note_Type'].isin(note_types_selected))
+            ]
+
+            output_filtered = io.BytesIO()
+            with pd.ExcelWriter(output_filtered, engine='xlsxwriter') as writer:
+                filtered_df.to_excel(writer, sheet_name="Filtered_Notes", index=False)
+
+            st.download_button("📥 Download Filtered Excel", output_filtered.getvalue(), "filtered_notes_summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+        # 📥 تصدير التحليل الكامل إلى Excel
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
