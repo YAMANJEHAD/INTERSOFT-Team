@@ -78,10 +78,9 @@ uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
-# ✅ دالة تصنيف الملاحظات (محدثة)
+# ✅ دالة تصنيف الملاحظات مع الأنواع الجديدة
 def classify_note(note):
     note = str(note).strip().upper()
-
     if "TERMINAL ID - WRONG DATE" in note:
         return "TERMINAL ID - WRONG DATE"
     elif "NO IMAGE FOR THE DEVICE" in note:
@@ -114,12 +113,12 @@ def classify_note(note):
         return "NO BILL"
     elif "NOT ACTIVE" in note:
         return "NOT ACTIVE"
-    elif "UNCLEAR RECEIPT" in note:
-        return "UNCLEAR RECEIPT"
     elif "NO RECEIPT" in note:
         return "NO RECEIPT"
-    elif "ANOTHER TERMINAL RECEIPT" in note or "RECEIPT" in note:
+    elif "ANOTHER TERMINAL RECEIPT" in note:
         return "ANOTHER TERMINAL RECEIPT"
+    elif "UNCLEAR RECEIPT" in note:
+        return "UNCLEAR RECEIPT"
     else:
         return "MISSING INFORMATION"
 
@@ -133,7 +132,6 @@ if uploaded_file:
     if not all(col in df.columns for col in required_cols):
         st.error(f"Missing required columns. Available: {list(df.columns)}")
     else:
-        # ✅ شريط التقدم أثناء التصنيف
         from time import sleep
         progress_bar = st.progress(0)
         note_types = []
@@ -170,10 +168,12 @@ if uploaded_file:
         st.subheader("Technician Notes Details")
         st.dataframe(technician_notes_table)
 
+        # 📊 عدد كل نوع من الملاحظات
         st.subheader("📊 Notes by Type")
         note_counts = df['Note_Type'].value_counts()
         st.bar_chart(note_counts)
 
+        # 🥧 Pie Chart
         st.subheader("🥧 Note Types Distribution (Pie Chart)")
         pie_data = note_counts.reset_index()
         pie_data.columns = ['Note_Type', 'Count']
@@ -181,6 +181,7 @@ if uploaded_file:
         fig.update_traces(textinfo='percent+label', pull=[0.1]*len(pie_data))
         st.plotly_chart(fig)
 
+        # ✅ جدول TERMINAL ID لـ "DONE"
         st.subheader("✅ Terminal IDs for 'DONE' Notes")
         done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
         done_terminals_counts = done_terminals['Technician_Name'].value_counts()
@@ -189,6 +190,7 @@ if uploaded_file:
         done_terminals_summary.columns = ['Technician_Name', 'DONE_Notes_Count']
         st.dataframe(done_terminals_summary)
 
+        # 📑 جدول ملاحظات كل فني بشكل منفصل
         st.subheader("📑 Detailed Notes for Top 5 Technicians")
         for tech in top_5_technicians.index:
             st.subheader(f"Notes for Technician: {tech} (Total Notes: {top_5_technicians[tech]})")
@@ -212,13 +214,10 @@ if uploaded_file:
         pdf_buffer = io.BytesIO()
         c = canvas.Canvas(pdf_buffer, pagesize=A4)
         width, height = A4
-
         c.setFont("Helvetica-Bold", 14)
         c.drawString(100, height - 50, "Summary Report")
-
         c.setFont("Helvetica", 12)
         c.drawString(100, height - 100, f"Top 5 Technicians: {', '.join(top_5_technicians.index)}")
         c.showPage()
         c.save()
-
         st.download_button("📥 Download PDF Report", pdf_buffer.getvalue(), "summary_report.pdf", "application/pdf")
