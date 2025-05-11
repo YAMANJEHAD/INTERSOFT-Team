@@ -184,7 +184,7 @@ if uploaded_file:
         st.bar_chart(note_counts)
 
         # 🥧 تحسين رسم دائري لتوزيع الأنواع
-        st.subheader("🥧 Note Types Distribution (Pie Chart)")
+        st.subheader("🥧 Note Types Distribution")
         pie_data = note_counts.reset_index()
         pie_data.columns = ['Note_Type', 'Count']
         fig = px.pie(pie_data, names='Note_Type', values='Count', title='Note Type Distribution')
@@ -220,16 +220,21 @@ if uploaded_file:
 
         st.download_button("📥 Download Full Analysis Excel", output_full.getvalue(), "full_analysis.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-        # 📥 تنزيل التحليل حسب نوع الـ Ticket Type (اختيار متعدد)
+        # 📥 تنزيل التحليل حسب نوع الـ Ticket Type و Note Type (اختيار متعدد)
         ticket_types_selected = st.multiselect("Select Ticket Types", df['Ticket_Type'].unique())
-        if ticket_types_selected:
-            filtered_ticket_types_df = df[df['Ticket_Type'].isin(ticket_types_selected)]
+        note_types_selected = st.multiselect("Select Note Types", df['Note_Type'].unique())
 
-            output_ticket_types = io.BytesIO()
-            with pd.ExcelWriter(output_ticket_types, engine='xlsxwriter') as writer:
-                filtered_ticket_types_df.to_excel(writer, sheet_name="Selected_Ticket_Types", index=False)
+        if ticket_types_selected or note_types_selected:
+            filtered_df = df[
+                (df['Ticket_Type'].isin(ticket_types_selected)) &
+                (df['Note_Type'].isin(note_types_selected))
+            ]
 
-            st.download_button("📥 Download Excel for Selected Ticket Types", output_ticket_types.getvalue(), "selected_ticket_types_summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            output_filtered = io.BytesIO()
+            with pd.ExcelWriter(output_filtered, engine='xlsxwriter') as writer:
+                filtered_df.to_excel(writer, sheet_name="Filtered_Notes", index=False)
+
+            st.download_button("📥 Download Filtered Excel", output_filtered.getvalue(), "filtered_notes_summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
         # 📄 تصدير تقرير PDF
         pdf_buffer = io.BytesIO()
