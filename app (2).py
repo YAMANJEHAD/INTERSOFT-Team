@@ -1,14 +1,14 @@
-import streamlit as st
+import os
+import zipfile
 import pandas as pd
+import streamlit as st
 import io
-import matplotlib.pyplot as plt
-import plotly.express as px
-import streamlit.components.v1 as components
 from datetime import datetime
+import streamlit.components.v1 as components
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
-# إعداد صفحة Streamlit
+# إعداد الصفحة
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
 # ✅ HTML + CSS لعرض الساعة والتاريخ
@@ -70,12 +70,10 @@ updateClock();
 """
 components.html(clock_html, height=130, scrolling=False)
 
-# عنوان الصفحة
-st.title("📊 INTERSOFT Analyzer")
-
 # رفع ملف Excel
 uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 
+# الأعمدة المطلوبة
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
 # دالة تصنيف الملاحظات
@@ -95,7 +93,7 @@ def classify_note(note):
         return "NO J.O"
     elif "DONE" in note:
         return "DONE"
-    elif "NO RETAILERS SIGNATURE" in note or ("RETAILER" in note and "SIGNATURE" in note):
+    elif "NO RETAILERS SIGNATURE" in note:
         return "NO RETAILERS SIGNATURE"
     elif "UNCLEAR IMAGE" in note:
         return "UNCLEAR IMAGE"
@@ -111,14 +109,6 @@ def classify_note(note):
         return "MISSING INFORMATION"
     elif "NO BILL" in note:
         return "NO BILL"
-    elif "NOT ACTIVE" in note:
-        return "NOT ACTIVE"
-    elif "NO RECEIPT" in note:
-        return "NO RECEIPT"
-    elif "ANOTHER TERMINAL RECEIPT" in note:
-        return "ANOTHER TERMINAL RECEIPT"
-    elif "UNCLEAR RECEIPT" in note:
-        return "UNCLEAR RECEIPT"
     else:
         return "MISSING INFORMATION"
 
@@ -146,108 +136,51 @@ if uploaded_file:
 
         st.success("✅ File processed successfully!")
 
-        # 📈 عدد الملاحظات حسب الفني
-        st.subheader("📈 Notes per Technician")
-        tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
-        st.bar_chart(tech_counts)
-
-        # 🔝 أعلى 5 فنيين مع ملاحظاتم
-        st.subheader("🔝 Top 5 Technicians with Most Notes")
-
-        # تصفية البيانات واستبعاد DONE و NO J.O
-        filtered_df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
-
-        # حساب الملاحظات لكل فني بعد الاستبعاد
-        tech_counts_filtered = filtered_df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
-
-        # تصفية أول 5 فنيين
-        top_5_technicians = tech_counts_filtered.head(5)
-
-        # تصفية البيانات الخاصة بالفنيين الأعلى 5
-        top_5_data = filtered_df[filtered_df['Technician_Name'].isin(top_5_technicians.index.tolist())]
-
-        technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
-        technician_notes_count = top_5_technicians.reset_index()
-        technician_notes_count.columns = ['Technician_Name', 'Notes_Count']
-
-        # إنشاء جدول للملاحظات الخاصة بكل فني
-        tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
-
-        # عرض جدول مع عدد الملاحظات لكل فني
-        st.dataframe(technician_notes_count)
-        st.subheader("Technician Notes Details")
-        st.dataframe(technician_notes_table)
-
-        # 📊 عدد كل نوع من الملاحظات
-        st.subheader("📊 Notes by Type")
-        note_counts = df['Note_Type'].value_counts()
-        st.bar_chart(note_counts)
-
-        # 🥧 تحسين رسم دائري لتوزيع الأنواع
-        st.subheader("🥧 Note Types Distribution")
-        pie_data = note_counts.reset_index()
-        pie_data.columns = ['Note_Type', 'Count']
-        fig = px.pie(pie_data, names='Note_Type', values='Count', title='Note Type Distribution')
-        fig.update_traces(textinfo='percent+label', pull=[0.1, 0.1, 0.1, 0.1, 0.1])
-        st.plotly_chart(fig)
-
-        # ✅ جدول TERMINAL ID لـ "DONE"
-        st.subheader("✅ Terminal IDs for 'DONE' Notes")
-        done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
-        done_terminals_counts = done_terminals['Technician_Name'].value_counts()
+        # 🔥 اختيار نوع التذكرة
+        selected_ticket_types = st.multiselect("Select Ticket Types", df['Ticket_Type'].unique())
         
-        # عرض فقط الفنيين الذين لديهم أكبر عدد من ملاحظات DONE
-        done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
-        done_terminals_summary = done_terminals_counts.head(5).reset_index()
-        done_terminals_summary.columns = ['Technician_Name', 'DONE_Notes_Count']
-        st.dataframe(done_terminals_summary)
+        # فلترة البيانات حسب نوع التذكرة المحدد
+        filtered_df = df[df['Ticket_Type'].isin(selected_ticket_types)] if selected_ticket_types else df
 
-        # 📑 جدول ملاحظات كل فني بشكل منفصل
-        st.subheader("📑 Detailed Notes for Top 5 Technicians")
-        for tech in top_5_technicians.index:
-            st.subheader(f"Notes for Technician: {tech} (Total Notes: {top_5_technicians[tech]})")
-            technician_data = top_5_data[top_5_data['Technician_Name'] == tech]
-            technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
-            st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']])
+        # 🔥 اختيار نوع الملاحظات
+        selected_note_types = st.multiselect("Select Note Types", df['Note_Type'].unique())
+        
+        # فلترة البيانات حسب نوع الملاحظات المحددة
+        filtered_df = filtered_df[filtered_df['Note_Type'].isin(selected_note_types)] if selected_note_types else filtered_df
 
-        # 📥 تصدير التحليل الكامل
-        output_full = io.BytesIO()
-        with pd.ExcelWriter(output_full, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name="All Notes", index=False)
-            note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
-            tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
-            done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
+        # إنشاء ملفات لكل فني
+        technician_groups = filtered_df.groupby('Technician_Name')
 
-        st.download_button("📥 Download Full Analysis Excel", output_full.getvalue(), "full_analysis.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        # تنزيل التحليل الكامل
+        st.subheader("📥 Download Complete Analysis")
 
-        # 📥 تنزيل التحليل حسب نوع الـ Ticket Type و Note Type (اختيار متعدد)
-        ticket_types_selected = st.multiselect("Select Ticket Types", df['Ticket_Type'].unique())
-        note_types_selected = st.multiselect("Select Note Types", df['Note_Type'].unique())
+        # إنشاء مجلدات لكل فني
+        download_button = st.button("Download Technician Files as ZIP")
 
-        if ticket_types_selected or note_types_selected:
-            filtered_df = df[
-                (df['Ticket_Type'].isin(ticket_types_selected)) &
-                (df['Note_Type'].isin(note_types_selected))
-            ]
+        if download_button:
+            zip_filename = "technician_notes.zip"
+            zip_buffer = io.BytesIO()
 
-            output_filtered = io.BytesIO()
-            with pd.ExcelWriter(output_filtered, engine='xlsxwriter') as writer:
-                filtered_df.to_excel(writer, sheet_name="Filtered_Notes", index=False)
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                for technician_name, technician_data in technician_groups:
+                    # إنشاء مجلد لكل فني داخل الـ ZIP
+                    technician_folder = f"{technician_name.replace(' ', '_')}"
+                    zip_file.writestr(f"{technician_folder}/info.txt", f"Technician: {technician_name}\nNotes Count: {technician_data.shape[0]}")
 
-            st.download_button("📥 Download Filtered Excel", output_filtered.getvalue(), "filtered_notes_summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    # إنشاء ملف Excel لكل فني
+                    technician_data_to_excel = io.BytesIO()
+                    with pd.ExcelWriter(technician_data_to_excel, engine='xlsxwriter') as writer:
+                        technician_data.to_excel(writer, index=False)
+                    technician_data_to_excel.seek(0)
+                    zip_file.writestr(f"{technician_folder}/{technician_name.replace(' ', '_')}_notes.xlsx", technician_data_to_excel.read())
 
-        # 📄 تصدير تقرير PDF
-        pdf_buffer = io.BytesIO()
-        c = canvas.Canvas(pdf_buffer, pagesize=A4)
-        width, height = A4
+            # إرسال ملف ZIP للمستخدم
+            zip_buffer.seek(0)
+            st.download_button("Download Technician Files ZIP", zip_buffer, zip_filename, "application/zip")
 
-        c.setFont("Helvetica-Bold", 14)
-        c.drawString(100, height - 50, "Summary Report")
+        # تصدير التحليل الكامل إلى Excel
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            filtered_df.to_excel(writer, sheet_name="Filtered Notes", index=False)
 
-        # إضافة تفاصيل التقرير
-        c.setFont("Helvetica", 12)
-        c.drawString(100, height - 100, f"Top 5 Technicians: {', '.join(top_5_technicians.index)}")
-        c.showPage()
-        c.save()
-
-        st.download_button("📥 Download PDF Report", pdf_buffer.getvalue(), "summary_report.pdf", "application/pdf")
+        st.download_button("📥 Download Filtered Analysis Excel", output.getvalue(), "filtered_analysis.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
