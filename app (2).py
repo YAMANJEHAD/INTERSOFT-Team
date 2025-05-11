@@ -70,37 +70,6 @@ updateClock();
 """
 components.html(clock_html, height=130, scrolling=False)
 
-# إضافة زر التبديل بين الوضع الداكن والفاتح
-theme = st.radio("Choose Theme", ("Dark", "Light"))
-
-# تعديل الشكل بناءً على التبديل بين الوضعين
-if theme == "Dark":
-    st.markdown("""
-        <style>
-        body {
-            background-color: #121212;
-            color: #ffffff;
-        }
-        .stButton>button {
-            background-color: #1abc9c;
-            color: white;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-        <style>
-        body {
-            background-color: #f5f5f5;
-            color: #000000;
-        }
-        .stButton>button {
-            background-color: #16a085;
-            color: white;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
 # عنوان الصفحة
 st.title("📊 INTERSOFT Analyzer")
 
@@ -247,8 +216,8 @@ if uploaded_file:
 
         if ticket_types_selected or note_types_selected:
             filtered_df = df[ 
-                (df['Ticket_Type'].isin(ticket_types_selected)) | 
-                (df['Note_Type'].isin(note_types_selected)) 
+                (df['Ticket_Type'].isin(ticket_types_selected)) |
+                (df['Note_Type'].isin(note_types_selected))
             ]
 
             output_filtered = io.BytesIO()
@@ -274,19 +243,13 @@ if uploaded_file:
         c = canvas.Canvas(pdf_buffer, pagesize=A4)
         width, height = A4
 
-        c.setFont("Helvetica-Bold", 16)
-        c.drawString(30, height - 40, "Note Type Analysis Report")
+        c.setFont("Helvetica-Bold", 14)
+        c.drawString(100, height - 50, "Summary Report")
 
-        # Add tables for note types
-        c.setFont("Helvetica", 10)
-        y_position = height - 80
-        for note_type, count in note_counts.items():
-            c.drawString(30, y_position, f"{note_type}: {count} notes")
-            y_position -= 20
-
+        # إضافة تفاصيل التقرير
+        c.setFont("Helvetica", 12)
+        c.drawString(100, height - 100, f"Top 5 Technicians: {', '.join(top_5_technicians.index)}")
         c.showPage()
         c.save()
 
-        pdf_buffer.seek(0)
-        st.download_button("📄 Download PDF Report", pdf_buffer, "analysis_report.pdf", "application/pdf")
-
+        st.download_button("📥 Download PDF Report", pdf_buffer.getvalue(), "summary_report.pdf", "application/pdf")
