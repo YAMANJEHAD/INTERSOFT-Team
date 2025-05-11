@@ -184,7 +184,7 @@ if uploaded_file:
         st.bar_chart(note_counts)
 
         # 🥧 تحسين رسم دائري لتوزيع الأنواع
-        st.subheader("🥧 Note Types Distribution")
+        st.subheader("🥧 Note Types Distribution (Pie Chart)")
         pie_data = note_counts.reset_index()
         pie_data.columns = ['Note_Type', 'Count']
         fig = px.pie(pie_data, names='Note_Type', values='Count', title='Note Type Distribution')
@@ -210,31 +210,17 @@ if uploaded_file:
             technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
             st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']])
 
-        # 📥 تصدير التحليل الكامل
-        output_full = io.BytesIO()
-        with pd.ExcelWriter(output_full, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name="All Notes", index=False)
+        # 📥 تصدير إلى Excel
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            for note_type in df['Note_Type'].unique():
+                subset = df[df['Note_Type'] == note_type]
+                subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
             note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
             done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
 
-        st.download_button("📥 Download Full Analysis Excel", output_full.getvalue(), "full_analysis.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-        # 📥 تنزيل التحليل حسب نوع الـ Ticket Type و Note Type (اختيار متعدد)
-        ticket_types_selected = st.multiselect("Select Ticket Types", df['Ticket_Type'].unique())
-        note_types_selected = st.multiselect("Select Note Types", df['Note_Type'].unique())
-
-        if ticket_types_selected or note_types_selected:
-            filtered_df = df[
-                (df['Ticket_Type'].isin(ticket_types_selected)) &
-                (df['Note_Type'].isin(note_types_selected))
-            ]
-
-            output_filtered = io.BytesIO()
-            with pd.ExcelWriter(output_filtered, engine='xlsxwriter') as writer:
-                filtered_df.to_excel(writer, sheet_name="Filtered_Notes", index=False)
-
-            st.download_button("📥 Download Filtered Excel", output_filtered.getvalue(), "filtered_notes_summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
         # 📄 تصدير تقرير PDF
         pdf_buffer = io.BytesIO()
