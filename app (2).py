@@ -13,12 +13,9 @@ import os
 # إعداد صفحة Streamlit
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-# إضافة شعار الشركة
-logo_path = r"C:\Users\User\Desktop\logoChip.png"
-if os.path.exists(logo_path):
-    st.image(logo_path, width=100)
-else:
-    st.warning("⚠️ لم يتم العثور على الشعار في المسار المحدد.")
+# إضافة شعار الشركة من GitHub
+logo_url = "https://raw.githubusercontent.com/username/repository/branch/logoChip.png"
+st.image(logo_url, width=100)
 
 # تفعيل الوضع الليلي/النهاري
 if "theme" not in st.session_state:
@@ -33,7 +30,7 @@ def toggle_theme():
         st._config.set_option("theme.base", "light")
     st.rerun()
 
-st.button("🌙 / ☀️ تبديل الوضع", on_click=toggle_theme)
+st.button("🌙 / ☀️ تبديل الوضع", on_click=toggle_theme, key="theme_button", use_container_width=True)
 
 # ✅ HTML + CSS لعرض الساعة والتاريخ
 clock_html = """
@@ -264,5 +261,7 @@ if uploaded_file:
                 y = height - 100
                 c.setFont("Helvetica", 12)
 
+        c.drawImage(logo_url, 100, height - 170, width=50, height=50)  # الشعار في التقرير
         c.save()
+
         st.download_button("📥 Download PDF Report", pdf_buffer.getvalue(), "summary_report.pdf", "application/pdf")
