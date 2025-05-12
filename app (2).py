@@ -7,9 +7,33 @@ import streamlit.components.v1 as components
 from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+from PIL import Image
+import os
 
 # إعداد صفحة Streamlit
 st.set_page_config(page_title="Note Analyzer", layout="wide")
+
+# إضافة شعار الشركة
+logo_path = r"C:\Users\User\Desktop\logoChip.png"
+if os.path.exists(logo_path):
+    st.image(logo_path, width=100)
+else:
+    st.warning("⚠️ لم يتم العثور على الشعار في المسار المحدد.")
+
+# تفعيل الوضع الليلي/النهاري
+if "theme" not in st.session_state:
+    st.session_state.theme = "light"
+
+def toggle_theme():
+    if st.session_state.theme == "light":
+        st.session_state.theme = "dark"
+        st._config.set_option("theme.base", "dark")
+    else:
+        st.session_state.theme = "light"
+        st._config.set_option("theme.base", "light")
+    st.rerun()
+
+st.button("🌙 / ☀️ تبديل الوضع", on_click=toggle_theme)
 
 # ✅ HTML + CSS لعرض الساعة والتاريخ
 clock_html = """
@@ -74,7 +98,7 @@ components.html(clock_html, height=130, scrolling=False)
 st.title("📊 INTERSOFT Analyzer")
 
 # رفع ملف Excel
-uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
+uploaded_file = st.file_uploader("📤 Upload Excel File", type=["xlsx"])
 
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
@@ -130,9 +154,8 @@ if uploaded_file:
         df = pd.read_excel(uploaded_file)
 
     if not all(col in df.columns for col in required_cols):
-        st.error(f"Missing required columns. Available: {list(df.columns)}")
+        st.error(f"❌ Missing required columns. Found: {list(df.columns)}")
     else:
-        # ✅ شريط التقدم أثناء التصنيف
         from time import sleep
         progress_bar = st.progress(0)
         note_types = []
@@ -146,110 +169,100 @@ if uploaded_file:
 
         st.success("✅ File processed successfully!")
 
-        # 📈 عدد الملاحظات حسب الفني
         st.subheader("📈 Notes per Technician")
         tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
         st.bar_chart(tech_counts)
 
-        # 🔝 أعلى 5 فنيين مع ملاحظاتم
         st.subheader("🔝 Top 5 Technicians with Most Notes")
-
-        # تصفية البيانات واستبعاد DONE و NO J.O
         filtered_df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
-
-        # حساب الملاحظات لكل فني بعد الاستبعاد
         tech_counts_filtered = filtered_df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
-
-        # تصفية أول 5 فنيين
         top_5_technicians = tech_counts_filtered.head(5)
-
-        # تصفية البيانات الخاصة بالفنيين الأعلى 5
         top_5_data = filtered_df[filtered_df['Technician_Name'].isin(top_5_technicians.index.tolist())]
 
         technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
         technician_notes_count = top_5_technicians.reset_index()
         technician_notes_count.columns = ['Technician_Name', 'Notes_Count']
 
-        # إنشاء جدول للملاحظات الخاصة بكل فني
-        tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
-
-        # عرض جدول مع عدد الملاحظات لكل فني
         st.dataframe(technician_notes_count)
         st.subheader("Technician Notes Details")
         st.dataframe(technician_notes_table)
 
-        # 📊 عدد كل نوع من الملاحظات
         st.subheader("📊 Notes by Type")
         note_counts = df['Note_Type'].value_counts()
         st.bar_chart(note_counts)
 
-        # 🥧 تحسين رسم دائري لتوزيع الأنواع
         st.subheader("🥧 Note Types Distribution (Pie Chart)")
         pie_data = note_counts.reset_index()
         pie_data.columns = ['Note_Type', 'Count']
         fig = px.pie(pie_data, names='Note_Type', values='Count', title='Note Type Distribution')
-        fig.update_traces(textinfo='percent+label', pull=[0.1, 0.1, 0.1, 0.1, 0.1])
+        fig.update_traces(textinfo='percent+label')
         st.plotly_chart(fig)
 
-        # ✅ جدول TERMINAL ID لـ "DONE"
         st.subheader("✅ Terminal IDs for 'DONE' Notes")
         done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
         done_terminals_counts = done_terminals['Technician_Name'].value_counts()
-        
-        # عرض فقط الفنيين الذين لديهم أكبر عدد من ملاحظات DONE
         done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
         done_terminals_summary = done_terminals_counts.head(5).reset_index()
         done_terminals_summary.columns = ['Technician_Name', 'DONE_Notes_Count']
         st.dataframe(done_terminals_summary)
 
-        # 📑 جدول ملاحظات كل فني بشكل منفصل
         st.subheader("📑 Detailed Notes for Top 5 Technicians")
         for tech in top_5_technicians.index:
-            st.subheader(f"Notes for Technician: {tech} (Total Notes: {top_5_technicians[tech]})")
+            st.subheader(f"🧑‍🔧 {tech} (Total Notes: {top_5_technicians[tech]})")
             technician_data = top_5_data[top_5_data['Technician_Name'] == tech]
-            technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
-            st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']])
+            st.dataframe(technician_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']])
 
-        # 📥 تصدير التحليل كامل بناءً على الفلاتر
-        ticket_types_selected = st.multiselect("Select Ticket Types", df['Ticket_Type'].unique())
-        note_types_selected = st.multiselect("Select Note Types", df['Note_Type'].unique())
+        with st.expander("🧰 Advanced Filters"):
+            ticket_types_selected = st.multiselect("🎫 Filter by Ticket Types", df['Ticket_Type'].unique())
+            note_types_selected = st.multiselect("📝 Filter by Note Types", df['Note_Type'].unique())
 
         if ticket_types_selected or note_types_selected:
-            filtered_df = df[
+            dynamic_filtered_df = df[
                 (df['Ticket_Type'].isin(ticket_types_selected)) |
                 (df['Note_Type'].isin(note_types_selected))
             ]
+            st.dataframe(dynamic_filtered_df)
 
             output_filtered = io.BytesIO()
             with pd.ExcelWriter(output_filtered, engine='xlsxwriter') as writer:
-                filtered_df.to_excel(writer, sheet_name="Filtered_Notes", index=False)
-
+                dynamic_filtered_df.to_excel(writer, sheet_name="Filtered_Notes", index=False)
             st.download_button("📥 Download Filtered Excel", output_filtered.getvalue(), "filtered_notes_summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-        # 📥 تصدير التحليل الكامل إلى Excel
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
                 subset = df[df['Note_Type'] == note_type]
                 subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
             note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
-            tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
+            df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count').to_excel(writer, sheet_name="Technician Notes Count", index=False)
             done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
 
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-        # 📄 تصدير تقرير PDF
+        # PDF تقرير
         pdf_buffer = io.BytesIO()
         c = canvas.Canvas(pdf_buffer, pagesize=A4)
         width, height = A4
 
         c.setFont("Helvetica-Bold", 14)
-        c.drawString(100, height - 50, "Summary Report")
+        c.drawString(100, height - 50, "INTERSOFT - Summary Report")
 
-        # إضافة تفاصيل التقرير
         c.setFont("Helvetica", 12)
-        c.drawString(100, height - 100, f"Top 5 Technicians: {', '.join(top_5_technicians.index)}")
-        c.showPage()
-        c.save()
+        c.drawString(100, height - 100, f"Top 5 Technicians:")
+        y = height - 120
+        for tech in top_5_technicians.index:
+            c.drawString(120, y, f"{tech}: {top_5_technicians[tech]} Notes")
+            y -= 20
 
+        c.drawString(100, y - 20, "Note Types Count:")
+        y -= 40
+        for note_type, count in note_counts.items():
+            c.drawString(120, y, f"{note_type}: {count}")
+            y -= 20
+            if y < 100:
+                c.showPage()
+                y = height - 100
+                c.setFont("Helvetica", 12)
+
+        c.save()
         st.download_button("📥 Download PDF Report", pdf_buffer.getvalue(), "summary_report.pdf", "application/pdf")
