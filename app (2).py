@@ -7,30 +7,38 @@ import streamlit.components.v1 as components
 from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-from PIL import Image
-import os
 
 # إعداد صفحة Streamlit
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-# إضافة شعار الشركة من GitHub
-logo_url = "https://raw.githubusercontent.com/username/repository/branch/logoChip.png"
-st.image(logo_url, width=100)
+# الشريط الجانبي (Sidebar)
+with st.sidebar:
+    st.header("🧑‍💼 User Info")
 
-# تفعيل الوضع الليلي/النهاري
-if "theme" not in st.session_state:
-    st.session_state.theme = "light"
+    if "username" not in st.session_state:
+        st.session_state.username = ""
+    if "login_time" not in st.session_state:
+        st.session_state.login_time = None
+    if "uploaded_files_log" not in st.session_state:
+        st.session_state.uploaded_files_log = []
 
-def toggle_theme():
-    if st.session_state.theme == "light":
-        st.session_state.theme = "dark"
-        st._config.set_option("theme.base", "dark")
+    username = st.text_input("👤 Enter your name", value=st.session_state.username)
+
+    if username and not st.session_state.login_time:
+        st.session_state.username = username
+        st.session_state.login_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    if not st.session_state.username:
+        st.warning("⚠️ Please enter your name to use the application.")
+        st.stop()
+
+    st.markdown(f"**📅 Logged in at:** `{st.session_state.login_time}`")
+    if st.session_state.uploaded_files_log:
+        st.markdown("**📂 Uploaded Files:**")
+        for log in st.session_state.uploaded_files_log:
+            st.markdown(f"- `{log}`")
     else:
-        st.session_state.theme = "light"
-        st._config.set_option("theme.base", "light")
-    st.rerun()
-
-st.button("🌙 / ☀️ تبديل الوضع", on_click=toggle_theme, key="theme_button", use_container_width=True)
+        st.info("No files uploaded yet.")
 
 # ✅ HTML + CSS لعرض الساعة والتاريخ
 clock_html = """
@@ -99,7 +107,7 @@ uploaded_file = st.file_uploader("📤 Upload Excel File", type=["xlsx"])
 
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
-# دالة تصنيف الملاحظات
+# تصنيف الملاحظات
 def classify_note(note):
     note = str(note).strip().upper()
     if "TERMINAL ID - WRONG DATE" in note:
@@ -143,8 +151,10 @@ def classify_note(note):
     else:
         return "MISSING INFORMATION"
 
-# عند رفع الملف
+# معالجة الملف
 if uploaded_file:
+    st.session_state.uploaded_files_log.append(uploaded_file.name)
+
     try:
         df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
     except:
@@ -261,7 +271,5 @@ if uploaded_file:
                 y = height - 100
                 c.setFont("Helvetica", 12)
 
-        c.drawImage(logo_url, 100, height - 170, width=50, height=50)  # الشعار في التقرير
         c.save()
-
         st.download_button("📥 Download PDF Report", pdf_buffer.getvalue(), "summary_report.pdf", "application/pdf")
