@@ -69,7 +69,7 @@ updateClock();
 </div>"""
 components.html(clock_html, height=130, scrolling=False)
 
-st.markdown("""<h1 style='color:#1abc9c; text-align:center;'>📊 INTERSOFT Analyzer</h1>""", unsafe_allow_html=True)
+st.markdown("""<h1 style='color:#ffffff; text-align:center;'>📊 INTERSOFT Analyzer</h1>""", unsafe_allow_html=True)
 
 uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
@@ -149,7 +149,6 @@ if uploaded_file:
         technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
         technician_notes_count = top_5_technicians.reset_index()
         technician_notes_count.columns = ['Technician_Name', 'Notes_Count']
-
         tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
 
         st.dataframe(technician_notes_count, use_container_width=True)
@@ -181,21 +180,6 @@ if uploaded_file:
             technician_data = top_5_data[top_5_data['Technician_Name'] == tech]
             technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
             st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
-
-        st.markdown("### 🧰 Export Filters")
-        ticket_types_selected = st.multiselect("🎟️ Select Ticket Types", df['Ticket_Type'].unique())
-        note_types_selected = st.multiselect("📝 Select Note Types", df['Note_Type'].unique())
-
-        if ticket_types_selected or note_types_selected:
-            filtered_df = df[
-                (df['Ticket_Type'].isin(ticket_types_selected)) |
-                (df['Note_Type'].isin(note_types_selected))
-            ]
-            output_filtered = io.BytesIO()
-            with pd.ExcelWriter(output_filtered, engine='xlsxwriter') as writer:
-                filtered_df.to_excel(writer, sheet_name="Filtered_Notes", index=False)
-
-            st.download_button("📥 Download Filtered Excel", output_filtered.getvalue(), "filtered_notes_summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
