@@ -10,3 +10,9 @@ openpyxl
 matplotlib
 plotly
 reportlab
+scikit-learn
+pandas
+matplotlib
+plotly
+openpyxl
+reportlab
