@@ -96,8 +96,8 @@ model_pipeline = Pipeline([
 ])
 model_pipeline.fit(training_data['NOTE'], training_data['Label'])
 
-def classify_note_ml(note):
-    return model_pipeline.predict([note])[0]
+def classify_note_ml(NOTE):
+    return model_pipeline.predict([NOTE])[0]
 
 # عند رفع الملف
 st.title("📊 INTERSOFT Analyzer")
