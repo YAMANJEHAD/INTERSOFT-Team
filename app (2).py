@@ -13,117 +13,89 @@ from reportlab.pdfgen import canvas
 # إعداد صفحة Streamlit
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-# ✅ HTML + CSS لعرض الساعة والتاريخ
-clock_html = """<div style="background: transparent;">
-<style>
-.clock-container {
-    font-family: 'Courier New', monospace;
-    font-size: 22px;
-    color: #fff;
-    background: linear-gradient(135deg, #1abc9c, #16a085);
-    padding: 12px 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    animation: pulse 2s infinite;
-    position: fixed;
-    top: 15px;
-    right: 25px;
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-}
-.clock-time {
-    font-size: 22px;
-    font-weight: bold;
-}
-.clock-date {
-    font-size: 16px;
-    margin-top: 4px;
-}
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0.4); }
-    70% { box-shadow: 0 0 0 15px rgba(26, 188, 156, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0); }
-}
-</style>
-<div class="clock-container">
-    <div class="clock-time" id="clock"></div>
-    <div class="clock-date" id="date"></div>
-</div>
-<script>
-function updateClock() {
-    const now = new Date();
-    const time = now.toLocaleTimeString();
-    const date = now.toLocaleDateString(undefined, {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-    document.getElementById('clock').innerText = time;
-    document.getElementById('date').innerText = date;
-}
-setInterval(updateClock, 1000);
-updateClock();
-</script>
-</div>"""
-components.html(clock_html, height=130, scrolling=False)
+# قائمة المستخدمين: يمكن إضافة المزيد من الحسابات أو ربطها بقاعدة بيانات
+users = {"admin": "admin123", "employee": "employee123"}  # مدير - موظف
+user_logged_in = False
 
-st.markdown("""<h1 style='color:#ffffff; text-align:center;'>📊 INTERSOFT Analyzer</h1>""", unsafe_allow_html=True)
+# صفحة تسجيل الدخول
+def login_page():
+    global user_logged_in
+    st.sidebar.header("Login")
+    username = st.sidebar.text_input("Username")
+    password = st.sidebar.text_input("Password", type="password")
 
-# Sidebar navigation
-st.sidebar.header("Navigation")
-page = st.sidebar.selectbox("Select a page", ["Dashboard", "Manage Images"])
+    if st.sidebar.button("Login"):
+        if username in users and users[username] == password:
+            user_logged_in = True
+            st.session_state.username = username
+            st.success("✅ Successfully logged in!")
+        else:
+            st.error("❌ Invalid username or password.")
 
-uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
-required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
+if "username" not in st.session_state:
+    login_page()
 
-def classify_note(note):
-    note = str(note).strip().upper()
-    if "TERMINAL ID - WRONG DATE" in note:
-        return "TERMINAL ID - WRONG DATE"
-    elif "NO IMAGE FOR THE DEVICE" in note:
-        return "NO IMAGE FOR THE DEVICE"
-    elif "IMAGE FOR THE DEVICE ONLY" in note:
-        return "IMAGE FOR THE DEVICE ONLY"
-    elif "WRONG DATE" in note:
-        return "WRONG DATE"
-    elif "TERMINAL ID" in note:
-        return "TERMINAL ID"
-    elif "NO J.O" in note:
-        return "NO J.O"
-    elif "DONE" in note:
-        return "DONE"
-    elif "NO RETAILERS SIGNATURE" in note or ("RETAILER" in note and "SIGNATURE" in note):
-        return "NO RETAILERS SIGNATURE"
-    elif "UNCLEAR IMAGE" in note:
-        return "UNCLEAR IMAGE"
-    elif "NO ENGINEER SIGNATURE" in note:
-        return "NO ENGINEER SIGNATURE"
-    elif "NO SIGNATURE" in note:
-        return "NO SIGNATURE"
-    elif "PENDING" in note:
-        return "PENDING"
-    elif "NO INFORMATIONS" in note:
-        return "NO INFORMATIONS"
-    elif "MISSING INFORMATION" in note:
-        return "MISSING INFORMATION"
-    elif "NO BILL" in note:
-        return "NO BILL"
-    elif "NOT ACTIVE" in note:
-        return "NOT ACTIVE"
-    elif "NO RECEIPT" in note:
-        return "NO RECEIPT"
-    elif "ANOTHER TERMINAL RECEIPT" in note:
-        return "ANOTHER TERMINAL RECEIPT"
-    elif "UNCLEAR RECEIPT" in note:
-        return "UNCLEAR RECEIPT"
+# إذا كان المستخدم قد سجل دخوله، نعرض الصفحات
+if user_logged_in:
+    if st.session_state.username == "admin":
+        # صفحة المدير
+        admin_page()
     else:
-        return "MISSING INFORMATION"
+        # صفحة الموظف
+        employee_page()
 
-# صفحة Dashboard
-if page == "Dashboard":
+# صفحة المدير
+def admin_page():
+    st.sidebar.header("Admin Dashboard")
+    st.markdown("""<h1 style='color:#ffffff; text-align:center;'>📊 Admin Dashboard</h1>""", unsafe_allow_html=True)
+
+    # تحميل ملف Excel
+    uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
+    required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
+
+    def classify_note(note):
+        note = str(note).strip().upper()
+        if "TERMINAL ID - WRONG DATE" in note:
+            return "TERMINAL ID - WRONG DATE"
+        elif "NO IMAGE FOR THE DEVICE" in note:
+            return "NO IMAGE FOR THE DEVICE"
+        elif "IMAGE FOR THE DEVICE ONLY" in note:
+            return "IMAGE FOR THE DEVICE ONLY"
+        elif "WRONG DATE" in note:
+            return "WRONG DATE"
+        elif "TERMINAL ID" in note:
+            return "TERMINAL ID"
+        elif "NO J.O" in note:
+            return "NO J.O"
+        elif "DONE" in note:
+            return "DONE"
+        elif "NO RETAILERS SIGNATURE" in note or ("RETAILER" in note and "SIGNATURE" in note):
+            return "NO RETAILERS SIGNATURE"
+        elif "UNCLEAR IMAGE" in note:
+            return "UNCLEAR IMAGE"
+        elif "NO ENGINEER SIGNATURE" in note:
+            return "NO ENGINEER SIGNATURE"
+        elif "NO SIGNATURE" in note:
+            return "NO SIGNATURE"
+        elif "PENDING" in note:
+            return "PENDING"
+        elif "NO INFORMATIONS" in note:
+            return "NO INFORMATIONS"
+        elif "MISSING INFORMATION" in note:
+            return "MISSING INFORMATION"
+        elif "NO BILL" in note:
+            return "NO BILL"
+        elif "NOT ACTIVE" in note:
+            return "NOT ACTIVE"
+        elif "NO RECEIPT" in note:
+            return "NO RECEIPT"
+        elif "ANOTHER TERMINAL RECEIPT" in note:
+            return "ANOTHER TERMINAL RECEIPT"
+        elif "UNCLEAR RECEIPT" in note:
+            return "UNCLEAR RECEIPT"
+        else:
+            return "MISSING INFORMATION"
+
     if uploaded_file:
         try:
             df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
@@ -205,48 +177,40 @@ if page == "Dashboard":
             c.save()
             st.download_button("📥 Download PDF Report", pdf_buffer.getvalue(), "summary_report.pdf", "application/pdf")
 
-# صفحة إدارة الصور
-if page == "Manage Images":
-    st.subheader("🗂 Manage Technician Images")
-    base_folder = "technician_files"
-    os.makedirs(base_folder, exist_ok=True)
+# صفحة الموظف
+def employee_page():
+    st.sidebar.header("Employee Dashboard")
+    st.markdown("""<h1 style='color:#ffffff; text-align:center;'>📊 Employee Dashboard</h1>""", unsafe_allow_html=True)
 
-    all_technicians = df['Technician_Name'].dropna().unique()
-    for tech in all_technicians:
-        folder_name = os.path.join(base_folder, tech.replace(" ", "_"))
-        os.makedirs(folder_name, exist_ok=True)
-
-        with st.expander(f"📁 Technician: {tech}"):
-            # Image Upload Section for each Technician
-            images = st.file_uploader(f"Upload images for {tech}", accept_multiple_files=True, type=["png", "jpg", "jpeg"], key=tech)
-            if images:
-                for img in images:
-                    img_path = os.path.join(folder_name, img.name)
-                    with open(img_path, "wb") as f:
-                        f.write(img.getbuffer())
-                st.success("Images uploaded successfully!")
-
-            # Displaying existing images
-            existing = [f for f in os.listdir(folder_name) if f.endswith(('.png', '.jpg', '.jpeg'))]
-            if existing:
-                cols = st.columns(4)
-                for idx, img_name in enumerate(existing):
-                    img_path = os.path.join(folder_name, img_name)
-                    with cols[idx % 4]:
-                        st.image(img_path, caption=img_name, use_column_width=True)
-                        if st.button(f"Delete {img_name}", key=f"del_{tech}_{img_name}"):
-                            os.remove(img_path)
-                            st.warning(f"{img_name} deleted.")
-                            st.experimental_rerun()
-
-    # Global ZIP for all technician folders
-    st.subheader("Download All Technician Images as ZIP")
-    zip_path = os.path.join(base_folder, "technician_images.zip")
-    with zipfile.ZipFile(zip_path, 'w') as zipf:
-        for folder in os.listdir(base_folder):
-            folder_path = os.path.join(base_folder, folder)
-            if os.path.isdir(folder_path):
-                for file in os.listdir(folder_path):
-                    zipf.write(os.path.join(folder_path, file), os.path.relpath(os.path.join(folder_path, file), base_folder))
-    st.download_button("Download All Images", zip_path, "technician_images.zip", mime="application/zip")
-
+    # رفع الصور الخاصة بالفني
+    technician_name = st.text_input("Enter Your Technician Name:")
+    uploaded_images = st.file_uploader("📁 Upload Images", type=["jpg", "png", "jpeg"], accept_multiple_files=True)
+    
+    if technician_name and uploaded_images:
+        image_folder = os.path.join("images", technician_name)
+        if not os.path.exists(image_folder):
+            os.makedirs(image_folder)
+        
+        for uploaded_image in uploaded_images:
+            image_path = os.path.join(image_folder, uploaded_image.name)
+            with open(image_path, "wb") as f:
+                f.write(uploaded_image.getbuffer())
+        
+        st.success("✅ Images uploaded successfully!")
+    
+    # عرض الصور السابقة
+    if technician_name:
+        technician_folder = os.path.join("images", technician_name)
+        if os.path.exists(technician_folder):
+            images = os.listdir(technician_folder)
+            for image_name in images:
+                image_path = os.path.join(technician_folder, image_name)
+                st.image(image_path, caption=image_name, use_column_width=True)
+            
+            # تنزيل الصور في ملف ZIP
+            zip_path = os.path.join(technician_folder, f"{technician_name}_images.zip")
+            with zipfile.ZipFile(zip_path, 'w') as zipf:
+                for image_name in images:
+                    zipf.write(os.path.join(technician_folder, image_name), image_name)
+            
+            st.download_button("📥 Download All Images as ZIP", zip_path, f"{technician_name}_images.zip", mime="application/zip")
