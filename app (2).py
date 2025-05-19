@@ -97,7 +97,7 @@ if nav == "Upload & Analyze":
                 df = df[df["Technician_Name"] == selected_tech]
 
             # ملخص النسب
-            st.markdown("### 📈 Note Types (%)")
+            st.markdown("### Note Types (%)")
             type_percent = df["Note_Type"].value_counts(normalize=True) * 100
             st.dataframe(type_percent.round(2).reset_index().rename(columns={"index": "Note Type", "Note_Type": "Percentage"}))
 
