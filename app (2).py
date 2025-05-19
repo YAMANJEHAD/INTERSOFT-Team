@@ -8,7 +8,16 @@ import io
 import streamlit.components.v1 as components
 
 # إعداد صفحة Streamlit
-st.set_page_config(page_title="Note Analyzer", layout="wide")
+st.set_page_config(page_title="CRM - Note Analyzer", layout="wide")
+
+# قائمة المستخدمين (للإشارة فقط، يمكن تخزين هذه البيانات في قاعدة بيانات)
+users = {
+    "admin": {"password": "adminpassword", "role": "admin"},
+    "employee1": {"password": "employee_password", "role": "employee"},
+    "employee2": {"password": "employee_password", "role": "employee"},
+    "employee3": {"password": "employee_password", "role": "employee"},
+    "employee4": {"password": "employee_password", "role": "employee"},
+}
 
 # دالة تسجيل الدخول
 def login_page():
@@ -16,24 +25,19 @@ def login_page():
     username = st.text_input("Enter your username")
     password = st.text_input("Enter your password", type="password")
 
-    # إذا كان المدير أو موظف، التحقق من البيانات
-    if username == "admin" and password == "adminpassword":
+    # التحقق من بيانات المستخدم
+    if username in users and users[username]["password"] == password:
         st.session_state.username = username
-        st.success("Successfully logged in as Admin!")
-    elif username in ["employee1", "employee2", "employee3", "employee4"] and password == "employee_password":
-        st.session_state.username = username
-        st.success(f"Successfully logged in as {username}!")
+        st.session_state.role = users[username]["role"]
+        st.success(f"Successfully logged in as {st.session_state.role.capitalize()}!")
     else:
         st.error("Invalid username or password")
 
 # إذا كان المستخدم قد سجل دخوله
 if "username" in st.session_state:
-    user_logged_in = True
-    if st.session_state.username == "admin":
-        # إذا كان المدير، يظهر صفحة المدير
+    if st.session_state.role == "admin":
         admin_page()
-    else:
-        # إذا كان موظفًا، يظهر صفحة الموظف
+    elif st.session_state.role == "employee":
         employee_page()
 else:
     login_page()
@@ -42,38 +46,49 @@ else:
 def admin_page():
     st.sidebar.header("Admin Dashboard")
     st.markdown("<h1 style='color:#ffffff; text-align:center;'>📊 Admin Dashboard</h1>", unsafe_allow_html=True)
-    st.write("This is the Admin page. Here you can view reports, stats, and manage users.")
+    st.write("Welcome, Admin! This is your control panel.")
+    
+    # إضافة مستخدم جديد
     st.markdown("### 🚀 User Management")
-    st.write("Here, the admin can manage employee accounts, check reports, and more.")
-    st.markdown("### 📈 Reports")
-    st.write("Here, the admin can see performance reports of the employees.")
+    new_username = st.text_input("New Username")
+    new_password = st.text_input("New Password", type="password")
+    if st.button("Add User"):
+        if new_username and new_password:
+            users[new_username] = {"password": new_password, "role": "employee"}
+            st.success(f"User {new_username} added successfully!")
+        else:
+            st.error("Please provide both username and password.")
 
-    # إمكانية رفع ملفات للمدير
+    # عرض بيانات المستخدمين
+    st.markdown("### 📋 User List")
+    user_data = pd.DataFrame(users.items(), columns=["Username", "Details"])
+    st.dataframe(user_data)
+
+    # رفع تقارير الموظفين
     uploaded_file = st.file_uploader("Upload Employee Report", type=["xlsx"])
     if uploaded_file:
         st.success("File uploaded successfully!")
         df = pd.read_excel(uploaded_file)
-        st.dataframe(df)  # عرض البيانات في جدول
+        st.dataframe(df)
 
 # دالة صفحة الموظف
 def employee_page():
     st.sidebar.header("Employee Dashboard")
     st.markdown("<h1 style='color:#ffffff; text-align:center;'>📊 Employee Dashboard</h1>", unsafe_allow_html=True)
-    st.write(f"Welcome {st.session_state.username}! This is your personal dashboard.")
-
+    st.write(f"Welcome, {st.session_state.username}! This is your personal dashboard.")
+    
+    # رفع ملفات الموظف
     st.markdown("### 📂 Upload your files or images")
     uploaded_file = st.file_uploader("📁 Upload Image File", type=["jpg", "png", "jpeg"])
     if uploaded_file:
         st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
 
-    # عرض تقارير الموظف
+    # رفع تقارير الموظف
     st.markdown("### 📝 Your Reports")
-    st.write("Here, the employee can upload data, see personal performance reports, etc.")
-
     uploaded_excel = st.file_uploader("Upload Your Excel Report", type=["xlsx"])
     if uploaded_excel:
         df = pd.read_excel(uploaded_excel)
-        st.dataframe(df)  # عرض بيانات الموظف
+        st.dataframe(df)
 
 # تحليل البيانات والرسوم البيانية
 uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
@@ -81,13 +96,46 @@ required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
 def classify_note(note):
     note = str(note).strip().upper()
-    # تصنيف الملاحظات بناءً على النص
     if "TERMINAL ID - WRONG DATE" in note:
         return "TERMINAL ID - WRONG DATE"
     elif "NO IMAGE FOR THE DEVICE" in note:
         return "NO IMAGE FOR THE DEVICE"
-    # إضافة المزيد من الحالات حسب الحاجة...
-    return "MISSING INFORMATION"
+    elif "IMAGE FOR THE DEVICE ONLY" in note:
+        return "IMAGE FOR THE DEVICE ONLY"
+    elif "WRONG DATE" in note:
+        return "WRONG DATE"
+    elif "TERMINAL ID" in note:
+        return "TERMINAL ID"
+    elif "NO J.O" in note:
+        return "NO J.O"
+    elif "DONE" in note:
+        return "DONE"
+    elif "NO RETAILERS SIGNATURE" in note or ("RETAILER" in note and "SIGNATURE" in note):
+        return "NO RETAILERS SIGNATURE"
+    elif "UNCLEAR IMAGE" in note:
+        return "UNCLEAR IMAGE"
+    elif "NO ENGINEER SIGNATURE" in note:
+        return "NO ENGINEER SIGNATURE"
+    elif "NO SIGNATURE" in note:
+        return "NO SIGNATURE"
+    elif "PENDING" in note:
+        return "PENDING"
+    elif "NO INFORMATIONS" in note:
+        return "NO INFORMATIONS"
+    elif "MISSING INFORMATION" in note:
+        return "MISSING INFORMATION"
+    elif "NO BILL" in note:
+        return "NO BILL"
+    elif "NOT ACTIVE" in note:
+        return "NOT ACTIVE"
+    elif "NO RECEIPT" in note:
+        return "NO RECEIPT"
+    elif "ANOTHER TERMINAL RECEIPT" in note:
+        return "ANOTHER TERMINAL RECEIPT"
+    elif "UNCLEAR RECEIPT" in note:
+        return "UNCLEAR RECEIPT"
+    else:
+        return "MISSING INFORMATION"
 
 if uploaded_file:
     try:
