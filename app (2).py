@@ -7,6 +7,10 @@ import streamlit.components.v1 as components
 from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+import os
+import shutil
+from PIL import Image
+import zipfile
 
 # إعداد صفحة Streamlit
 st.set_page_config(page_title="Note Analyzer", layout="wide")
@@ -140,6 +144,7 @@ if uploaded_file:
 
         st.success("✅ File processed successfully!")
 
+        # التحليلات
         st.markdown("### 📈 Notes per Technician")
         tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
         st.bar_chart(tech_counts)
@@ -207,3 +212,46 @@ if uploaded_file:
         c.showPage()
         c.save()
         st.download_button("📥 Download PDF Report", pdf_buffer.getvalue(), "summary_report.pdf", "application/pdf")
+
+        # إدارة مجلدات الفنيين والصور
+        st.markdown("## 📸 إدارة ملفات الفنيين")
+        base_dir = "Technician_Files"
+        os.makedirs(base_dir, exist_ok=True)
+
+        for tech in df['Technician_Name'].unique():
+            tech_folder = os.path.join(base_dir, tech.replace(" ", "_"))
+            os.makedirs(tech_folder, exist_ok=True)
+
+            with st.expander(f"📂 ملفات: {tech}"):
+                uploaded_images = st.file_uploader(f"📤 أضف صور لـ {tech}", type=["png", "jpg", "jpeg"], accept_multiple_files=True, key=tech)
+                if uploaded_images:
+                    for img_file in uploaded_images:
+                        img_path = os.path.join(tech_folder, img_file.name)
+                        with open(img_path, "wb") as f:
+                            f.write(img_file.getbuffer())
+                    st.success("✅ تم رفع الصور!")
+
+                existing_images = [f for f in os.listdir(tech_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+                if existing_images:
+                    st.markdown("### 🖼 الصور المرفوعة:")
+                    cols = st.columns(4)
+                    for idx, img_name in enumerate(existing_images):
+                        img_path = os.path.join(tech_folder, img_name)
+                        with cols[idx % 4]:
+                            st.image(img_path, caption=img_name, use_column_width=True)
+                            if st.button(f"🗑 حذف {img_name}", key=f"del_{tech}_{img_name}"):
+                                os.remove(img_path)
+                                st.warning(f"❌ تم حذف {img_name}")
+                                st.experimental_rerun()
+
+                # ضغط المجلد وتحميله
+                zip_filename = f"{tech.replace(' ', '_')}_images.zip"
+                zip_path = os.path.join(base_dir, zip_filename)
+                with zipfile.ZipFile(zip_path, 'w') as zipf:
+                    for root, _, files in os.walk(tech_folder):
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            zipf.write(file_path, arcname=os.path.relpath(file_path, tech_folder))
+
+                with open(zip_path, "rb") as f:
+                    st.download_button("📥 تحميل الصور كمجلد مضغوط", f, file_name=zip_filename, mime="application/zip")
