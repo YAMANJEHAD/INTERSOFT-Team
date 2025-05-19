@@ -1,19 +1,17 @@
 import streamlit as st
 import pandas as pd
 import io
-import os
-import zipfile
-from PIL import Image
+import matplotlib.pyplot as plt
 import plotly.express as px
+import streamlit.components.v1 as components
+from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-from datetime import datetime
-import streamlit.components.v1 as components
 
-# Set up Streamlit page
-st.set_page_config(page_title="Technician Note Analyzer", layout="wide")
+# إعداد صفحة Streamlit
+st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-# HTML Clock Widget
+# ✅ HTML + CSS لعرض الساعة والتاريخ
 clock_html = """<div style="background: transparent;">
 <style>
 .clock-container {
@@ -70,142 +68,136 @@ updateClock();
 </div>"""
 components.html(clock_html, height=130, scrolling=False)
 
-st.markdown("""<h1 style='color:#ffffff; text-align:center;'>📊 Technician Note Analyzer</h1>""", unsafe_allow_html=True)
+st.markdown("""<h1 style='color:#ffffff; text-align:center;'>📊 INTERSOFT Analyzer</h1>""", unsafe_allow_html=True)
 
-# Upload section
 uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
-required_columns = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
+required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
-# Classification function
 def classify_note(note):
     note = str(note).strip().upper()
-    keywords = {
-        "TERMINAL ID - WRONG DATE": "TERMINAL ID - WRONG DATE",
-        "NO IMAGE FOR THE DEVICE": "NO IMAGE FOR THE DEVICE",
-        "IMAGE FOR THE DEVICE ONLY": "IMAGE FOR THE DEVICE ONLY",
-        "WRONG DATE": "WRONG DATE",
-        "TERMINAL ID": "TERMINAL ID",
-        "NO J.O": "NO J.O",
-        "DONE": "DONE",
-        "NO RETAILERS SIGNATURE": "NO RETAILERS SIGNATURE",
-        "RETAILER": "NO RETAILERS SIGNATURE",
-        "SIGNATURE": "NO RETAILERS SIGNATURE",
-        "UNCLEAR IMAGE": "UNCLEAR IMAGE",
-        "NO ENGINEER SIGNATURE": "NO ENGINEER SIGNATURE",
-        "NO SIGNATURE": "NO SIGNATURE",
-        "PENDING": "PENDING",
-        "NO INFORMATIONS": "NO INFORMATIONS",
-        "MISSING INFORMATION": "MISSING INFORMATION",
-        "NO BILL": "NO BILL",
-        "NOT ACTIVE": "NOT ACTIVE",
-        "NO RECEIPT": "NO RECEIPT",
-        "WRONG RECEIPT": "WRONG RECEIPT",
-        "ANOTHER TERMINAL RECEIPT": "ANOTHER TERMINAL RECEIPT",
-        "UNCLEAR RECEIPT": "UNCLEAR RECEIPT",
-    }
-    for key in keywords:
-        if key in note:
-            return keywords[key]
-    return "MISSING INFORMATION"
+    if "TERMINAL ID - WRONG DATE" in note:
+        return "TERMINAL ID - WRONG DATE"
+    elif "NO IMAGE FOR THE DEVICE" in note:
+        return "NO IMAGE FOR THE DEVICE"
+    elif "IMAGE FOR THE DEVICE ONLY" in note:
+        return "IMAGE FOR THE DEVICE ONLY"
+    elif "WRONG DATE" in note:
+        return "WRONG DATE"
+    elif "TERMINAL ID" in note:
+        return "TERMINAL ID"
+    elif "NO J.O" in note:
+        return "NO J.O"
+    elif "DONE" in note:
+        return "DONE"
+    elif "NO RETAILERS SIGNATURE" in note or ("RETAILER" in note and "SIGNATURE" in note):
+        return "NO RETAILERS SIGNATURE"
+    elif "UNCLEAR IMAGE" in note:
+        return "UNCLEAR IMAGE"
+    elif "NO ENGINEER SIGNATURE" in note:
+        return "NO ENGINEER SIGNATURE"
+    elif "NO SIGNATURE" in note:
+        return "NO SIGNATURE"
+    elif "PENDING" in note:
+        return "PENDING"
+    elif "NO INFORMATIONS" in note:
+        return "NO INFORMATIONS"
+    elif "MISSING INFORMATION" in note:
+        return "MISSING INFORMATION"
+    elif "NO BILL" in note:
+        return "NO BILL"
+    elif "NOT ACTIVE" in note:
+        return "NOT ACTIVE"
+    elif "NO RECEIPT" in note:
+        return "NO RECEIPT"
+    elif "ANOTHER TERMINAL RECEIPT" in note:
+        return "ANOTHER TERMINAL RECEIPT"
+    elif "UNCLEAR RECEIPT" in note:
+        return "UNCLEAR RECEIPT"
+    else:
+        return "MISSING INFORMATION"
 
-# Main process
 if uploaded_file:
     try:
         df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
     except:
         df = pd.read_excel(uploaded_file)
 
-    if not all(col in df.columns for col in required_columns):
-        st.error(f"Missing required columns. Found columns: {list(df.columns)}")
+    if not all(col in df.columns for col in required_cols):
+        st.error(f"❌ Missing required columns. Available: {list(df.columns)}")
     else:
-        df['Note_Type'] = df['NOTE'].apply(classify_note)
+        progress_bar = st.progress(0)
+        note_types = []
+        for i, note in enumerate(df['NOTE']):
+            note_types.append(classify_note(note))
+            if i % 10 == 0 or i == len(df['NOTE']) - 1:
+                progress_bar.progress((i + 1) / len(df['NOTE']))
+        df['Note_Type'] = note_types
+        progress_bar.empty()
 
-        # Visualizations
-        st.subheader("📊 Notes Count by Technician")
-        st.bar_chart(df['Technician_Name'].value_counts())
+        st.success("✅ File processed successfully!")
 
-        st.subheader("🧾 Top 5 Technicians with Most Notes (Excluding DONE/NO J.O)")
+        st.markdown("### 📈 Notes per Technician")
+        tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
+        st.bar_chart(tech_counts)
+
+        st.markdown("### 🔝 Top 5 Technicians with Most Notes")
         filtered_df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
-        top_techs = filtered_df['Technician_Name'].value_counts().head(5)
-        top_tech_df = filtered_df[filtered_df['Technician_Name'].isin(top_techs.index)]
-        st.dataframe(top_tech_df[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']])
+        tech_counts_filtered = filtered_df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
+        top_5_technicians = tech_counts_filtered.head(5)
+        top_5_data = filtered_df[filtered_df['Technician_Name'].isin(top_5_technicians.index.tolist())]
+        technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
+        technician_notes_count = top_5_technicians.reset_index()
+        technician_notes_count.columns = ['Technician_Name', 'Notes_Count']
+        tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
 
-        st.subheader("🥧 Note Type Distribution")
-        note_counts = df['Note_Type'].value_counts().reset_index()
-        note_counts.columns = ['Note_Type', 'Count']
-        fig = px.pie(note_counts, names='Note_Type', values='Count', title='Distribution of Notes by Type')
+        st.dataframe(technician_notes_count, use_container_width=True)
+        st.markdown("### 🧾 Technician Notes Details")
+        st.dataframe(technician_notes_table, use_container_width=True)
+
+        st.markdown("### 📊 Notes by Type")
+        note_counts = df['Note_Type'].value_counts()
+        st.bar_chart(note_counts)
+
+        st.markdown("### 🥧 Note Types Distribution")
+        pie_data = note_counts.reset_index()
+        pie_data.columns = ['Note_Type', 'Count']
+        fig = px.pie(pie_data, names='Note_Type', values='Count', title='Note Type Distribution')
         fig.update_traces(textinfo='percent+label')
         st.plotly_chart(fig)
 
-        # Export Excel
-        excel_output = io.BytesIO()
-        with pd.ExcelWriter(excel_output, engine='xlsxwriter') as writer:
-            for note_type in df['Note_Type'].unique():
-                df[df['Note_Type'] == note_type][['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
-            note_counts.to_excel(writer, sheet_name="Note Summary", index=False)
-        st.download_button("📥 Download Summary Excel", data=excel_output.getvalue(), file_name="summary.xlsx")
+        st.markdown("### ✅ Terminal IDs for 'DONE' Notes")
+        done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
+        done_terminals_counts = done_terminals['Technician_Name'].value_counts()
+        done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
+        done_terminals_summary = done_terminals_counts.head(5).reset_index()
+        done_terminals_summary.columns = ['Technician_Name', 'DONE_Notes_Count']
+        st.dataframe(done_terminals_summary, use_container_width=True)
 
-        # Export PDF
-        pdf_output = io.BytesIO()
-        c = canvas.Canvas(pdf_output, pagesize=A4)
+        st.markdown("### 📑 Detailed Notes for Top 5 Technicians")
+        for tech in top_5_technicians.index:
+            st.markdown(f"#### Notes for Technician: {tech}")
+            technician_data = top_5_data[top_5_data['Technician_Name'] == tech]
+            technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
+            st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
+
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            for note_type in df['Note_Type'].unique():
+                subset = df[df['Note_Type'] == note_type]
+                subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
+            note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
+            tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
+            done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
+
+        st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+        pdf_buffer = io.BytesIO()
+        c = canvas.Canvas(pdf_buffer, pagesize=A4)
         width, height = A4
         c.setFont("Helvetica-Bold", 14)
         c.drawString(100, height - 50, "Summary Report")
         c.setFont("Helvetica", 12)
-        c.drawString(100, height - 100, f"Top Technicians: {', '.join(top_techs.index)}")
+        c.drawString(100, height - 100, f"Top 5 Technicians: {', '.join(top_5_technicians.index)}")
         c.showPage()
         c.save()
-        st.download_button("📥 Download PDF Report", data=pdf_output.getvalue(), file_name="summary.pdf")
-
-        # Technician folders and images
-        st.subheader("🗂 Technician Image Management")
-        base_folder = "technician_files"
-        os.makedirs(base_folder, exist_ok=True)
-
-        all_technicians = df['Technician_Name'].dropna().unique()
-        for tech in all_technicians:
-            folder_name = os.path.join(base_folder, tech.replace(" ", "_"))
-            os.makedirs(folder_name, exist_ok=True)
-
-            with st.expander(f"📁 Technician: {tech}"):
-                images = st.file_uploader(f"Upload images for {tech}", accept_multiple_files=True, type=["png", "jpg", "jpeg"], key=tech)
-                if images:
-                    for img in images:
-                        img_path = os.path.join(folder_name, img.name)
-                        with open(img_path, "wb") as f:
-                            f.write(img.getbuffer())
-                    st.success("Images uploaded successfully!")
-
-                existing = [f for f in os.listdir(folder_name) if f.endswith(('.png', '.jpg', '.jpeg'))]
-                if existing:
-                    cols = st.columns(4)
-                    for idx, img_name in enumerate(existing):
-                        img_path = os.path.join(folder_name, img_name)
-                        with cols[idx % 4]:
-                            st.image(img_path, caption=img_name, use_column_width=True)
-                            if st.button(f"Delete {img_name}", key=f"del_{tech}_{img_name}"):
-                                os.remove(img_path)
-                                st.warning(f"{img_name} deleted.")
-                                st.experimental_rerun()
-
-                # Zip and download technician folder
-                zip_path = f"{folder_name}.zip"
-                with zipfile.ZipFile(zip_path, 'w') as zipf:
-                    for img in os.listdir(folder_name):
-                        img_path = os.path.join(folder_name, img)
-                        zipf.write(img_path, arcname=img)
-                with open(zip_path, "rb") as f:
-                    st.download_button("📦 Download Technician Images ZIP", data=f, file_name=os.path.basename(zip_path), mime="application/zip")
-
-        # Global ZIP for all folders
-        st.subheader("📦 Download All Technicians' Images")
-        all_zip_path = "All_Technician_Images.zip"
-        with zipfile.ZipFile(all_zip_path, 'w') as zipf:
-            for tech in all_technicians:
-                tech_folder = os.path.join(base_folder, tech.replace(" ", "_"))
-                for img in os.listdir(tech_folder):
-                    img_path = os.path.join(tech_folder, img)
-                    arcname = os.path.join(tech.replace(" ", "_"), img)
-                    zipf.write(img_path, arcname=arcname)
-        with open(all_zip_path, "rb") as f:
-            st.download_button("📥 Download All Technicians ZIP", data=f, file_name=all_zip_path, mime="application/zip")
+        st.download_button("📥 Download PDF Report", pdf_buffer.getvalue(), "summary_report.pdf", "application/pdf")
