@@ -175,7 +175,7 @@ if uploaded_file:
             st.bar_chart(note_counts)
 
         elif role == "manager":
-            st.success("✅ File processed successfully!")
+            st.success("File processed successfully!")
             st.markdown("### 📈 Notes per Technician")
             tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
             st.bar_chart(tech_counts)
