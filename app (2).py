@@ -70,6 +70,8 @@ components.html(clock_html, height=130, scrolling=False)
 
 st.markdown("""<h1 style='color:#ffffff; text-align:center;'>📊 INTERSOFT Analyzer</h1>""", unsafe_allow_html=True)
 
+st.info("✅ تمت إضافة تصنيفات جديدة: WRONG RECEIPT و NO RECEIPT")
+
 uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
@@ -109,6 +111,8 @@ def classify_note(note):
         return "NOT ACTIVE"
     elif "NO RECEIPT" in note:
         return "NO RECEIPT"
+    elif "WRONG RECEIPT" in note:
+        return "WRONG RECEIPT"
     elif "ANOTHER TERMINAL RECEIPT" in note:
         return "ANOTHER TERMINAL RECEIPT"
     elif "UNCLEAR RECEIPT" in note:
@@ -180,6 +184,7 @@ if uploaded_file:
             technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
             st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
 
+        # تصدير إلى Excel
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
@@ -191,6 +196,7 @@ if uploaded_file:
 
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
+        # تصدير PDF
         pdf_buffer = io.BytesIO()
         c = canvas.Canvas(pdf_buffer, pagesize=A4)
         width, height = A4
