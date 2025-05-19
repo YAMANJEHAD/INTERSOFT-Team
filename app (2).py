@@ -186,6 +186,6 @@ elif nav == "Upload & Analyze":
             c.drawString(100, 760, f"Total Notes: {len(df)}")
             c.showPage()
             c.save()
-            st.download_button("📄 Download PDF", pdf.getvalue(), "report.pdf")
+            st.download_button("Download PDF", pdf.getvalue(), "report.pdf")
         else:
             st.error("❌ Missing 'NOTE' column in file.")
