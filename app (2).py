@@ -157,8 +157,8 @@ if uploaded_file:
         c.save()
         st.download_button("📥 Download PDF Report", data=pdf_output.getvalue(), file_name="summary.pdf")
 
-        # Technician folders and images
-        st.subheader("🗂 Technician Image Management")
+        # Technician folders and images (New UI)
+        st.subheader("🗂 Manage Technician Images")
         base_folder = "technician_files"
         os.makedirs(base_folder, exist_ok=True)
 
@@ -168,6 +168,7 @@ if uploaded_file:
             os.makedirs(folder_name, exist_ok=True)
 
             with st.expander(f"📁 Technician: {tech}"):
+                # Image Upload Section for each Technician
                 images = st.file_uploader(f"Upload images for {tech}", accept_multiple_files=True, type=["png", "jpg", "jpeg"], key=tech)
                 if images:
                     for img in images:
@@ -176,6 +177,7 @@ if uploaded_file:
                             f.write(img.getbuffer())
                     st.success("Images uploaded successfully!")
 
+                # Displaying existing images
                 existing = [f for f in os.listdir(folder_name) if f.endswith(('.png', '.jpg', '.jpeg'))]
                 if existing:
                     cols = st.columns(4)
@@ -188,17 +190,8 @@ if uploaded_file:
                                 st.warning(f"{img_name} deleted.")
                                 st.experimental_rerun()
 
-                # Zip and download technician folder
-                zip_path = f"{folder_name}.zip"
-                with zipfile.ZipFile(zip_path, 'w') as zipf:
-                    for img in os.listdir(folder_name):
-                        img_path = os.path.join(folder_name, img)
-                        zipf.write(img_path, arcname=img)
-                with open(zip_path, "rb") as f:
-                    st.download_button("📦 Download Technician Images ZIP", data=f, file_name=os.path.basename(zip_path), mime="application/zip")
-
-        # Global ZIP for all folders
-        st.subheader("📦 Download All Technicians' Images")
+        # Global ZIP for all technician folders
+        st.subheader("📦 Download All Technicians' Images in a ZIP")
         all_zip_path = "All_Technician_Images.zip"
         with zipfile.ZipFile(all_zip_path, 'w') as zipf:
             for tech in all_technicians:
