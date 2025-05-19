@@ -7,48 +7,61 @@ import plotly.express as px
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 
+# إعداد الصفحة
 st.set_page_config(page_title="INTERSOFT Note Analyzer PRO", layout="wide")
 
+# مسارات الملفات
 USERS_FILE, LOG_FILE, NOTES_FILE = "users.csv", "activity_log.csv", "notes.csv"
-def load_or_create(path, cols): 
+
+def load_or_create(path, cols):
     if not os.path.exists(path): pd.DataFrame(columns=cols).to_csv(path, index=False)
     return pd.read_csv(path)
 
+# تحميل البيانات
 df_users = load_or_create(USERS_FILE, ["username", "password", "role"])
 df_log = load_or_create(LOG_FILE, ["username", "action", "timestamp"])
 df_notes = load_or_create(NOTES_FILE, ["from_user", "to_user", "note", "timestamp"])
 
-def log_action(user, action): 
-    with open(LOG_FILE, "a") as f: f.write(f"{user},{action},{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-")
+def log_action(user, action):
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(LOG_FILE, "a") as f:
+        f.write(f"{user},{action},{ts}\n")
 
+# تسجيل الدخول
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
+
 if not st.session_state.logged_in:
     st.title("Login")
-    u, p = st.text_input("Username"), st.text_input("Password", type="password")
+    u = st.text_input("Username")
+    p = st.text_input("Password", type="password")
     if st.button("Login"):
         user = df_users[(df_users.username == u) & (df_users.password == p)]
         if not user.empty:
-            st.session_state.update({"logged_in": True, "username": u, "role": user.iloc[0].role})
+            st.session_state.logged_in = True
+            st.session_state.username = u
+            st.session_state.role = user.iloc[0].role
             log_action(u, "Login")
             st.rerun()
         else: st.error("Invalid credentials")
     st.stop()
 
+# واجهة التنقل
 st.sidebar.title(f"👤 {st.session_state.username} ({st.session_state.role})")
 nav = st.sidebar.radio("Menu", ["Dashboard", "Upload & Analyze", "Notes", "Logout"])
+
 if nav == "Logout":
     log_action(st.session_state.username, "Logout")
     st.session_state.logged_in = False
     st.rerun()
 
+# Dashboard
 if nav == "Dashboard":
     st.title("📊 Dashboard")
-    st.markdown("### Login Activity")
     st.dataframe(df_log.sort_values("timestamp", ascending=False), use_container_width=True)
-    fig = px.histogram(df_log, x="username", color="action", title="User Actions")
+    fig = px.histogram(df_log, x="username", color="action", title="User Activity")
     st.plotly_chart(fig)
 
+# Upload & Analyze
 elif nav == "Upload & Analyze":
     st.title("Upload & Analyze Excel")
     file = st.file_uploader("Upload Excel", type=["xlsx"])
@@ -56,16 +69,22 @@ elif nav == "Upload & Analyze":
         df = pd.read_excel(file)
         required = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
         if all(col in df.columns for col in required):
-            def classify(n): n = str(n).upper(); return next((k for k in ["WRONG DATE","NO SIGNATURE","DONE","TERMINAL ID","UNCLEAR RECEIPT"] if k in n), "UNCLASSIFIED")
+            def classify(n): 
+                n = str(n).upper()
+                for t in ["WRONG DATE", "NO SIGNATURE", "DONE", "TERMINAL ID", "UNCLEAR RECEIPT"]:
+                    if t in n: return t
+                return "UNCLASSIFIED"
             df["Note_Type"] = df["NOTE"].apply(classify)
-            st.success("File processed.")
+            st.success("File processed successfully.")
             st.plotly_chart(px.pie(df["Note_Type"].value_counts().reset_index(), names="index", values="Note_Type", title="Note Types"))
-            st.dataframe(df, use_container_width=True)
+            st.dataframe(df)
 
+            # Excel
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine="xlsxwriter") as writer: df.to_excel(writer, index=False)
             st.download_button("📥 Download Excel", output.getvalue(), "notes_report.xlsx")
 
+            # PDF
             pdf = io.BytesIO()
             c = canvas.Canvas(pdf, pagesize=A4)
             c.drawString(100, 800, "INTERSOFT Report")
@@ -75,16 +94,17 @@ elif nav == "Upload & Analyze":
             st.download_button("📄 Download PDF", pdf.getvalue(), "report.pdf")
         else: st.error("Missing required columns.")
 
+# Notes
 elif nav == "Notes":
-    st.title("📬 Send Notes")
+    st.title("📬 Notes System")
     to_user = st.selectbox("Send to", df_users[df_users.username != st.session_state.username]["username"])
-    note = st.text_area("Your Note")
+    note = st.text_area("Write note here")
     if st.button("Send Note"):
         ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         df_notes.loc[len(df_notes)] = [st.session_state.username, to_user, note, ts]
         df_notes.to_csv(NOTES_FILE, index=False)
         log_action(st.session_state.username, f"Sent note to {to_user}")
-        st.success("Note sent.")
-    st.markdown("### 📥 Inbox")
+        st.success("Note sent successfully.")
+    st.markdown("### Inbox")
     inbox = df_notes[df_notes.to_user == st.session_state.username]
     st.dataframe(inbox.sort_values("timestamp", ascending=False), use_container_width=True)
