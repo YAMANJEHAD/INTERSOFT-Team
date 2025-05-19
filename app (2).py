@@ -1,191 +1,205 @@
 import streamlit as st
 import pandas as pd
-import os, io
-from datetime import datetime
+import io
+import matplotlib.pyplot as plt
 import plotly.express as px
-from reportlab.pdfgen import canvas
+import streamlit.components.v1 as components
+from datetime import datetime
 from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 
-# ملفات البيانات
-USERS_FILE = "users.csv"
-ATTEND_FILE = "attendance.csv"
-LOG_FILE = "activity_log.csv"
-NOTES_FILE = "notes.csv"
+# إعداد صفحة Streamlit
+st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-# تحميل أو إنشاء ملفات
-def load_csv(path, cols):
-    if not os.path.exists(path):
-        pd.DataFrame(columns=cols).to_csv(path, index=False)
-    return pd.read_csv(path)
+# ✅ HTML + CSS لعرض الساعة والتاريخ
+clock_html = """<div style="background: transparent;">
+<style>
+.clock-container {
+    font-family: 'Courier New', monospace;
+    font-size: 22px;
+    color: #fff;
+    background: linear-gradient(135deg, #1abc9c, #16a085);
+    padding: 12px 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: pulse 2s infinite;
+    position: fixed;
+    top: 15px;
+    right: 25px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+.clock-time {
+    font-size: 22px;
+    font-weight: bold;
+}
+.clock-date {
+    font-size: 16px;
+    margin-top: 4px;
+}
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0.4); }
+    70% { box-shadow: 0 0 0 15px rgba(26, 188, 156, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0); }
+}
+</style>
+<div class="clock-container">
+    <div class="clock-time" id="clock"></div>
+    <div class="clock-date" id="date"></div>
+</div>
+<script>
+function updateClock() {
+    const now = new Date();
+    const time = now.toLocaleTimeString();
+    const date = now.toLocaleDateString(undefined, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    document.getElementById('clock').innerText = time;
+    document.getElementById('date').innerText = date;
+}
+setInterval(updateClock, 1000);
+updateClock();
+</script>
+</div>"""
+components.html(clock_html, height=130, scrolling=False)
 
-df_users = load_csv(USERS_FILE, ["username", "password", "role", "full_name", "email"])
-df_attend = load_csv(ATTEND_FILE, ["username", "action", "timestamp"])
-df_log = load_csv(LOG_FILE, ["username", "action", "timestamp"])
-df_notes = load_csv(NOTES_FILE, ["from_user", "to_user", "note", "timestamp"])
+st.markdown("""<h1 style='color:#ffffff; text-align:center;'>📊 INTERSOFT Analyzer</h1>""", unsafe_allow_html=True)
 
-def log_action(user, action):
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open(LOG_FILE, "a") as f:
-        f.write(f"{user},{action},{timestamp}\n")
+uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
+required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
-def record_attendance(user, action_type):
-    time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open(ATTEND_FILE, "a") as f:
-        f.write(f"{user},{action_type},{time}\n")
-    log_action(user, action_type)
+def classify_note(note):
+    note = str(note).strip().upper()
+    if "TERMINAL ID - WRONG DATE" in note:
+        return "TERMINAL ID - WRONG DATE"
+    elif "NO IMAGE FOR THE DEVICE" in note:
+        return "NO IMAGE FOR THE DEVICE"
+    elif "IMAGE FOR THE DEVICE ONLY" in note:
+        return "IMAGE FOR THE DEVICE ONLY"
+    elif "WRONG DATE" in note:
+        return "WRONG DATE"
+    elif "TERMINAL ID" in note:
+        return "TERMINAL ID"
+    elif "NO J.O" in note:
+        return "NO J.O"
+    elif "DONE" in note:
+        return "DONE"
+    elif "NO RETAILERS SIGNATURE" in note or ("RETAILER" in note and "SIGNATURE" in note):
+        return "NO RETAILERS SIGNATURE"
+    elif "UNCLEAR IMAGE" in note:
+        return "UNCLEAR IMAGE"
+    elif "NO ENGINEER SIGNATURE" in note:
+        return "NO ENGINEER SIGNATURE"
+    elif "NO SIGNATURE" in note:
+        return "NO SIGNATURE"
+    elif "PENDING" in note:
+        return "PENDING"
+    elif "NO INFORMATIONS" in note:
+        return "NO INFORMATIONS"
+    elif "MISSING INFORMATION" in note:
+        return "MISSING INFORMATION"
+    elif "NO BILL" in note:
+        return "NO BILL"
+    elif "NOT ACTIVE" in note:
+        return "NOT ACTIVE"
+    elif "NO RECEIPT" in note:
+        return "NO RECEIPT"
+    elif "ANOTHER TERMINAL RECEIPT" in note:
+        return "ANOTHER TERMINAL RECEIPT"
+    elif "UNCLEAR RECEIPT" in note:
+        return "UNCLEAR RECEIPT"
+    elif "WRONG RECEIPT" in note:
+        return "WRONG RECEIPT"
+    else:
+        return "MISSING INFORMATION"
 
-# تسجيل دخول
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
+if uploaded_file:
+    try:
+        df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
+    except:
+        df = pd.read_excel(uploaded_file)
 
-if not st.session_state.logged_in:
-    st.title("🔐 INTERSOFT Login")
-    u = st.text_input("Username")
-    p = st.text_input("Password", type="password")
-    if st.button("Login"):
-        user = df_users[(df_users.username == u) & (df_users.password == p)]
-        if not user.empty:
-            st.session_state.logged_in = True
-            st.session_state.username = u
-            st.session_state.role = user.iloc[0]["role"]
-            st.session_state.full_name = user.iloc[0]["full_name"]
-            st.session_state.email = user.iloc[0]["email"]
-            log_action(u, "Login")
-            st.rerun()
-        else:
-            st.error("❌ Invalid credentials")
-    st.stop()
+    if not all(col in df.columns for col in required_cols):
+        st.error(f"❌ Missing required columns. Available: {list(df.columns)}")
+    else:
+        progress_bar = st.progress(0)
+        note_types = []
+        for i, note in enumerate(df['NOTE']):
+            note_types.append(classify_note(note))
+            if i % 10 == 0 or i == len(df['NOTE']) - 1:
+                progress_bar.progress((i + 1) / len(df['NOTE']))
+        df['Note_Type'] = note_types
+        progress_bar.empty()
 
-# واجهة المستخدم
-username = st.session_state.username
-role = st.session_state.role
-full_name = st.session_state.full_name
+        st.success("✅ File processed successfully!")
 
-st.set_page_config(layout="wide")
-with st.sidebar:
-    st.image(f"https://i.pravatar.cc/150?u={username}", width=100)
-    st.markdown(f"*{full_name}*\n\n`{username}` • {role}")
-    st.markdown("---")
+        st.markdown("### 📈 Notes per Technician")
+        tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
+        st.bar_chart(tech_counts)
 
-    if st.button("Start Work"): record_attendance(username, "Start Work")
-    if st.button("Take Break"): record_attendance(username, "Break")
-    if st.button("End Work"): record_attendance(username, "End Work")
+        st.markdown("### 🔝 Top 5 Technicians with Most Notes")
+        filtered_df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
+        tech_counts_filtered = filtered_df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
+        top_5_technicians = tech_counts_filtered.head(5)
+        top_5_data = filtered_df[filtered_df['Technician_Name'].isin(top_5_technicians.index.tolist())]
+        technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
+        technician_notes_count = top_5_technicians.reset_index()
+        technician_notes_count.columns = ['Technician_Name', 'Notes_Count']
+        tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
 
-    nav = st.radio("Navigate", ["Dashboard", "Profile", "Team", "Notes", "Upload & Analyze"])
+        st.dataframe(technician_notes_count, use_container_width=True)
+        st.markdown("### 🧾 Technician Notes Details")
+        st.dataframe(technician_notes_table, use_container_width=True)
 
-    if st.button("Logout"):
-        log_action(username, "Logout")
-        st.session_state.logged_in = False
-        st.rerun()
+        st.markdown("### 📊 Notes by Type")
+        note_counts = df['Note_Type'].value_counts()
+        st.bar_chart(note_counts)
 
-st.title(f"📌 {nav}")
-
-# --- Dashboard ---
-if nav == "Dashboard":
-    st.subheader("System Overview")
-    if role == "manager":
-        st.markdown("### 👥 Attendance Records")
-        st.dataframe(df_attend.sort_values("timestamp", ascending=False), use_container_width=True)
-
-        online_users = df_log.groupby("username").tail(1)
-        online_status = online_users[online_users["action"] != "Logout"]
-        st.markdown("### 🟢 Currently Online")
-        st.dataframe(online_status[["username", "action", "timestamp"]])
-
-        fig = px.histogram(df_attend, x="action", color="username", title="Attendance Activity")
+        st.markdown("### 🥧 Note Types Distribution")
+        pie_data = note_counts.reset_index()
+        pie_data.columns = ['Note_Type', 'Count']
+        fig = px.pie(pie_data, names='Note_Type', values='Count', title='Note Type Distribution')
+        fig.update_traces(textinfo='percent+label')
         st.plotly_chart(fig)
 
-    else:
-        personal_logs = df_log[df_log["username"] == username].sort_values("timestamp", ascending=False)
-        st.markdown("### 🕒 Your Recent Activity")
-        st.dataframe(personal_logs)
+        st.markdown("### ✅ Terminal IDs for 'DONE' Notes")
+        done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
+        done_terminals_counts = done_terminals['Technician_Name'].value_counts()
+        done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
+        done_terminals_summary = done_terminals_counts.head(5).reset_index()
+        done_terminals_summary.columns = ['Technician_Name', 'DONE_Notes_Count']
+        st.dataframe(done_terminals_summary, use_container_width=True)
 
-# --- Profile ---
-elif nav == "Profile":
-    user_info = df_users[df_users.username == username].iloc[0]
-    st.markdown(f"*Full Name:* {user_info.full_name}")
-    st.markdown(f"*Email:* {user_info.email}")
-    st.markdown(f"*Role:* {user_info.role}")
+        st.markdown("### 📑 Detailed Notes for Top 5 Technicians")
+        for tech in top_5_technicians.index:
+            st.markdown(f"#### Notes for Technician: {tech}")
+            technician_data = top_5_data[top_5_data['Technician_Name'] == tech]
+            technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
+            st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
 
-    with st.expander("✏️ Edit Profile"):
-        new_name = st.text_input("Full Name", value=user_info.full_name)
-        new_email = st.text_input("Email", value=user_info.email)
-        if st.button("Update Info"):
-            df_users.loc[df_users.username == username, ["full_name", "email"]] = [new_name, new_email]
-            df_users.to_csv(USERS_FILE, index=False)
-            st.success("✅ Updated")
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            for note_type in df['Note_Type'].unique():
+                subset = df[df['Note_Type'] == note_type]
+                subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
+            note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
+            tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
+            done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
 
-    with st.expander("🔐 Change Password"):
-        old = st.text_input("Old Password", type="password")
-        new = st.text_input("New Password", type="password")
-        if st.button("Change Password"):
-            if df_users[df_users.username == username].iloc[0].password == old:
-                df_users.loc[df_users.username == username, "password"] = new
-                df_users.to_csv(USERS_FILE, index=False)
-                st.success("✅ Password changed")
+        st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# --- Team ---
-elif nav == "Team":
-    st.subheader("Team Status")
-    for _, row in df_users.iterrows():
-        name = row["full_name"]
-        u = row["username"]
-        last_action = df_log[df_log["username"] == u].tail(1)
-        status = "🟢 Online" if not last_action.empty and last_action.iloc[0]["action"] != "Logout" else "⚪ Offline"
-        st.markdown(f"- *{name}* ({row['role']}) — {status}")
-
-# --- Notes ---
-elif nav == "Notes":
-    st.subheader("📝 Send Note")
-    users = df_users[df_users.username != username]["username"].tolist()
-    to = st.selectbox("To", users)
-    txt = st.text_area("Note")
-    if st.button("Send Note"):
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        df_notes.loc[len(df_notes)] = [username, to, txt, now]
-        df_notes.to_csv(NOTES_FILE, index=False)
-        log_action(username, f"Note to {to}")
-        st.success("✅ Sent!")
-
-    st.markdown("### 📨 Notes You Received")
-    inbox = df_notes[df_notes.to_user == username].sort_values("timestamp", ascending=False)
-    st.dataframe(inbox)
-
-# --- Upload & Analyze ---
-elif nav == "Upload & Analyze":
-    file = st.file_uploader("Upload Excel", type=["xlsx"])
-    if file:
-        df = pd.read_excel(file)
-        if "NOTE" in df.columns:
-            def classify(note):
-                note = str(note).upper()
-                if "TERMINAL" in note: return "TERMINAL ID"
-                if "DONE" in note: return "DONE"
-                if "WRONG" in note: return "WRONG DATE"
-                return "OTHER"
-
-            df["Note_Type"] = df["NOTE"].apply(classify)
-            st.success("✅ File processed.")
-
-            fig = px.pie(df["Note_Type"].value_counts().reset_index(),
-                         names="index", values="Note_Type", title="Note Types")
-            st.plotly_chart(fig)
-            st.dataframe(df)
-
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                df.to_excel(writer, index=False)
-            st.download_button("📥 Download", output.getvalue(), "processed_notes.xlsx")
-
-            pdf = io.BytesIO()
-            c = canvas.Canvas(pdf, pagesize=A4)
-            c.setFont("Helvetica-Bold", 16)
-            c.drawString(100, 800, "INTERSOFT Report")
-            c.setFont("Helvetica", 12)
-            c.drawString(100, 780, f"User: {username} | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-            c.drawString(100, 760, f"Total Notes: {len(df)}")
-            c.showPage()
-            c.save()
-            st.download_button("Download PDF", pdf.getvalue(), "report.pdf")
-        else:
-            st.error("❌ Missing 'NOTE' column in file.")
+        pdf_buffer = io.BytesIO()
+        c = canvas.Canvas(pdf_buffer, pagesize=A4)
+        width, height = A4
+        c.setFont("Helvetica-Bold", 14)
+        c.drawString(100, height - 50, "Summary Report")
+        c.setFont("Helvetica", 12)
+        c.drawString(100, height - 100, f"Top 5 Technicians: {', '.join(top_5_technicians.index)}")
+        c.showPage()
+        c.save()
+        st.download_button("📥 Download PDF Report", pdf_buffer.getvalue(), "summary_report.pdf", "application/pdf")
