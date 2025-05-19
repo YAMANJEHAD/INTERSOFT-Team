@@ -1,115 +1,102 @@
 import streamlit as st
 import pandas as pd
 import io
-import matplotlib.pyplot as plt
-import plotly.express as px
 from datetime import datetime
-from reportlab.lib.pagesizes import A4
+import plotly.express as px
 from reportlab.pdfgen import canvas
-import streamlit.components.v1 as components
+from reportlab.lib.pagesizes import A4
+import os
 
-# إعداد الصفحة
-st.set_page_config(page_title="Note Analyzer", layout="wide")
+# الملفات المطلوبة
+USER_FILE = "users.csv"
+LOG_FILE = "activity_log.csv"
 
-# بيانات تسجيل الدخول
-users = {
-    "mohammad": {"password": "admin123", "role": "manager"},
-    "yaman": {"password": "emp123", "role": "employee"},
-    "mahmud": {"password": "emp123", "role": "employee"},
-    "hatem": {"password": "emp123", "role": "employee"},
-    "qusi": {"password": "emp123", "role": "employee"}
-}
+# تحميل المستخدمين
+if not os.path.exists(USER_FILE):
+    df_users = pd.DataFrame(columns=["username", "password", "role"])
+    df_users.to_csv(USER_FILE, index=False)
+else:
+    df_users = pd.read_csv(USER_FILE)
+
+# تحميل سجل النشاط
+if not os.path.exists(LOG_FILE):
+    df_log = pd.DataFrame(columns=["username", "action", "timestamp"])
+    df_log.to_csv(LOG_FILE, index=False)
+else:
+    df_log = pd.read_csv(LOG_FILE)
+
+# تسجيل النشاط
+def log_action(username, action):
+    new_log = pd.DataFrame([[username, action, datetime.now().strftime("%Y-%m-%d %H:%M:%S")]], columns=["username", "action", "timestamp"])
+    new_log.to_csv(LOG_FILE, mode='a', index=False, header=False)
 
 # تسجيل الدخول
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
-    st.session_state.username = ""
-    st.session_state.role = ""
 
 if not st.session_state.logged_in:
-    st.markdown("<h2 style='color:white'>🔐 Login</h2>", unsafe_allow_html=True)
+    st.title("🔐 Login")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
     if st.button("Login"):
-        if username in users and users[username]["password"] == password:
+        match = df_users[(df_users["username"] == username) & (df_users["password"] == password)]
+        if not match.empty:
             st.session_state.logged_in = True
             st.session_state.username = username
-            st.session_state.role = users[username]["role"]
-            st.success(f"Welcome {username}!")
+            st.session_state.role = match.iloc[0]["role"]
+            log_action(username, "Login")
+            st.success("✅ Login successful!")
             st.rerun()
         else:
-            st.error("Invalid credentials.")
+            st.error("❌ Wrong credentials")
     st.stop()
 
-# زر تسجيل خروج
+# تسجيل الخروج
 if st.button("Logout"):
+    log_action(st.session_state.username, "Logout")
     st.session_state.logged_in = False
-    st.session_state.username = ""
-    st.session_state.role = ""
     st.rerun()
 
-username = st.session_state.username
-role = st.session_state.role
+# الواجهة الرئيسية
+st.markdown(f"<h1 style='text-align:center'>📊 INTERSOFT Analyzer ({st.session_state.role.upper()})</h1>", unsafe_allow_html=True)
 
-# ✅ الساعة والتاريخ
-clock_html = """<div style="background: transparent;">
-<style>
-.clock-container {
-    font-family: 'Courier New', monospace;
-    font-size: 22px;
-    color: #fff;
-    background: linear-gradient(135deg, #1abc9c, #16a085);
-    padding: 12px 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    animation: pulse 2s infinite;
-    position: fixed;
-    top: 15px;
-    right: 25px;
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-}
-.clock-time {
-    font-size: 22px;
-    font-weight: bold;
-}
-.clock-date {
-    font-size: 16px;
-    margin-top: 4px;
-}
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0.4); }
-    70% { box-shadow: 0 0 0 15px rgba(26, 188, 156, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0); }
-}
-</style>
-<div class="clock-container">
-    <div class="clock-time" id="clock"></div>
-    <div class="clock-date" id="date"></div>
-</div>
-<script>
-function updateClock() {
-    const now = new Date();
-    const time = now.toLocaleTimeString();
-    const date = now.toLocaleDateString(undefined, {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-    document.getElementById('clock').innerText = time;
-    document.getElementById('date').innerText = date;
-}
-setInterval(updateClock, 1000);
-updateClock();
-</script>
-</div>"""
-components.html(clock_html, height=130, scrolling=False)
+# إدارة الحساب (للمدير)
+if st.session_state.role == "manager":
+    st.subheader("👥 User Management")
+    with st.expander("➕ Add New User"):
+        new_user = st.text_input("New Username")
+        new_pass = st.text_input("New Password", type="password")
+        new_role = st.selectbox("Role", ["employee", "manager"])
+        if st.button("Create User"):
+            if new_user in df_users["username"].values:
+                st.warning("⚠️ Username already exists.")
+            else:
+                df_users.loc[len(df_users)] = [new_user, new_pass, new_role]
+                df_users.to_csv(USER_FILE, index=False)
+                st.success("✅ User created.")
+                log_action(st.session_state.username, f"Created user: {new_user}")
 
-st.markdown(f"<h1 style='color:#ffffff; text-align:center;'>📊 INTERSOFT Analyzer ({role.upper()})</h1>", unsafe_allow_html=True)
+# تغيير كلمة المرور
+with st.expander("🔑 Change Password"):
+    old_pass = st.text_input("Old Password", type="password")
+    new_pass = st.text_input("New Password", type="password")
+    if st.button("Change Password"):
+        idx = df_users[df_users["username"] == st.session_state.username].index
+        if not idx.empty and df_users.loc[idx[0], "password"] == old_pass:
+            df_users.loc[idx[0], "password"] = new_pass
+            df_users.to_csv(USER_FILE, index=False)
+            st.success("✅ Password changed.")
+            log_action(st.session_state.username, "Changed password")
+        else:
+            st.error("❌ Wrong old password.")
 
+# سجل النشاط (فقط للمدير)
+if st.session_state.role == "manager":
+    st.subheader("📜 Activity Log")
+    log_df = pd.read_csv(LOG_FILE)
+    st.dataframe(log_df.sort_values("timestamp", ascending=False), use_container_width=True)
+
+# تحليل البيانات
 uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
@@ -157,76 +144,43 @@ def classify_note(note):
         return "MISSING INFORMATION"
 
 if uploaded_file:
+    log_action(st.session_state.username, "Uploaded file")
     try:
         df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
     except:
         df = pd.read_excel(uploaded_file)
 
     if not all(col in df.columns for col in required_cols):
-        st.error("❌ Missing required columns.")
+        st.error("❌ Missing columns.")
     else:
         df['Note_Type'] = df['NOTE'].apply(classify_note)
+        st.success("✅ File processed.")
 
-        if role == "employee":
-            df = df[df["Technician_Name"].str.lower() == username.lower()]
-            st.markdown(f"### 👨‍🔧 Notes for {username}")
-            st.dataframe(df[['Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
-            note_counts = df['Note_Type'].value_counts()
-            st.bar_chart(note_counts)
+        st.subheader("📊 Notes by Type")
+        note_counts = df['Note_Type'].value_counts()
+        st.bar_chart(note_counts)
 
-        elif role == "manager":
-            st.success("File processed successfully!")
-            st.markdown("### 📈 Notes per Technician")
-            tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
-            st.bar_chart(tech_counts)
+        st.subheader("👨‍🔧 Notes per Technician")
+        tech_counts = df.groupby('Technician_Name')['Note_Type'].count()
+        st.bar_chart(tech_counts)
 
-            st.markdown("### 🔝 Top 5 Technicians with Most Notes")
-            filtered_df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
-            tech_counts_filtered = filtered_df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
-            top_5_technicians = tech_counts_filtered.head(5)
-            top_5_data = filtered_df[filtered_df['Technician_Name'].isin(top_5_technicians.index.tolist())]
-            technician_notes_count = top_5_technicians.reset_index()
-            technician_notes_count.columns = ['Technician_Name', 'Notes_Count']
-            st.dataframe(technician_notes_count, use_container_width=True)
+        # تحميل Excel
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False, sheet_name="All Notes")
+        st.download_button("📥 Download Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        log_action(st.session_state.username, "Downloaded Excel")
 
-            st.markdown("### 🧾 Technician Notes Details")
-            st.dataframe(top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
-
-            st.markdown("### 📊 Notes by Type")
-            note_counts = df['Note_Type'].value_counts()
-            st.bar_chart(note_counts)
-
-            st.markdown("### 🥧 Note Types Distribution")
-            pie_data = note_counts.reset_index()
-            pie_data.columns = ['Note_Type', 'Count']
-            fig = px.pie(pie_data, names='Note_Type', values='Count', title='Note Type Distribution')
-            fig.update_traces(textinfo='percent+label')
-            st.plotly_chart(fig)
-
-            st.markdown("### ✅ Terminal IDs for 'DONE' Notes")
-            done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
-            done_terminals_counts = done_terminals['Technician_Name'].value_counts()
-            done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
-            done_terminals_summary = done_terminals_counts.head(5).reset_index()
-            done_terminals_summary.columns = ['Technician_Name', 'DONE_Notes_Count']
-            st.dataframe(done_terminals_summary, use_container_width=True)
-
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                for note_type in df['Note_Type'].unique():
-                    subset = df[df['Note_Type'] == note_type]
-                    subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
-                note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
-
-            st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-            pdf_buffer = io.BytesIO()
-            c = canvas.Canvas(pdf_buffer, pagesize=A4)
-            width, height = A4
-            c.setFont("Helvetica-Bold", 14)
-            c.drawString(100, height - 50, "Summary Report")
-            c.setFont("Helvetica", 12)
-            c.drawString(100, height - 100, f"Top 5 Technicians: {', '.join(top_5_technicians.index)}")
-            c.showPage()
-            c.save()
-            st.download_button("📥 Download PDF Report", pdf_buffer.getvalue(), "summary_report.pdf", "application/pdf")
+        # تحميل PDF
+        pdf_buffer = io.BytesIO()
+        c = canvas.Canvas(pdf_buffer, pagesize=A4)
+        width, height = A4
+        c.setFont("Helvetica-Bold", 14)
+        c.drawString(100, height - 50, "Summary Report")
+        c.setFont("Helvetica", 12)
+        c.drawString(100, height - 100, f"Uploaded by: {st.session_state.username}")
+        c.drawString(100, height - 130, f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        c.showPage()
+        c.save()
+        st.download_button("📥 Download PDF", pdf_buffer.getvalue(), "summary_report.pdf", "application/pdf")
+        log_action(st.session_state.username, "Downloaded PDF")
