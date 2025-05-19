@@ -113,6 +113,8 @@ def classify_note(note):
         return "ANOTHER TERMINAL RECEIPT"
     elif "UNCLEAR RECEIPT" in note:
         return "UNCLEAR RECEIPT"
+    elif "WRONG RECEIPT" in note:
+        return "WRONG RECEIPT"
     else:
         return "MISSING INFORMATION"
 
