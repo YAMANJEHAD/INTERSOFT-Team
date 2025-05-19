@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import io, os
@@ -6,19 +7,21 @@ import plotly.express as px
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 
-# إعداد
-st.set_page_config(page_title="INTERSOFT PRO", layout="wide")
+st.set_page_config(page_title="INTERSOFT Note Analyzer PRO", layout="wide")
+
 USERS_FILE, LOG_FILE, NOTES_FILE = "users.csv", "activity_log.csv", "notes.csv"
 def load_or_create(path, cols): 
     if not os.path.exists(path): pd.DataFrame(columns=cols).to_csv(path, index=False)
     return pd.read_csv(path)
+
 df_users = load_or_create(USERS_FILE, ["username", "password", "role"])
 df_log = load_or_create(LOG_FILE, ["username", "action", "timestamp"])
 df_notes = load_or_create(NOTES_FILE, ["from_user", "to_user", "note", "timestamp"])
-def log_action(user, action): 
-    with open(LOG_FILE, "a") as f: f.write(f"{user},{action},{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
 
-# تسجيل دخول
+def log_action(user, action): 
+    with open(LOG_FILE, "a") as f: f.write(f"{user},{action},{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+")
+
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if not st.session_state.logged_in:
     st.title("Login")
@@ -32,7 +35,6 @@ if not st.session_state.logged_in:
         else: st.error("Invalid credentials")
     st.stop()
 
-# بعد الدخول
 st.sidebar.title(f"👤 {st.session_state.username} ({st.session_state.role})")
 nav = st.sidebar.radio("Menu", ["Dashboard", "Upload & Analyze", "Notes", "Logout"])
 if nav == "Logout":
@@ -40,7 +42,6 @@ if nav == "Logout":
     st.session_state.logged_in = False
     st.rerun()
 
-# Dashboard
 if nav == "Dashboard":
     st.title("📊 Dashboard")
     st.markdown("### Login Activity")
@@ -48,7 +49,6 @@ if nav == "Dashboard":
     fig = px.histogram(df_log, x="username", color="action", title="User Actions")
     st.plotly_chart(fig)
 
-# Upload & Analyze
 elif nav == "Upload & Analyze":
     st.title("Upload & Analyze Excel")
     file = st.file_uploader("Upload Excel", type=["xlsx"])
@@ -62,13 +62,10 @@ elif nav == "Upload & Analyze":
             st.plotly_chart(px.pie(df["Note_Type"].value_counts().reset_index(), names="index", values="Note_Type", title="Note Types"))
             st.dataframe(df, use_container_width=True)
 
-            # Excel Download
             output = io.BytesIO()
-            with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-                df.to_excel(writer, index=False)
+            with pd.ExcelWriter(output, engine="xlsxwriter") as writer: df.to_excel(writer, index=False)
             st.download_button("📥 Download Excel", output.getvalue(), "notes_report.xlsx")
 
-            # PDF Download
             pdf = io.BytesIO()
             c = canvas.Canvas(pdf, pagesize=A4)
             c.drawString(100, 800, "INTERSOFT Report")
@@ -78,7 +75,6 @@ elif nav == "Upload & Analyze":
             st.download_button("📄 Download PDF", pdf.getvalue(), "report.pdf")
         else: st.error("Missing required columns.")
 
-# Notes
 elif nav == "Notes":
     st.title("📬 Send Notes")
     to_user = st.selectbox("Send to", df_users[df_users.username != st.session_state.username]["username"])
