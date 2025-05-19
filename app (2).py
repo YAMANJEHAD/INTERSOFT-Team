@@ -1,96 +1,75 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-from io import BytesIO
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
 import io
+import matplotlib.pyplot as plt
+import plotly.express as px
 import streamlit.components.v1 as components
+from datetime import datetime
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 
 # إعداد صفحة Streamlit
-st.set_page_config(page_title="CRM - Note Analyzer", layout="wide")
+st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-# قائمة المستخدمين (للإشارة فقط، يمكن تخزين هذه البيانات في قاعدة بيانات)
-users = {
-    "admin": {"password": "adminpassword", "role": "admin"},
-    "employee1": {"password": "employee_password", "role": "employee"},
-    "employee2": {"password": "employee_password", "role": "employee"},
-    "employee3": {"password": "employee_password", "role": "employee"},
-    "employee4": {"password": "employee_password", "role": "employee"},
+# ✅ HTML + CSS لعرض الساعة والتاريخ
+clock_html = """<div style="background: transparent;">
+<style>
+.clock-container {
+    font-family: 'Courier New', monospace;
+    font-size: 22px;
+    color: #fff;
+    background: linear-gradient(135deg, #1abc9c, #16a085);
+    padding: 12px 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: pulse 2s infinite;
+    position: fixed;
+    top: 15px;
+    right: 25px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
 }
+.clock-time {
+    font-size: 22px;
+    font-weight: bold;
+}
+.clock-date {
+    font-size: 16px;
+    margin-top: 4px;
+}
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0.4); }
+    70% { box-shadow: 0 0 0 15px rgba(26, 188, 156, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0); }
+}
+</style>
+<div class="clock-container">
+    <div class="clock-time" id="clock"></div>
+    <div class="clock-date" id="date"></div>
+</div>
+<script>
+function updateClock() {
+    const now = new Date();
+    const time = now.toLocaleTimeString();
+    const date = now.toLocaleDateString(undefined, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    document.getElementById('clock').innerText = time;
+    document.getElementById('date').innerText = date;
+}
+setInterval(updateClock, 1000);
+updateClock();
+</script>
+</div>"""
+components.html(clock_html, height=130, scrolling=False)
 
-# دالة تسجيل الدخول
-def login_page():
-    st.title("Login")
-    username = st.text_input("Enter your username")
-    password = st.text_input("Enter your password", type="password")
+st.markdown("""<h1 style='color:#ffffff; text-align:center;'>📊 INTERSOFT Analyzer</h1>""", unsafe_allow_html=True)
 
-    # التحقق من بيانات المستخدم
-    if username in users and users[username]["password"] == password:
-        st.session_state.username = username
-        st.session_state.role = users[username]["role"]
-        st.success(f"Successfully logged in as {st.session_state.role.capitalize()}!")
-    else:
-        st.error("Invalid username or password")
-
-# إذا كان المستخدم قد سجل دخوله
-if "username" in st.session_state:
-    if st.session_state.role == "admin":
-        admin_page()
-    elif st.session_state.role == "employee":
-        employee_page()
-else:
-    login_page()
-
-# دالة صفحة المدير
-def admin_page():
-    st.sidebar.header("Admin Dashboard")
-    st.markdown("<h1 style='color:#ffffff; text-align:center;'>📊 Admin Dashboard</h1>", unsafe_allow_html=True)
-    st.write("Welcome, Admin! This is your control panel.")
-    
-    # إضافة مستخدم جديد
-    st.markdown("### 🚀 User Management")
-    new_username = st.text_input("New Username")
-    new_password = st.text_input("New Password", type="password")
-    if st.button("Add User"):
-        if new_username and new_password:
-            users[new_username] = {"password": new_password, "role": "employee"}
-            st.success(f"User {new_username} added successfully!")
-        else:
-            st.error("Please provide both username and password.")
-
-    # عرض بيانات المستخدمين
-    st.markdown("### 📋 User List")
-    user_data = pd.DataFrame(users.items(), columns=["Username", "Details"])
-    st.dataframe(user_data)
-
-    # رفع تقارير الموظفين
-    uploaded_file = st.file_uploader("Upload Employee Report", type=["xlsx"])
-    if uploaded_file:
-        st.success("File uploaded successfully!")
-        df = pd.read_excel(uploaded_file)
-        st.dataframe(df)
-
-# دالة صفحة الموظف
-def employee_page():
-    st.sidebar.header("Employee Dashboard")
-    st.markdown("<h1 style='color:#ffffff; text-align:center;'>📊 Employee Dashboard</h1>", unsafe_allow_html=True)
-    st.write(f"Welcome, {st.session_state.username}! This is your personal dashboard.")
-    
-    # رفع ملفات الموظف
-    st.markdown("### 📂 Upload your files or images")
-    uploaded_file = st.file_uploader("📁 Upload Image File", type=["jpg", "png", "jpeg"])
-    if uploaded_file:
-        st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
-
-    # رفع تقارير الموظف
-    st.markdown("### 📝 Your Reports")
-    uploaded_excel = st.file_uploader("Upload Your Excel Report", type=["xlsx"])
-    if uploaded_excel:
-        df = pd.read_excel(uploaded_excel)
-        st.dataframe(df)
-
-# تحليل البيانات والرسوم البيانية
 uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
@@ -165,23 +144,53 @@ if uploaded_file:
         filtered_df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
         tech_counts_filtered = filtered_df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
         top_5_technicians = tech_counts_filtered.head(5)
-        technician_notes_table = filtered_df[filtered_df['Technician_Name'].isin(top_5_technicians.index.tolist())]
+        top_5_data = filtered_df[filtered_df['Technician_Name'].isin(top_5_technicians.index.tolist())]
+        technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
+        technician_notes_count = top_5_technicians.reset_index()
+        technician_notes_count.columns = ['Technician_Name', 'Notes_Count']
+        tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
 
-        st.dataframe(technician_notes_table)
+        st.dataframe(technician_notes_count, use_container_width=True)
+        st.markdown("### 🧾 Technician Notes Details")
+        st.dataframe(technician_notes_table, use_container_width=True)
+
+        st.markdown("### 📊 Notes by Type")
+        note_counts = df['Note_Type'].value_counts()
+        st.bar_chart(note_counts)
 
         st.markdown("### 🥧 Note Types Distribution")
-        pie_data = df['Note_Type'].value_counts().reset_index()
+        pie_data = note_counts.reset_index()
         pie_data.columns = ['Note_Type', 'Count']
         fig = px.pie(pie_data, names='Note_Type', values='Count', title='Note Type Distribution')
+        fig.update_traces(textinfo='percent+label')
         st.plotly_chart(fig)
 
-        # تنزيل ملف Excel
+        st.markdown("### ✅ Terminal IDs for 'DONE' Notes")
+        done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
+        done_terminals_counts = done_terminals['Technician_Name'].value_counts()
+        done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
+        done_terminals_summary = done_terminals_counts.head(5).reset_index()
+        done_terminals_summary.columns = ['Technician_Name', 'DONE_Notes_Count']
+        st.dataframe(done_terminals_summary, use_container_width=True)
+
+        st.markdown("### 📑 Detailed Notes for Top 5 Technicians")
+        for tech in top_5_technicians.index:
+            st.markdown(f"#### Notes for Technician: {tech}")
+            technician_data = top_5_data[top_5_data['Technician_Name'] == tech]
+            technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
+            st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
+
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df.to_excel(writer, index=False)
+            for note_type in df['Note_Type'].unique():
+                subset = df[df['Note_Type'] == note_type]
+                subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
+            note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
+            tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
+            done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
+
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-        # تنزيل PDF
         pdf_buffer = io.BytesIO()
         c = canvas.Canvas(pdf_buffer, pagesize=A4)
         width, height = A4
