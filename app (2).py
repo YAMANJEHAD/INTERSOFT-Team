@@ -132,6 +132,7 @@ if uploaded_file:
             st.bar_chart(tech_counts)
 
         with tab3:
+            st.markdown("### 🚨 Technician With most notes!")
             filtered_df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
             tech_counts_filtered = filtered_df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
             top_5_technicians = tech_counts_filtered.head(5)
