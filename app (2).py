@@ -123,7 +123,7 @@ if uploaded_file:
         tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
             "📊 Note Type Percentages",
             "👨‍🔧 Notes per Technician",
-            "🏆 Top 5 Technicians",
+            "🚨 Top 5 Technicians",
             "🥧 Note Type Distribution",
             "✅ DONE Terminals",
             "📑 Detailed Notes"
@@ -159,7 +159,7 @@ if uploaded_file:
             st.plotly_chart(fig)
 
         with tab5:
-            st.markdown("### ✅ Terminal IDs for 'DONE' Notes")
+            st.markdown("### ✅'DONE' Notes")
             done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
             done_terminals_counts = done_terminals['Technician_Name'].value_counts()
             done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
