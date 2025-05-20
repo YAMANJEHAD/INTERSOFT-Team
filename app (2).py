@@ -113,24 +113,27 @@ if uploaded_file:
         df['Note_Type'] = df['NOTE'].apply(classify_note)
         st.success("✅ File processed successfully!")
 
-        # نسب الملاحظات
+        # ✅ النسب وعدد التكرار
         note_counts = df['Note_Type'].value_counts()
         note_percentage = (note_counts / note_counts.sum()) * 100
-        note_percentage_df = note_percentage.reset_index()
-        note_percentage_df.columns = ['Note_Type', 'Percentage (%)']
+        note_percentage_df = pd.DataFrame({
+            "Note_Type": note_counts.index,
+            "Count": note_counts.values,
+            "Percentage (%)": note_percentage.round(2).values
+        })
 
-        # تابات العرض
+        # ✅ تبويبات
         tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-            "📊 Note Type Percentages",
+            "📊 Note Type Summary",
             "👨‍🔧 Notes per Technician",
-            "🚨 Top 5 Technicians",
+            "🏆 Top 5 Technicians",
             "🥧 Note Type Distribution",
             "✅ DONE Terminals",
             "📑 Detailed Notes"
         ])
 
         with tab1:
-            st.markdown("### 🔢 Percentage of Each Note Type")
+            st.markdown("### 🔢 Percentage and Count of Each Note Type")
             st.dataframe(note_percentage_df, use_container_width=True)
 
         with tab2:
@@ -159,7 +162,7 @@ if uploaded_file:
             st.plotly_chart(fig)
 
         with tab5:
-            st.markdown("### ✅'DONE' Notes")
+            st.markdown("### ✅ Terminal IDs for 'DONE' Notes")
             done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
             done_terminals_counts = done_terminals['Technician_Name'].value_counts()
             done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
@@ -175,13 +178,13 @@ if uploaded_file:
                 technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
                 st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
 
-        # ✅ التصدير
+        # ✅ تصدير البيانات
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
                 subset = df[df['Note_Type'] == note_type]
                 subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
-            note_percentage_df.to_excel(writer, sheet_name="Note Type Percentages", index=False)
+            note_percentage_df.to_excel(writer, sheet_name="Note Type Summary", index=False)
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
             done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
 
