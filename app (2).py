@@ -8,7 +8,7 @@ from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
-# إعداد الصفحة
+# إعداد صفحة Streamlit
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
 # ✅ HTML + CSS لعرض الساعة والتاريخ
@@ -127,38 +127,79 @@ if uploaded_file:
     if not all(col in df.columns for col in required_cols):
         st.error(f"❌ Missing required columns. Available: {list(df.columns)}")
     else:
-        with st.spinner("🔄 Processing file..."):
-            df['Note_Type'] = df['NOTE'].apply(classify_note)
+        progress_bar = st.progress(0)
+        note_types = []
+        for i, note in enumerate(df['NOTE']):
+            note_types.append(classify_note(note))
+            if i % 10 == 0 or i == len(df['NOTE']) - 1:
+                progress_bar.progress((i + 1) / len(df['NOTE']))
+        df['Note_Type'] = note_types
+        progress_bar.empty()
 
         st.success("✅ File processed successfully!")
 
+        st.markdown("### 📈 Notes per Technician")
+        tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
+        st.bar_chart(tech_counts)
+
+        st.markdown("### 🔝 Top 5 Technicians with Most Notes")
+        filtered_df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
+        tech_counts_filtered = filtered_df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
+        top_5_technicians = tech_counts_filtered.head(5)
+        top_5_data = filtered_df[filtered_df['Technician_Name'].isin(top_5_technicians.index.tolist())]
+        technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
+        technician_notes_count = top_5_technicians.reset_index()
+        technician_notes_count.columns = ['Technician_Name', 'Notes_Count']
+        tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
+
+        st.dataframe(technician_notes_count, use_container_width=True)
+        st.markdown("### 🧾 Technician Notes Details")
+        st.dataframe(technician_notes_table, use_container_width=True)
+
+        st.markdown("### 📊 Notes by Type")
         note_counts = df['Note_Type'].value_counts()
-        note_percentage = (note_counts / note_counts.sum()) * 100
-        note_percentage_df = note_percentage.reset_index()
-        note_percentage_df.columns = ['Note_Type', 'Percentage (%)']
+        st.bar_chart(note_counts)
 
-        # ✅ عرض النسبة المئوية لكل نوت
-        st.markdown("### 📊 Note Types Percentage")
-        st.dataframe(note_percentage_df, use_container_width=True)
+        st.markdown("### 🥧 Note Types Distribution")
+        pie_data = note_counts.reset_index()
+        pie_data.columns = ['Note_Type', 'Count']
+        fig = px.pie(pie_data, names='Note_Type', values='Count', title='Note Type Distribution')
+        fig.update_traces(textinfo='percent+label')
+        st.plotly_chart(fig)
 
-        # ✅ أزرار لعرض كل نوع تحليل على حدة
-        if st.button("📈 Show Notes per Technician"):
-            tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
-            st.bar_chart(tech_counts)
+        st.markdown("### ✅ Terminal IDs for 'DONE' Notes")
+        done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
+        done_terminals_counts = done_terminals['Technician_Name'].value_counts()
+        done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
+        done_terminals_summary = done_terminals_counts.head(5).reset_index()
+        done_terminals_summary.columns = ['Technician_Name', 'DONE_Notes_Count']
+        st.dataframe(done_terminals_summary, use_container_width=True)
 
-        if st.button("🔝 Show Top 5 Technicians with Most Notes"):
-            filtered_df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
-            tech_counts_filtered = filtered_df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
-            top_5_technicians = tech_counts_filtered.head(5)
-            st.dataframe(top_5_technicians.reset_index(), use_container_width=True)
+        st.markdown("### 📑 Detailed Notes for Top 5 Technicians")
+        for tech in top_5_technicians.index:
+            st.markdown(f"#### Notes for Technician: {tech}")
+            technician_data = top_5_data[top_5_data['Technician_Name'] == tech]
+            technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
+            st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
 
-        if st.button("🥧 Show Note Types Pie Chart"):
-            pie_data = note_counts.reset_index()
-            pie_data.columns = ['Note_Type', 'Count']
-            fig = px.pie(pie_data, names='Note_Type', values='Count', title='Note Type Distribution')
-            fig.update_traces(textinfo='percent+label')
-            st.plotly_chart(fig)
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            for note_type in df['Note_Type'].unique():
+                subset = df[df['Note_Type'] == note_type]
+                subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
+            note_counts.reset_index().rename(columns={'index': 'Note_Type', 'Note_Type': 'Count'}).to_excel(writer, sheet_name="Note Type Count", index=False)
+            tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
+            done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
 
-        if st.button("✅ Show DONE Terminal Details"):
-            done_df = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
-            st.dataframe(done_df, use_container_width=True)
+        st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+        pdf_buffer = io.BytesIO()
+        c = canvas.Canvas(pdf_buffer, pagesize=A4)
+        width, height = A4
+        c.setFont("Helvetica-Bold", 14)
+        c.drawString(100, height - 50, "Summary Report")
+        c.setFont("Helvetica", 12)
+        c.drawString(100, height - 100, f"Top 5 Technicians: {', '.join(top_5_technicians.index)}")
+        c.showPage()
+        c.save()
+        st.download_button("📥 Download PDF Report", pdf_buffer.getvalue(), "summary_report.pdf", "application/pdf")
