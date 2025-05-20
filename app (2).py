@@ -110,7 +110,7 @@ if uploaded_file:
         # ✅ تنبيه MULTIPLE ISSUES دائم
         if 'MULTIPLE ISSUES' in note_percentage_df['Note_Type'].values:
             percent = note_percentage_df[note_percentage_df['Note_Type'] == 'MULTIPLE ISSUES']['Percentage (%)'].values[0]
-            if percent > 10:
+            if percent > 5:
                 st.warning(f"🔴 MULTIPLE ISSUES are high: {percent:.2f}%")
             else:
                 st.info(f"🟢 All good! MULTIPLE ISSUES under control: {percent:.2f}%")
