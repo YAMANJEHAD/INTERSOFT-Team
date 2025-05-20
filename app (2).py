@@ -11,7 +11,7 @@ from reportlab.lib.utils import ImageReader
 # إعداد الصفحة
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-# الساعة والتاريخ
+# ✅ الساعة والتاريخ
 clock_html = """<div style="background: transparent;">
 <style>
 .clock-container {
@@ -98,19 +98,14 @@ if uploaded_file:
         df['Note_Type'] = df['NOTE'].apply(classify_note)
         st.success("✅ File processed successfully!")
 
-        # النسب وعدد التكرار
-        note_counts = df['Note_Type'].value_counts()
-        note_percentage = (note_counts / note_counts.sum()) * 100
-        note_percentage_df = pd.DataFrame({
-            "Note_Type": note_counts.index,
-            "Count": note_counts.values,
-            "Percentage (%)": note_percentage.round(2).values
-        })
+        # ✅ النسب وعدد التكرار
+        note_counts = df['Note_Type'].value_counts().reset_index()
+        note_counts.columns = ["Note_Type", "Count"]
 
         # ✅ تنبيه MULTIPLE ISSUES دائم
-        if 'MULTIPLE ISSUES' in note_percentage_df['Note_Type'].values:
-            percent = note_percentage_df[note_percentage_df['Note_Type'] == 'MULTIPLE ISSUES']['Percentage (%)'].values[0]
-            if percent > 5:
+        if 'MULTIPLE ISSUES' in note_counts['Note_Type'].values:
+            percent = (note_counts[note_counts['Note_Type'] == 'MULTIPLE ISSUES']['Count'].values[0] / note_counts['Count'].sum()) * 100
+            if percent > 10:
                 st.warning(f"🔴 MULTIPLE ISSUES are high: {percent:.2f}%")
             else:
                 st.info(f"🟢 All good! MULTIPLE ISSUES under control: {percent:.2f}%")
@@ -121,9 +116,9 @@ if uploaded_file:
             "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes"])
 
         with tab1:
-            st.markdown("### 🔢 Percentage and Count of Each Note Type")
-            st.dataframe(note_percentage_df, use_container_width=True)
-            fig_bar = px.bar(note_percentage_df, x="Note_Type", y="Count", title="Note Type Frequency")
+            st.markdown("### 🔢 Count of Each Note Type")
+            st.dataframe(note_counts, use_container_width=True)
+            fig_bar = px.bar(note_counts, x="Note_Type", y="Count", title="Note Type Frequency")
             st.plotly_chart(fig_bar, use_container_width=True)
 
         with tab2:
@@ -132,7 +127,6 @@ if uploaded_file:
             st.bar_chart(tech_counts)
 
         with tab3:
-            st.markdown("### 🚨 Technician With most notes!")
             filtered_df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
             tech_counts_filtered = filtered_df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
             top_5_technicians = tech_counts_filtered.head(5)
@@ -145,9 +139,7 @@ if uploaded_file:
 
         with tab4:
             st.markdown("### 🥧 Note Types Distribution")
-            pie_data = note_counts.reset_index()
-            pie_data.columns = ['Note_Type', 'Count']
-            fig = px.pie(pie_data, names='Note_Type', values='Count', title='Note Type Distribution')
+            fig = px.pie(note_counts, names='Note_Type', values='Count', title='Note Type Distribution')
             fig.update_traces(textinfo='percent+label')
             st.plotly_chart(fig)
 
@@ -174,49 +166,8 @@ if uploaded_file:
             for note_type in df['Note_Type'].unique():
                 subset = df[df['Note_Type'] == note_type]
                 subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
-            note_percentage_df.to_excel(writer, sheet_name="Note Type Summary", index=False)
+            note_counts.to_excel(writer, sheet_name="Note Type Count", index=False)
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
             done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
 
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-        # ✅ تقرير PDF
-        pdf_buffer = io.BytesIO()
-        c = canvas.Canvas(pdf_buffer, pagesize=A4)
-        width, height = A4
-        logo_path = "/mnt/data/logoChip.png"
-        try:
-            logo = ImageReader(logo_path)
-            c.drawImage(logo, 40, height - 100, width=80, height=80)
-        except:
-            pass
-
-        total_notes = len(df)
-        unique_techs = df['Technician_Name'].nunique()
-        top_note = note_percentage_df.iloc[0]['Note_Type']
-        multi_issues_percent = note_percentage_df[note_percentage_df['Note_Type'] == 'MULTIPLE ISSUES']['Percentage (%)'].values[0] if 'MULTIPLE ISSUES' in note_percentage_df['Note_Type'].values else 0
-        today = datetime.now().strftime("%Y-%m-%d %H:%M")
-
-        c.setFont("Helvetica-Bold", 16)
-        c.drawString(150, height - 60, "📊 INTERSOFT Notes Summary Report")
-        c.setFont("Helvetica", 11)
-        c.drawString(150, height - 85, f"📅 Generated on: {today}")
-
-        c.setFont("Helvetica", 12)
-        c.drawString(50, height - 140, f"• Total Notes: {total_notes}")
-        c.drawString(50, height - 160, f"• Unique Technicians: {unique_techs}")
-        c.drawString(50, height - 180, f"• Most Common Note Type: {top_note}")
-        c.drawString(50, height - 200, f"• MULTIPLE ISSUES Rate: {multi_issues_percent:.2f}%")
-
-        c.setFont("Helvetica-Bold", 13)
-        c.drawString(50, height - 230, "🏆 Top 5 Technicians:")
-        c.setFont("Helvetica", 12)
-        y = height - 250
-        for tech, count in top_5_technicians.items():
-            c.drawString(60, y, f"- {tech}: {count} notes")
-            y -= 20
-
-        c.showPage()
-        c.save()
-
-        st.download_button("📥 Download PDF Report", pdf_buffer.getvalue(), "summary_report.pdf", "application/pdf")
