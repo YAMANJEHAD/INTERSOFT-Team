@@ -6,7 +6,7 @@ import streamlit.components.v1 as components
 from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-import time
+from reportlab.lib.utils import ImageReader
 
 # إعداد الصفحة
 st.set_page_config(page_title="Note Analyzer", layout="wide")
@@ -123,18 +123,15 @@ if uploaded_file:
             "Percentage (%)": note_percentage.round(2).values
         })
 
-        # ✅ تنبيه MULTIPLE ISSUES مع مؤقت اختفاء
-        alert = st.empty()
+        # ✅ تنبيه MULTIPLE ISSUES باستخدام st.toast()
         if 'MULTIPLE ISSUES' in note_percentage_df['Note_Type'].values:
             percent = note_percentage_df[note_percentage_df['Note_Type'] == 'MULTIPLE ISSUES']['Percentage (%)'].values[0]
             if percent > 10:
-                alert.error(f"🔴 High rate of MULTIPLE ISSUES: {percent:.2f}%")
+                st.toast(f"🔴 MULTIPLE ISSUES are high: {percent:.2f}%", icon="⚠️")
             else:
-                alert.success(f"🟢 All good! MULTIPLE ISSUES are under control: {percent:.2f}%")
-            time.sleep(10)
-            alert.empty()
+                st.toast(f"✅ All good! MULTIPLE ISSUES under control: {percent:.2f}%", icon="✅")
 
-        # ✅ تبويبات
+        # ✅ تبويبات العرض
         tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
             "📊 Note Type Summary",
             "👨‍🔧 Notes per Technician",
@@ -201,14 +198,3 @@ if uploaded_file:
             done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
 
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-        pdf_buffer = io.BytesIO()
-        c = canvas.Canvas(pdf_buffer, pagesize=A4)
-        width, height = A4
-        c.setFont("Helvetica-Bold", 14)
-        c.drawString(100, height - 50, "Summary Report")
-        c.setFont("Helvetica", 12)
-        c.drawString(100, height - 100, f"Top 5 Technicians: {', '.join(top_5_technicians.index)}")
-        c.showPage()
-        c.save()
-        st.download_button("📥 Download PDF Report", pdf_buffer.getvalue(), "summary_report.pdf", "application/pdf")
