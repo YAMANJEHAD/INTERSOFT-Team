@@ -98,7 +98,7 @@ if uploaded_file:
         df['Note_Type'] = df['NOTE'].apply(classify_note)
         st.success("✅ File processed successfully!")
 
-        # ✅ النسب وعدد التكرار
+        # النسب وعدد التكرار
         note_counts = df['Note_Type'].value_counts()
         note_percentage = (note_counts / note_counts.sum()) * 100
         note_percentage_df = pd.DataFrame({
