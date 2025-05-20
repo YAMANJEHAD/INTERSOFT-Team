@@ -8,10 +8,10 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 
-# Page setup
+# إعداد الصفحة
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-# Clock widget
+# ✅ الساعة والتاريخ
 clock_html = """<div style="background: transparent;">
 <style>
 .clock-container {
@@ -64,7 +64,10 @@ components.html(clock_html, height=130, scrolling=False)
 
 st.markdown("""<h1 style='color:#ffffff; text-align:center;'>📊 INTERSOFT Analyzer</h1>""", unsafe_allow_html=True)
 
-# Classification function
+uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
+required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
+
+# ✅ التصنيف مع دعم MULTIPLE ISSUES
 def classify_note(note):
     note = str(note).strip().upper()
     known_keywords = [
@@ -82,10 +85,7 @@ def classify_note(note):
     else:
         return "MULTIPLE ISSUES"
 
-# Single file analysis only
-uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
-required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
-
+# ✅ المعالجة الرئيسية بعد رفع الملف
 if uploaded_file:
     try:
         df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
@@ -98,16 +98,19 @@ if uploaded_file:
         df['Note_Type'] = df['NOTE'].apply(classify_note)
         st.success("✅ File processed successfully!")
 
+        # ✅ النسب وعدد التكرار
         note_counts = df['Note_Type'].value_counts().reset_index()
         note_counts.columns = ["Note_Type", "Count"]
 
+        # ✅ تنبيه MULTIPLE ISSUES دائم
         if 'MULTIPLE ISSUES' in note_counts['Note_Type'].values:
             percent = (note_counts[note_counts['Note_Type'] == 'MULTIPLE ISSUES']['Count'].values[0] / note_counts['Count'].sum()) * 100
-            if percent > 10:
+            if percent > 5:
                 st.warning(f"🔴 MULTIPLE ISSUES are high: {percent:.2f}%")
             else:
-                st.info(f"🟢 MULTIPLE ISSUES under control: {percent:.2f}%")
+                st.info(f"🟢 All good! MULTIPLE ISSUES under control: {percent:.2f}%")
 
+        # ✅ تبويبات العرض
         tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
             "📊 Note Type Summary", "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians",
             "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes"])
@@ -128,6 +131,7 @@ if uploaded_file:
             tech_counts_filtered = filtered_df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
             top_5_technicians = tech_counts_filtered.head(5)
             top_5_data = filtered_df[filtered_df['Technician_Name'].isin(top_5_technicians.index.tolist())]
+            technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
             technician_notes_count = top_5_technicians.reset_index()
             technician_notes_count.columns = ['Technician_Name', 'Notes_Count']
             tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
@@ -140,7 +144,7 @@ if uploaded_file:
             st.plotly_chart(fig)
 
         with tab5:
-            st.markdown("### ✅ 'DONE' Notes")
+            st.markdown("### ✅'DONE' Notes")
             done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
             done_terminals_counts = done_terminals['Technician_Name'].value_counts()
             done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
@@ -156,10 +160,14 @@ if uploaded_file:
                 technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
                 st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
 
-        # Download Excel
+        # ✅ تصدير البيانات
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            note_counts.to_excel(writer, sheet_name="Note Summary", index=False)
-            tech_note_group.to_excel(writer, sheet_name="Technician Notes", index=False)
-            done_terminals_table.to_excel(writer, sheet_name="DONE Notes", index=False)
-        st.download_button("📥 Download Excel Summary", output.getvalue(), "note_analysis_summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            for note_type in df['Note_Type'].unique():
+                subset = df[df['Note_Type'] == note_type]
+                subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
+            note_counts.to_excel(writer, sheet_name="Note Type Count", index=False)
+            tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
+            done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
+
+        st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
