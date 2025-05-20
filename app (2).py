@@ -105,7 +105,7 @@ if uploaded_file:
         # ✅ تنبيه MULTIPLE ISSUES دائم
         if 'MULTIPLE ISSUES' in note_counts['Note_Type'].values:
             percent = (note_counts[note_counts['Note_Type'] == 'MULTIPLE ISSUES']['Count'].values[0] / note_counts['Count'].sum()) * 100
-            if percent > 10:
+            if percent > 5:
                 st.warning(f"🔴 MULTIPLE ISSUES are high: {percent:.2f}%")
             else:
                 st.info(f"🟢 All good! MULTIPLE ISSUES under control: {percent:.2f}%")
