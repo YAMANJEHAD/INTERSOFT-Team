@@ -6,6 +6,7 @@ import streamlit.components.v1 as components
 from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+import time
 
 # إعداد الصفحة
 st.set_page_config(page_title="Note Analyzer", layout="wide")
@@ -100,7 +101,7 @@ def classify_note(note):
     else:
         return "MULTIPLE ISSUES"
 
-# ✅ بعد رفع الملف
+# ✅ المعالجة الرئيسية بعد رفع الملف
 if uploaded_file:
     try:
         df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
@@ -111,17 +112,6 @@ if uploaded_file:
         st.error(f"❌ Missing required columns. Available: {list(df.columns)}")
     else:
         df['Note_Type'] = df['NOTE'].apply(classify_note)
-
-        # ✅ فلترة بالتاريخ (إن وُجد)
-        if 'Date' in df.columns:
-            df['Date'] = pd.to_datetime(df['Date'])
-            st.markdown("### 📅 Filter by Date Range")
-            min_date = df['Date'].min().date()
-            max_date = df['Date'].max().date()
-            start_date = st.date_input("Start Date", value=min_date, min_value=min_date, max_value=max_date)
-            end_date = st.date_input("End Date", value=max_date, min_value=min_date, max_value=max_date)
-            df = df[(df['Date'] >= pd.to_datetime(start_date)) & (df['Date'] <= pd.to_datetime(end_date))]
-
         st.success("✅ File processed successfully!")
 
         # ✅ النسب وعدد التكرار
@@ -133,43 +123,50 @@ if uploaded_file:
             "Percentage (%)": note_percentage.round(2).values
         })
 
-        # ✅ تنبيه MULTIPLE ISSUES
+        # ✅ تنبيه MULTIPLE ISSUES مع مؤقت اختفاء
+        alert = st.empty()
         if 'MULTIPLE ISSUES' in note_percentage_df['Note_Type'].values:
             percent = note_percentage_df[note_percentage_df['Note_Type'] == 'MULTIPLE ISSUES']['Percentage (%)'].values[0]
             if percent > 10:
-                st.error(f"🚨 High rate of MULTIPLE ISSUES: {percent:.2f}%")
+                alert.error(f"🔴 High rate of MULTIPLE ISSUES: {percent:.2f}%")
             else:
-                st.success(f"✅ All good! MULTIPLE ISSUES are under control: {percent:.2f}%")
+                alert.success(f"🟢 All good! MULTIPLE ISSUES are under control: {percent:.2f}%")
+            time.sleep(10)
+            alert.empty()
 
-        # ✅ متوسط عدد الملاحظات لكل فني
-        avg_notes = df.groupby("Technician_Name")["Note_Type"].count().mean()
-        st.markdown(f"### 📊 Average Notes per Technician: **{avg_notes:.2f}**")
-
-        # ✅ Tabs
-        tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+        # ✅ تبويبات
+        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
             "📊 Note Type Summary",
             "👨‍🔧 Notes per Technician",
-            "🏆 Top 5 Technicians",
-            "🥧 Note Distribution",
+            "🚨 Top 5 Technicians",
+            "🥧 Note Type Distribution",
             "✅ DONE Terminals",
-            "📑 Detailed Notes",
-            "📅 Notes Timeline"
+            "📑 Detailed Notes"
         ])
 
         with tab1:
+            st.markdown("### 🔢 Percentage and Count of Each Note Type")
             st.dataframe(note_percentage_df, use_container_width=True)
 
         with tab2:
+            st.markdown("### 📈 Notes per Technician")
             tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
             st.bar_chart(tech_counts)
 
         with tab3:
+            st.markdown("### 🔝 Top 5 Technicians with Most Notes")
             filtered_df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
-            top_5_techs = filtered_df['Technician_Name'].value_counts().head(5)
-            top_5_data = filtered_df[filtered_df['Technician_Name'].isin(top_5_techs.index)]
-            st.dataframe(top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
+            tech_counts_filtered = filtered_df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
+            top_5_technicians = tech_counts_filtered.head(5)
+            top_5_data = filtered_df[filtered_df['Technician_Name'].isin(top_5_technicians.index.tolist())]
+            technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
+            technician_notes_count = top_5_technicians.reset_index()
+            technician_notes_count.columns = ['Technician_Name', 'Notes_Count']
+            tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
+            st.dataframe(technician_notes_count, use_container_width=True)
 
         with tab4:
+            st.markdown("### 🥧 Note Types Distribution")
             pie_data = note_counts.reset_index()
             pie_data.columns = ['Note_Type', 'Count']
             fig = px.pie(pie_data, names='Note_Type', values='Count', title='Note Type Distribution')
@@ -177,22 +174,21 @@ if uploaded_file:
             st.plotly_chart(fig)
 
         with tab5:
-            done_df = df[df['Note_Type'] == 'DONE']
-            done_summary = done_df['Technician_Name'].value_counts().reset_index()
-            done_summary.columns = ['Technician_Name', 'DONE Count']
-            st.dataframe(done_summary, use_container_width=True)
+            st.markdown("### ✅'DONE' Notes")
+            done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
+            done_terminals_counts = done_terminals['Technician_Name'].value_counts()
+            done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
+            done_terminals_summary = done_terminals_counts.head(5).reset_index()
+            done_terminals_summary.columns = ['Technician_Name', 'DONE_Notes_Count']
+            st.dataframe(done_terminals_summary, use_container_width=True)
 
         with tab6:
-            for tech in df['Technician_Name'].unique():
+            st.markdown("### 📑 Detailed Notes for Top 5 Technicians")
+            for tech in top_5_technicians.index:
                 st.markdown(f"#### 🧑 Technician: {tech}")
-                tech_data = df[df['Technician_Name'] == tech]
-                st.dataframe(tech_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
-
-        with tab7:
-            if 'Date' in df.columns:
-                timeline = df.groupby(['Date', 'Note_Type']).size().reset_index(name='Count')
-                fig_time = px.line(timeline, x='Date', y='Count', color='Note_Type', title='Timeline of Notes by Type')
-                st.plotly_chart(fig_time, use_container_width=True)
+                technician_data = top_5_data[top_5_data['Technician_Name'] == tech]
+                technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
+                st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
 
         # ✅ تصدير البيانات
         output = io.BytesIO()
@@ -201,14 +197,18 @@ if uploaded_file:
                 subset = df[df['Note_Type'] == note_type]
                 subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
             note_percentage_df.to_excel(writer, sheet_name="Note Type Summary", index=False)
+            tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
+            done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
+
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
         pdf_buffer = io.BytesIO()
         c = canvas.Canvas(pdf_buffer, pagesize=A4)
+        width, height = A4
         c.setFont("Helvetica-Bold", 14)
-        c.drawString(100, 800, "Summary Report")
+        c.drawString(100, height - 50, "Summary Report")
         c.setFont("Helvetica", 12)
-        c.drawString(100, 770, f"Average Notes per Technician: {avg_notes:.2f}")
+        c.drawString(100, height - 100, f"Top 5 Technicians: {', '.join(top_5_technicians.index)}")
         c.showPage()
         c.save()
         st.download_button("📥 Download PDF Report", pdf_buffer.getvalue(), "summary_report.pdf", "application/pdf")
