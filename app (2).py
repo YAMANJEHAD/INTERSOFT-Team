@@ -193,7 +193,7 @@ if uploaded_file:
             merged['Issue_Rate (%)'] = (merged['Issues'] / merged['Total_Jobs']) * 100
             merged = merged.sort_values(by='Issue_Rate (%)', ascending=False)
             st.dataframe(merged[['Technician_Name', 'Total_Jobs', 'Issues', 'Issue_Rate (%)']], use_container_width=True)
-                        st.markdown("---")
+            st.markdown("---")
             st.markdown("## 🧠 Suggested Fixes for Each Issue Type")
 
             suggestions_dict = {
