@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import io
@@ -11,6 +12,7 @@ from reportlab.lib.utils import ImageReader
 # إعداد الصفحة
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
+# الساعة والتاريخ
 clock_html = """<div style="background: transparent;">
 <style>
 .clock-container {
@@ -61,12 +63,11 @@ updateClock();
 </div>"""
 components.html(clock_html, height=130, scrolling=False)
 
-st.markdown("""<h1 style='color:#ffffff; text-align:center;'>📊 INTERSOFT Analyzer</h1>""", unsafe_allow_html=True)
+st.markdown("<h1 style='color:#ffffff; text-align:center;'>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
 
 uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
-# ✅ التصنيف مع دعم MULTIPLE ISSUES
 def classify_note(note):
     note = str(note).strip().upper()
     known_keywords = [
@@ -84,7 +85,6 @@ def classify_note(note):
     else:
         return "MULTIPLE ISSUES"
 
-# ✅ المعالجة الرئيسية بعد رفع الملف
 if uploaded_file:
     try:
         df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
@@ -159,15 +159,14 @@ if uploaded_file:
 
         with tab7:
             st.markdown("## ✍️ Signature Issues Analysis")
-            signature_issues_keywords = ['NO SIGNATURE', 'NO ENGINEER SIGNATURE', 'NO RETAILERS SIGNATURE']
-            signature_issues_df = df[df['Note_Type'].isin(signature_issues_keywords)]
+            signature_issues_df = df[df['NOTE'].str.upper().str.contains("SIGNATURE", na=False)]
 
             if signature_issues_df.empty:
                 st.success("✅ No signature-related issues found!")
             else:
                 st.markdown("### 📋 Summary Table")
-                sig_group = signature_issues_df.groupby('Technician_Name')['Note_Type'].count().reset_index(name='Signature_Issues')
-                total_tech = df.groupby('Technician_Name')['Note_Type'].count().reset_index(name='Total_Notes')
+                sig_group = signature_issues_df.groupby('Technician_Name')['NOTE'].count().reset_index(name='Signature_Issues')
+                total_tech = df.groupby('Technician_Name')['NOTE'].count().reset_index(name='Total_Notes')
                 sig_merged = pd.merge(sig_group, total_tech, on='Technician_Name')
                 sig_merged['Signature_Issue_Rate (%)'] = (sig_merged['Signature_Issues'] / sig_merged['Total_Notes']) * 100
                 st.dataframe(sig_merged, use_container_width=True)
@@ -180,10 +179,10 @@ if uploaded_file:
                 fig_sig_line = px.line(sig_merged, x='Technician_Name', y='Signature_Issue_Rate (%)', markers=True, title='Signature Issue Rate')
                 st.plotly_chart(fig_sig_line, use_container_width=True)
 
-                st.markdown("### 🗺️ Geo Map of Signature Issues (dummy data)")
+                st.markdown("### 🗺️ Geo Map (Dummy Coordinates)")
                 df_map = signature_issues_df.copy()
-                df_map['lat'] = 31.9 + (df_map.index % 10) * 0.01
-                df_map['lon'] = 35.9 + (df_map.index % 10) * 0.01
+                df_map['lat'] = 24.7136 + (df_map.index % 10) * 0.03
+                df_map['lon'] = 46.6753 + (df_map.index % 10) * 0.03
                 st.map(df_map[['lat', 'lon']])
 
                 sig_output = io.BytesIO()
@@ -193,7 +192,6 @@ if uploaded_file:
 
                 st.download_button("📥 Download Signature Issues Report", sig_output.getvalue(), "signature_issues.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-        # ✅ تصدير البيانات العامة
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
