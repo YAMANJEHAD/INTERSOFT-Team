@@ -160,6 +160,65 @@ if uploaded_file:
                 technician_data = top_5_data[top_5_data['Technician_Name'] == tech]
                 technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
                 st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
+                tab7 = st.tabs(["🛠️ J.O Improvement Suggestions & Analysis"])[0]
+        with tab7:
+            st.markdown("## 🛠️ How to Reduce J.O Issues Based on PMBOK & POS Experience")
+            st.markdown("""
+            ### 📌 1. Pre-Execution Planning
+            - ✅ Use standard templates for J.O (pre-filled via CRM).
+            - ✅ Add smart checklist before technician submits.
+
+            ### 📌 2. Quality Control During Execution
+            - ✅ Validate required fields before allowing submission.
+            - ✅ Use e-signature + location capture.
+            - ✅ Auto-detect common note issues (e.g., 'NO SIGNATURE').
+
+            ### 📌 3. Monitoring and Alerting
+            - ✅ Weekly report showing high-error technicians.
+            - ✅ Alert if MULTIPLE ISSUES exceed threshold (like current logic).
+            - ✅ Use AI or regex to classify notes and catch repeated patterns.
+
+            ### 📌 4. Lessons Learned
+            - ✅ Create scorecards for technicians (accuracy/speed).
+            - ✅ Push micro-trainings on the CRM platform.
+            - ✅ Monthly reports sent to managers with insights.
+
+            > 🧠 **Pro Tip:** You can connect this dashboard to your CRM for real-time validation and even alert the technician live before error happens.
+            """)
+
+            st.markdown("---")
+            st.markdown("## 🔍 Deep Dive: Analyze Common J.O Problems")
+
+            # أكثر نوع ملاحظة تكراراً
+            top_issue = note_counts.iloc[0]
+            st.markdown(f"### 🏆 Top Issue Type: **{top_issue['Note_Type']}** with {top_issue['Count']} occurrences")
+
+            # أكثر فني عليه ملاحظات
+            tech_note_summary = df[df['Note_Type'] != 'DONE'].groupby('Technician_Name')['Note_Type'].count().reset_index(name="Issue_Count")
+            tech_note_summary = tech_note_summary.sort_values(by="Issue_Count", ascending=False)
+            top_tech = tech_note_summary.iloc[0]
+            st.markdown(f"### 👨‍🔧 Technician with Most Issues: **{top_tech['Technician_Name']}** - {top_tech['Issue_Count']} issues")
+
+            # توزيع الأعطال حسب نوع التذكرة
+            st.markdown("### 📊 Note Type Breakdown by Ticket Type")
+            type_ticket_group = df.groupby(['Note_Type', 'Ticket_Type']).size().reset_index(name="Count")
+            fig_ticket_breakdown = px.bar(type_ticket_group, x="Note_Type", y="Count", color="Ticket_Type", title="Note Type by Ticket Type", barmode="group")
+            st.plotly_chart(fig_ticket_breakdown, use_container_width=True)
+
+            # جدول كامل للمشاكل
+            st.markdown("### 📋 Full Issue Table (excluding DONE & NO J.O)")
+            issue_table = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])][['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
+            st.dataframe(issue_table, use_container_width=True)
+
+            # نسبة المشاكل إلى جميع الفنيين
+            st.markdown("### 📌 Technician Issue Rate (%)")
+            total_jobs = df.groupby('Technician_Name')['Note_Type'].count().reset_index(name="Total_Jobs")
+            issues_only = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])].groupby('Technician_Name')['Note_Type'].count().reset_index(name="Issues")
+            merged = pd.merge(total_jobs, issues_only, on='Technician_Name', how='left').fillna(0)
+            merged['Issue_Rate (%)'] = (merged['Issues'] / merged['Total_Jobs']) * 100
+            merged = merged.sort_values(by='Issue_Rate (%)', ascending=False)
+            st.dataframe(merged[['Technician_Name', 'Total_Jobs', 'Issues', 'Issue_Rate (%)']], use_container_width=True)
+        
 
         # ✅ تصدير البيانات
         output = io.BytesIO()
