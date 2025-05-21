@@ -219,7 +219,7 @@ if uploaded_file:
                 
         
         with st.tabs(["✍️ Signature Issues Dashboard"])[0]:
-    st.markdown("## ✍️ Signature Problem Tracker")
+            st.markdown("## ✍️ Signature Problem Tracker")
 
     # تحديد الملاحظات المتعلقة بالتوقيع
     signature_issues_keywords = ['NO SIGNATURE', 'NO ENGINEER SIGNATURE', 'NO RETAILERS SIGNATURE']
