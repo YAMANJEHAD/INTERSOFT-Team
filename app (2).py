@@ -217,7 +217,7 @@ if uploaded_file:
                 "NOT ACTIVE": "🔌 Device might be off or inactive – ensure power and signal before starting."
         
         with st.tabs(["✍️ Signature Issues Dashboard"])[0]:
-    st.markdown("## ✍️ Signature Problem Tracker")
+             st.markdown("## ✍️ Signature Problem Tracker")
 
     signature_issues_keywords = ['NO SIGNATURE', 'NO ENGINEER SIGNATURE', 'NO RETAILERS SIGNATURE']
     signature_issues_df = df[df['Note_Type'].isin(signature_issues_keywords)]
