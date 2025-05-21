@@ -97,11 +97,9 @@ if uploaded_file:
         df['Note_Type'] = df['NOTE'].apply(classify_note)
         st.success("✅ File processed successfully!")
 
-        # ✅ النسب وعدد التكرار
         note_counts = df['Note_Type'].value_counts().reset_index()
         note_counts.columns = ["Note_Type", "Count"]
 
-        # ✅ تنبيه MULTIPLE ISSUES دائم
         if 'MULTIPLE ISSUES' in note_counts['Note_Type'].values:
             percent = (note_counts[note_counts['Note_Type'] == 'MULTIPLE ISSUES']['Count'].values[0] / note_counts['Count'].sum()) * 100
             if percent > 5:
@@ -109,10 +107,9 @@ if uploaded_file:
             else:
                 st.info(f"🟢 All good! MULTIPLE ISSUES under control: {percent:.2f}%")
 
-        # ✅ تبويبات العرض
-        tab1, tab2, tab3, tab4, tab5, tab6= st.tabs([
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
             "📊 Note Type Summary", "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians",
-            "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes"])
+            "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes", "✍️ Signature Issues"])
 
         with tab1:
             st.markdown("### 🔢 Count of Each Note Type")
@@ -159,43 +156,44 @@ if uploaded_file:
                 technician_data = top_5_data[top_5_data['Technician_Name'] == tech]
                 technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
                 st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
-                tab7 = st.tabs(["🛠️ J.O Improvement Suggestions & Analysis"])[0]
+
         with tab7:
-            st.markdown("---")
-            st.markdown("## 🔍 Deep Dive: Analyze Common J.O Problems")
+            st.markdown("## ✍️ Signature Issues Analysis")
+            signature_issues_keywords = ['NO SIGNATURE', 'NO ENGINEER SIGNATURE', 'NO RETAILERS SIGNATURE']
+            signature_issues_df = df[df['Note_Type'].isin(signature_issues_keywords)]
 
-            # أكثر نوع ملاحظة تكراراً
-            top_issue = note_counts.iloc[0]
-            st.markdown(f"### 🏆 Top Issue Type: *{top_issue['Note_Type']}* with {top_issue['Count']} occurrences")
+            if signature_issues_df.empty:
+                st.success("✅ No signature-related issues found!")
+            else:
+                st.markdown("### 📋 Summary Table")
+                sig_group = signature_issues_df.groupby('Technician_Name')['Note_Type'].count().reset_index(name='Signature_Issues')
+                total_tech = df.groupby('Technician_Name')['Note_Type'].count().reset_index(name='Total_Notes')
+                sig_merged = pd.merge(sig_group, total_tech, on='Technician_Name')
+                sig_merged['Signature_Issue_Rate (%)'] = (sig_merged['Signature_Issues'] / sig_merged['Total_Notes']) * 100
+                st.dataframe(sig_merged, use_container_width=True)
 
-            # أكثر فني عليه ملاحظات
-            tech_note_summary = df[df['Note_Type'] != 'DONE'].groupby('Technician_Name')['Note_Type'].count().reset_index(name="Issue_Count")
-            tech_note_summary = tech_note_summary.sort_values(by="Issue_Count", ascending=False)
-            top_tech = tech_note_summary.iloc[0]
-            st.markdown(f"### 👨‍🔧 Technician with Most Issues: *{top_tech['Technician_Name']}* - {top_tech['Issue_Count']} issues")
+                st.markdown("### 📊 Bar Chart")
+                fig_sig_bar = px.bar(sig_merged, x='Technician_Name', y='Signature_Issues', color='Signature_Issue_Rate (%)', title='Signature Issues per Technician')
+                st.plotly_chart(fig_sig_bar, use_container_width=True)
 
-            # توزيع الأعطال حسب نوع التذكرة
-            st.markdown("### 📊 Note Type Breakdown by Ticket Type")
-            type_ticket_group = df.groupby(['Note_Type', 'Ticket_Type']).size().reset_index(name="Count")
-            fig_ticket_breakdown = px.bar(type_ticket_group, x="Note_Type", y="Count", color="Ticket_Type", title="Note Type by Ticket Type", barmode="group")
-            st.plotly_chart(fig_ticket_breakdown, use_container_width=True)
+                st.markdown("### 📈 Line Chart")
+                fig_sig_line = px.line(sig_merged, x='Technician_Name', y='Signature_Issue_Rate (%)', markers=True, title='Signature Issue Rate')
+                st.plotly_chart(fig_sig_line, use_container_width=True)
 
-            # جدول كامل للمشاكل
-            st.markdown("### 📋 Full Issue Table (excluding DONE & NO J.O)")
-            issue_table = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])][['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
-            st.dataframe(issue_table, use_container_width=True)
+                st.markdown("### 🗺️ Geo Map of Signature Issues (dummy data)")
+                df_map = signature_issues_df.copy()
+                df_map['lat'] = 31.9 + (df_map.index % 10) * 0.01
+                df_map['lon'] = 35.9 + (df_map.index % 10) * 0.01
+                st.map(df_map[['lat', 'lon']])
 
-            # نسبة المشاكل إلى جميع الفنيين
-            st.markdown("### 📌 Technician Issue Rate (%)")
-            total_jobs = df.groupby('Technician_Name')['Note_Type'].count().reset_index(name="Total_Jobs")
-            issues_only = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])].groupby('Technician_Name')['Note_Type'].count().reset_index(name="Issues")
-            merged = pd.merge(total_jobs, issues_only, on='Technician_Name', how='left').fillna(0)
-            merged['Issue_Rate (%)'] = (merged['Issues'] / merged['Total_Jobs']) * 100
-            merged = merged.sort_values(by='Issue_Rate (%)', ascending=False)
-            st.dataframe(merged[['Technician_Name', 'Total_Jobs', 'Issues', 'Issue_Rate (%)']], use_container_width=True)
-        
+                sig_output = io.BytesIO()
+                with pd.ExcelWriter(sig_output, engine='xlsxwriter') as writer:
+                    signature_issues_df.to_excel(writer, index=False, sheet_name="Signature Issues")
+                    sig_merged.to_excel(writer, index=False, sheet_name="Technician Summary")
 
-        # ✅ تصدير البيانات
+                st.download_button("📥 Download Signature Issues Report", sig_output.getvalue(), "signature_issues.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+        # ✅ تصدير البيانات العامة
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
@@ -205,4 +203,4 @@ if uploaded_file:
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
             done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
 
-        st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
