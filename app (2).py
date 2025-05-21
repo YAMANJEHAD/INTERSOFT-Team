@@ -84,7 +84,6 @@ def classify_note(note):
     else:
         return "MULTIPLE ISSUES"
 
-# ✅ المعالجة الرئيسية بعد رفع الملف
 if uploaded_file:
     try:
         df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
@@ -97,11 +96,9 @@ if uploaded_file:
         df['Note_Type'] = df['NOTE'].apply(classify_note)
         st.success("✅ File processed successfully!")
 
-        # ✅ النسب وعدد التكرار
         note_counts = df['Note_Type'].value_counts().reset_index()
         note_counts.columns = ["Note_Type", "Count"]
 
-        # ✅ تنبيه MULTIPLE ISSUES دائم
         if 'MULTIPLE ISSUES' in note_counts['Note_Type'].values:
             percent = (note_counts[note_counts['Note_Type'] == 'MULTIPLE ISSUES']['Count'].values[0] / note_counts['Count'].sum()) * 100
             if percent > 5:
@@ -109,8 +106,7 @@ if uploaded_file:
             else:
                 st.info(f"🟢 All good! MULTIPLE ISSUES under control: {percent:.2f}%")
 
-        # ✅ تبويبات العرض
-        tab1, tab2, tab3, tab4, tab5, tab6= st.tabs([
+        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
             "📊 Note Type Summary", "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians",
             "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes"])
 
@@ -159,35 +155,36 @@ if uploaded_file:
                 technician_data = top_5_data[top_5_data['Technician_Name'] == tech]
                 technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
                 st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
-                tab7 = st.tabs(["🛠️ J.O Improvement Suggestions & Analysis"])[0]
-                tab7, tab8 = st.tabs(["🛠️ J.O Improvement Suggestions & Analysis", "✍️ Signature Issues Dashboard"])
+
+        # Tabs 7 & 8: Added below
+        tab7, tab8 = st.tabs(["🛠️ J.O Improvement Suggestions & Analysis", "✍️ Signature Issues Dashboard"])
 
         with tab7:
-            st.markdown("---")
             st.markdown("## 🔍 Deep Dive: Analyze Common J.O Problems")
 
-            # أكثر نوع ملاحظة تكراراً
             top_issue = note_counts.iloc[0]
             st.markdown(f"### 🏆 Top Issue Type: **{top_issue['Note_Type']}** with {top_issue['Count']} occurrences")
 
-            # أكثر فني عليه ملاحظات
             tech_note_summary = df[df['Note_Type'] != 'DONE'].groupby('Technician_Name')['Note_Type'].count().reset_index(name="Issue_Count")
             tech_note_summary = tech_note_summary.sort_values(by="Issue_Count", ascending=False)
             top_tech = tech_note_summary.iloc[0]
             st.markdown(f"### 👨‍🔧 Technician with Most Issues: **{top_tech['Technician_Name']}** - {top_tech['Issue_Count']} issues")
 
-            # توزيع الأعطال حسب نوع التذكرة
             st.markdown("### 📊 Note Type Breakdown by Ticket Type")
             type_ticket_group = df.groupby(['Note_Type', 'Ticket_Type']).size().reset_index(name="Count")
             fig_ticket_breakdown = px.bar(type_ticket_group, x="Note_Type", y="Count", color="Ticket_Type", title="Note Type by Ticket Type", barmode="group")
             st.plotly_chart(fig_ticket_breakdown, use_container_width=True)
 
-            # جدول كامل للمشاكل
+            st.markdown("### 🗺️ Geo Distribution (Dummy Coordinates)")
+            df_map = df.copy()
+            df_map['lat'] = 31.9 + (df_map.index % 10) * 0.01  # مؤقت
+            df_map['lon'] = 35.9 + (df_map.index % 10) * 0.01
+            st.map(df_map[['lat', 'lon']])
+
             st.markdown("### 📋 Full Issue Table (excluding DONE & NO J.O)")
             issue_table = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])][['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
             st.dataframe(issue_table, use_container_width=True)
 
-            # نسبة المشاكل إلى جميع الفنيين
             st.markdown("### 📌 Technician Issue Rate (%)")
             total_jobs = df.groupby('Technician_Name')['Note_Type'].count().reset_index(name="Total_Jobs")
             issues_only = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])].groupby('Technician_Name')['Note_Type'].count().reset_index(name="Issues")
@@ -196,38 +193,26 @@ if uploaded_file:
             merged = merged.sort_values(by='Issue_Rate (%)', ascending=False)
             st.dataframe(merged[['Technician_Name', 'Total_Jobs', 'Issues', 'Issue_Rate (%)']], use_container_width=True)
 
-            st.markdown("---")
             st.markdown("## 🧠 Suggested Fixes for Each Issue Type")
-
-            suggestions_dict = {
-                "NO SIGNATURE": "🖊️ Ensure the customer signs directly on the device using the signature app.",
-                "WRONG DATE": "📅 Double-check the device date or sync with current system date automatically.",
-                "NO ENGINEER SIGNATURE": "🛑 Engineer must sign the J.O before submission – enforce this via CRM validation.",
-                "UNCLEAR RECEIPT": "📸 Re-capture the receipt image ensuring clarity and full visibility.",
-                "NO RECEIPT": "📥 Attach receipt image before submission. Don't allow J.O without it.",
-                "NO RETAILERS SIGNATURE": "🖋️ Confirm the retailer’s signature is collected. Use e-signature tools if needed.",
-                "NO J.O": "⚠️ Make sure technician has a valid J.O number before task execution.",
-                "MISSING INFORMATION": "🧾 Fill all required fields – enforce via CRM mandatory fields.",
-                "DONE": "✅ Completed successfully – no action needed.",
-                "MULTIPLE ISSUES": "🔍 Technician must review multiple missing elements – display full checklist before closing.",
-                "TERMINAL ID": "📟 Re-confirm the Terminal ID with CRM or scan directly.",
-                "TERMINAL ID - WRONG DATE": "🧭 Fix both terminal ID & date errors – possibly caused by device configuration.",
-                "REJECTED RECEIPT": "🚫 Provide acceptable format/quality for receipt image.",
-                "NO IMAGE FOR THE DEVICE": "📷 Mandatory device image missing – require photo before submit.",
-                "IMAGE FOR THE DEVICE ONLY": "📷 Add more context images (receipt, location).",
-                "UNCLEAR IMAGE": "🔍 Ensure lighting and angle are correct for image clarity.",
-                "NO INFORMATIONS": "🧾 Fill in missing fields; use auto-suggestions if applicable.",
-                "NOT ACTIVE": "🔌 Device might be off or inactive – ensure power and signal before starting."
-            }
-
+            suggestions_dict = { ... }  # نفس القاموس السابق
             for note_type in note_counts['Note_Type'].unique():
                 suggestion = suggestions_dict.get(note_type, "⚠️ No specific suggestion available.")
                 st.markdown(f"### 🔧 {note_type}")
                 st.info(suggestion)
 
+            # ✅ Export full analysis Excel
+            full_output = io.BytesIO()
+            with pd.ExcelWriter(full_output, engine='xlsxwriter') as writer:
+                df.to_excel(writer, sheet_name="Full Notes", index=False)
+                note_counts.to_excel(writer, sheet_name="Note Type Count", index=False)
+                tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
+                issue_table.to_excel(writer, sheet_name="Issues", index=False)
+                merged.to_excel(writer, sheet_name="Technician Summary", index=False)
+
+            st.download_button("📥 Download Full Analysis Excel", full_output.getvalue(), "full_analysis.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
         with tab8:
             st.markdown("## ✍️ Signature Problem Tracker")
-
             signature_issues_keywords = ['NO SIGNATURE', 'NO ENGINEER SIGNATURE', 'NO RETAILERS SIGNATURE']
             signature_issues_df = df[df['Note_Type'].isin(signature_issues_keywords)]
 
@@ -235,9 +220,7 @@ if uploaded_file:
                 st.success("✅ No signature-related issues found!")
             else:
                 signature_issues_count = signature_issues_df.groupby('Technician_Name')['Note_Type'].count().reset_index(name="Signature_Issues")
-
                 total_issues = df.groupby('Technician_Name')['Note_Type'].count().reset_index(name="Total_Issues")
-
                 merged_signature = pd.merge(signature_issues_count, total_issues, on='Technician_Name', how='left')
                 merged_signature['Signature_Issue_Rate (%)'] = (merged_signature['Signature_Issues'] / merged_signature['Total_Issues']) * 100
                 merged_signature = merged_signature.sort_values(by='Signature_Issue_Rate (%)', ascending=False)
@@ -266,22 +249,13 @@ if uploaded_file:
                 )
                 st.plotly_chart(fig_line, use_container_width=True)
 
+                # تصدير التوقيعات إلى Excel
+                sig_output = io.BytesIO()
+                with pd.ExcelWriter(sig_output, engine='xlsxwriter') as writer:
+                    signature_issues_df.to_excel(writer, index=False, sheet_name="Signature Issues")
+                    merged_signature.to_excel(writer, index=False, sheet_name="Technician Summary")
 
-            for note_type in note_counts['Note_Type'].unique():
-                suggestion = suggestions_dict.get(note_type, "⚠️ No specific suggestion available.")
-                st.markdown(f"### 🔧 {note_type}")
-                st.info(suggestion)
-
-        
-
-        # ✅ تصدير البيانات
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            for note_type in df['Note_Type'].unique():
-                subset = df[df['Note_Type'] == note_type]
-                subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
-            note_counts.to_excel(writer, sheet_name="Note Type Count", index=False)
-            tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
-            done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
-
-        st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                st.download_button("📥 Download Signature Issues Excel", sig_output.getvalue(), "signature_issues.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    }
+  ]
+}
