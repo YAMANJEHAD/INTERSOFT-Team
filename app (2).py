@@ -11,7 +11,6 @@ from reportlab.lib.utils import ImageReader
 # إعداد الصفحة
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-#الساعة والتاريخ
 clock_html = """<div style="background: transparent;">
 <style>
 .clock-container {
