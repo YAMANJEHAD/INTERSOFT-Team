@@ -193,6 +193,35 @@ if uploaded_file:
             merged['Issue_Rate (%)'] = (merged['Issues'] / merged['Total_Jobs']) * 100
             merged = merged.sort_values(by='Issue_Rate (%)', ascending=False)
             st.dataframe(merged[['Technician_Name', 'Total_Jobs', 'Issues', 'Issue_Rate (%)']], use_container_width=True)
+                        st.markdown("---")
+            st.markdown("## 🧠 Suggested Fixes for Each Issue Type")
+
+            suggestions_dict = {
+                "NO SIGNATURE": "🖊️ Ensure the customer signs directly on the device using the signature app.",
+                "WRONG DATE": "📅 Double-check the device date or sync with current system date automatically.",
+                "NO ENGINEER SIGNATURE": "🛑 Engineer must sign the J.O before submission – enforce this via CRM validation.",
+                "UNCLEAR RECEIPT": "📸 Re-capture the receipt image ensuring clarity and full visibility.",
+                "NO RECEIPT": "📥 Attach receipt image before submission. Don't allow J.O without it.",
+                "NO RETAILERS SIGNATURE": "🖋️ Confirm the retailer’s signature is collected. Use e-signature tools if needed.",
+                "NO J.O": "⚠️ Make sure technician has a valid J.O number before task execution.",
+                "MISSING INFORMATION": "🧾 Fill all required fields – enforce via CRM mandatory fields.",
+                "DONE": "✅ Completed successfully – no action needed.",
+                "MULTIPLE ISSUES": "🔍 Technician must review multiple missing elements – display full checklist before closing.",
+                "TERMINAL ID": "📟 Re-confirm the Terminal ID with CRM or scan directly.",
+                "TERMINAL ID - WRONG DATE": "🧭 Fix both terminal ID & date errors – possibly caused by device configuration.",
+                "REJECTED RECEIPT": "🚫 Provide acceptable format/quality for receipt image.",
+                "NO IMAGE FOR THE DEVICE": "📷 Mandatory device image missing – require photo before submit.",
+                "IMAGE FOR THE DEVICE ONLY": "📷 Add more context images (receipt, location).",
+                "UNCLEAR IMAGE": "🔍 Ensure lighting and angle are correct for image clarity.",
+                "NO INFORMATIONS": "🧾 Fill in missing fields; use auto-suggestions if applicable.",
+                "NOT ACTIVE": "🔌 Device might be off or inactive – ensure power and signal before starting."
+            }
+
+            for note_type in note_counts['Note_Type'].unique():
+                suggestion = suggestions_dict.get(note_type, "⚠️ No specific suggestion available.")
+                st.markdown(f"### 🔧 {note_type}")
+                st.info(suggestion)
+
         
 
         # ✅ تصدير البيانات
