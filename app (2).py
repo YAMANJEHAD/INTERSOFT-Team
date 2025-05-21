@@ -113,7 +113,7 @@ if uploaded_file:
         # ✅ تبويبات العرض
         tab1, tab2, tab3, tab4, tab5, tab6, tab7= st.tabs([
             "📊 Note Type Summary", "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians",
-            "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes" , "🔍 Deep Dive: Analyze Common J.O Problems"])
+            "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes"])
 
         with tab1:
             st.markdown("### 🔢 Count of Each Note Type")
@@ -162,30 +162,6 @@ if uploaded_file:
                 st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
                 tab7 = st.tabs(["🛠️ J.O Improvement Suggestions & Analysis"])[0]
         with tab7:
-            st.markdown("## 🛠️ How to Reduce J.O Issues Based on PMBOK & POS Experience")
-            st.markdown("""
-            ### 📌 1. Pre-Execution Planning
-            - ✅ Use standard templates for J.O (pre-filled via CRM).
-            - ✅ Add smart checklist before technician submits.
-
-            ### 📌 2. Quality Control During Execution
-            - ✅ Validate required fields before allowing submission.
-            - ✅ Use e-signature + location capture.
-            - ✅ Auto-detect common note issues (e.g., 'NO SIGNATURE').
-
-            ### 📌 3. Monitoring and Alerting
-            - ✅ Weekly report showing high-error technicians.
-            - ✅ Alert if MULTIPLE ISSUES exceed threshold (like current logic).
-            - ✅ Use AI or regex to classify notes and catch repeated patterns.
-
-            ### 📌 4. Lessons Learned
-            - ✅ Create scorecards for technicians (accuracy/speed).
-            - ✅ Push micro-trainings on the CRM platform.
-            - ✅ Monthly reports sent to managers with insights.
-
-            > 🧠 **Pro Tip:** You can connect this dashboard to your CRM for real-time validation and even alert the technician live before error happens.
-            """)
-
             st.markdown("---")
             st.markdown("## 🔍 Deep Dive: Analyze Common J.O Problems")
 
