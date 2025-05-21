@@ -218,50 +218,34 @@ if uploaded_file:
         
                 
         
-        with tab8:
-            st.markdown("## ✍️ Signature Problem Tracker")
+        with st.tabs(["✍️ Signature Issues Dashboard"])[0]:
+    st.markdown("## ✍️ Signature Problem Tracker")
 
-            # تحديد الملاحظات المتعلقة بالتوقيع
-            signature_issues_keywords = ['NO SIGNATURE', 'NO ENGINEER SIGNATURE', 'NO RETAILERS SIGNATURE']
-            signature_issues_df = df[df['Note_Type'].isin(signature_issues_keywords)]
+    # تحديد الملاحظات المتعلقة بالتوقيع
+    signature_issues_keywords = ['NO SIGNATURE', 'NO ENGINEER SIGNATURE', 'NO RETAILERS SIGNATURE']
+    signature_issues_df = df[df['Note_Type'].isin(signature_issues_keywords)]
 
-            if signature_issues_df.empty:
-                st.success("✅ No signature-related issues found!")
-            else:
-                # عدد مشاكل التوقيع لكل فني
-                signature_issues_count = signature_issues_df.groupby('Technician_Name')['Note_Type'].count().reset_index(name="Signature_Issues")
+    if signature_issues_df.empty:
+        st.success("✅ No signature-related issues found!")
+    else:
+        # عدد مشاكل التوقيع لكل فني
+        signature_issues_count = signature_issues_df.groupby('Technician_Name')['Note_Type'].count().reset_index(name="Signature_Issues")
 
-                # إجمالي الملاحظات لكل فني
-                total_issues = df.groupby('Technician_Name')['Note_Type'].count().reset_index(name="Total_Issues")
+        # إجمالي الملاحظات لكل فني
+        total_issues = df.groupby('Technician_Name')['Note_Type'].count().reset_index(name="Total_Issues")
 
-                # دمج البيانات
-                merged_signature = pd.merge(signature_issues_count, total_issues, on='Technician_Name', how='left')
-                merged_signature['Signature_Issue_Rate (%)'] = (merged_signature['Signature_Issues'] / merged_signature['Total_Issues']) * 100
-                merged_signature = merged_signature.sort_values(by='Signature_Issue_Rate (%)', ascending=False)
+        # دمج البيانات
+        merged_signature = pd.merge(signature_issues_count, total_issues, on='Technician_Name', how='left')
+        merged_signature['Signature_Issue_Rate (%)'] = (merged_signature['Signature_Issues'] / merged_signature['Total_Issues']) * 100
+        merged_signature = merged_signature.sort_values(by='Signature_Issue_Rate (%)', ascending=False)
 
-                st.markdown("### 📋 Signature Issue Summary by Technician")
-                st.dataframe(merged_signature, use_container_width=True)
+        st.markdown("### 📋 Signature Issue Summary by Technician")
+        st.dataframe(merged_signature, use_container_width=True)
 
-                st.markdown("### 📊 Bar Chart – Signature Issues Count")
-                fig_signature = px.bar(
-                    merged_signature,
-                    x='Technician_Name',
-                    y='Signature_Issues',
-                    color='Signature_Issue_Rate (%)',
-                    title='Technicians with Signature Problems',
-                    labels={'Signature_Issues': 'Issues Count'}
-                )
-                st.plotly_chart(fig_signature, use_container_width=True)
+        st.markdown("### 📊 Bar Chart – Signature Issues Count")
+        fig_signature = px.bar(
+            merged_signature,
 
-                st.markdown("### 📈 Line Chart – Signature Issue Rate (%)")
-                fig_line = px.line(
-                    merged_signature,
-                    x='Technician_Name',
-                    y='Signature_Issue_Rate (%)',
-                    markers=True,
-                    title='Signature Issue Rate by Technician'
-                )
-                st.plotly_chart(fig_line, use_container_width=True)
 
             }
 
