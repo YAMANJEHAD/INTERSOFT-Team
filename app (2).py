@@ -111,9 +111,9 @@ if uploaded_file:
                 st.info(f"🟢 All good! MULTIPLE ISSUES under control: {percent:.2f}%")
 
         # ✅ تبويبات العرض
-        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7= st.tabs([
             "📊 Note Type Summary", "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians",
-            "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes"])
+            "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes" , "🔍 Deep Dive: Analyze Common J.O Problems"])
 
         with tab1:
             st.markdown("### 🔢 Count of Each Note Type")
