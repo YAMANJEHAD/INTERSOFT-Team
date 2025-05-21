@@ -215,7 +215,7 @@ if uploaded_file:
                 "UNCLEAR IMAGE": "🔍 Ensure lighting and angle are correct for image clarity.",
                 "NO INFORMATIONS": "🧾 Fill in missing fields; use auto-suggestions if applicable.",
                 "NOT ACTIVE": "🔌 Device might be off or inactive – ensure power and signal before starting."
-                    tab8 = st.tabs(["✍️ Signature Issues Dashboard"])[0]
+        tab8 = st.tabs(["✍️ Signature Issues Dashboard"])[0]
         with tab8:
             st.markdown("## ✍️ Signature Problem Tracker")
 
