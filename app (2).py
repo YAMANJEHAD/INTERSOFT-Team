@@ -8,7 +8,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 
-# إعداد الصفحة
+# إعداد 
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
 clock_html = """<div style="background: transparent;">
