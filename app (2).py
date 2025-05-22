@@ -267,7 +267,7 @@ if uploaded_file:
             
            
             
-            # Ticket type vs problem analysis
+            # Ticket type vs problem analysisl
             st.markdown("### 🎫 Ticket Type vs Problem Type")
             ticket_problem = pd.crosstab(df['Ticket_Type'], df['Note_Type'])
             st.dataframe(ticket_problem.style.background_gradient(cmap='Blues'), 
