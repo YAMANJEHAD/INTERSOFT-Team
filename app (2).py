@@ -169,7 +169,7 @@ if uploaded_file:
 
         alerts = generate_alerts(df)
         if alerts:
-            with st.expander("🚨 Alerts", expanded=False:
+            with st.expander("🚨 Alerts", expanded=True:
                 for alert in alerts:
                     st.markdown(f"""
                     <div style='background-color:#fff3cd; color:#856404; padding:8px 15px;
