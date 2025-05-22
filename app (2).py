@@ -151,7 +151,7 @@ if uploaded_file:
     total_notes = len(filtered_df)
     multiple_count = len(filtered_df[filtered_df['Note_Type'] == 'MULTIPLE ISSUES'])
 
-    if total_notes > 0:
+        if total_notes > 0:
         percent = (multiple_count / total_notes) * 100
 
         with st.expander("🔍 MULTIPLE ISSUES Status", expanded=False):
