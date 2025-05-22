@@ -154,10 +154,19 @@ if uploaded_file:
 
         # Display alerts
         alerts = generate_alerts(df)
-        if alerts:
-            with st.expander("🚨 Alerts", expanded=True):
-                for alert in alerts:
-                    st.warning(alert)
+        # Display alerts (smaller styled)
+alerts = generate_alerts(df)
+if alerts:
+    with st.expander("🚨 Alerts", expanded=True):
+        for alert in alerts:
+            st.markdown(f"""
+            <div style='background-color:#fff3cd; color:#856404; padding:8px 15px;
+                        border-left: 6px solid #ffeeba; border-radius: 6px;
+                        font-size:14px; margin-bottom:8px'>
+            {alert}
+            </div>
+            """, unsafe_allow_html=True)
+
 
         tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
             "📊 Note Type Summary", "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians",
