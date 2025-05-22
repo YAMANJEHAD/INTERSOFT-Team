@@ -250,7 +250,7 @@ if uploaded_file:
             
             # Common problems analysis
             st.markdown("### 📌 Common Problems and Patterns")
-            common_problems = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
+            common_problems = df[~df['Note_Type'].isin(['DONE'])]
             
             # Problem frequency
             problem_freq = common_problems['Note_Type'].value_counts().reset_index()
@@ -265,13 +265,7 @@ if uploaded_file:
                                      title='Problem Distribution')
                 st.plotly_chart(fig_problems, use_container_width=True)
             
-            # Problem severity analysis
-            st.markdown("### ⚠️ Problem Severity Analysis")
-            severity_counts = df['Problem_Severity'].value_counts().reset_index()
-            severity_counts.columns = ["Severity", "Count"]
-            fig_severity = px.bar(severity_counts, x='Severity', y='Count', 
-                                 color='Severity', title='Problem Severity Levels')
-            st.plotly_chart(fig_severity, use_container_width=True)
+           
             
             # Ticket type vs problem analysis
             st.markdown("### 🎫 Ticket Type vs Problem Type")
@@ -279,40 +273,9 @@ if uploaded_file:
             st.dataframe(ticket_problem.style.background_gradient(cmap='Blues'), 
                         use_container_width=True)
             
-            # Time analysis (if date column exists)
-            if 'Date' in df.columns:
-                st.markdown("### 📅 Problem Trends Over Time")
-                df['Date'] = pd.to_datetime(df['Date'])
-                time_analysis = df.groupby([df['Date'].dt.to_period('M'), 'Note_Type']).size().unstack()
-                fig_time = px.line(time_analysis, title='Monthly Problem Trends')
-                st.plotly_chart(fig_time, use_container_width=True)
             
-            # Multiple issues analysis
-            st.markdown("### 🔄 Multiple Issues Analysis")
-            multi_issue_df = df[df['Note_Type'] == 'MULTIPLE ISSUES']
-            if not multi_issue_df.empty:
-                keywords = []
-                for note in multi_issue_df['NOTE']:
-                    words = str(note).upper().split()
-                    keywords.extend([w for w in words if w in [
-                        "TERMINAL", "DATE", "IMAGE", "SIGNATURE", "RECEIPT", 
-                        "WRONG", "MISSING", "NO", "PENDING"]])
                 
-                keyword_counts = pd.Series(keywords).value_counts().reset_index()
-                keyword_counts.columns = ["Keyword", "Count"]
-                
-                fig_keywords = px.bar(keyword_counts.head(10), 
-                                    x='Keyword', y='Count',
-                                    title='Top Keywords in Multiple Issues')
-                st.plotly_chart(fig_keywords, use_container_width=True)
-            else:
-                st.info("No multiple issues found in the data")
-            
-            # Text analysis of notes
-            st.markdown("### 🔤 Text Analysis of Notes")
-            word_freq = text_analysis(df['NOTE'])
-            fig_words = px.bar(word_freq, x='Word', y='Count', title='Most Frequent Words in Notes')
-            st.plotly_chart(fig_words, use_container_width=True)
+               
             
             # Suggested solutions
             st.markdown("### 💡 Suggested Solutions for Common Problems")
