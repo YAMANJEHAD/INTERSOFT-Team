@@ -125,7 +125,26 @@ def text_analysis(notes):
     word_counts = Counter(all_words)
     return pd.DataFrame(word_counts.most_common(20), columns=['Word', 'Count'])
 
+import os
+import hashlib
+from datetime import datetime
+
+ARCHIVE_DIR = "uploaded_archive"
+os.makedirs(ARCHIVE_DIR, exist_ok=True)
+
 if uploaded_file:
+    # إنشاء اسم فريد للملف باستخدام hash وتاريخ الرفع
+    uploaded_bytes = uploaded_file.read()
+    uploaded_file.seek(0)
+    file_hash = hashlib.md5(uploaded_bytes).hexdigest()
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    archive_filename = f"{timestamp}_{file_hash}.xlsx"
+    archive_path = os.path.join(ARCHIVE_DIR, archive_filename)
+
+    # حفظ نسخة من الملف
+    with open(archive_path, "wb") as f:
+        f.write(uploaded_bytes)
+
     try:
         df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
     except:
@@ -178,6 +197,29 @@ if uploaded_file:
                     {alert}
                     </div>
                     """, unsafe_allow_html=True)
+
+        # ✅ تحميل مباشر للملف المؤرشف الحالي
+        st.markdown("### 📤 Current Uploaded File")
+        with open(archive_path, "rb") as f:
+            st.download_button("⬇️ Download This File", data=f, file_name=archive_filename, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+        # ✅ عرض الملفات المؤرشفة سابقًا
+        st.markdown("### 🗂️ Archived Files")
+        archived_files = sorted(os.listdir(ARCHIVE_DIR), reverse=True)
+        if archived_files:
+            for file in archived_files[:10]:
+                st.markdown(f"📁 [Download {file}](/{ARCHIVE_DIR}/{file})")
+        else:
+            st.info("No archived files found yet.")
+
+        # ✅ تحليل ملف مؤرشف سابقًا
+        st.markdown("### 📈 Analyze Archived File")
+        archive_to_analyze = st.selectbox("Select a file to analyze:", archived_files)
+        if archive_to_analyze:
+            analyze_path = os.path.join(ARCHIVE_DIR, archive_to_analyze)
+            df_archived = pd.read_excel(analyze_path)
+            st.write(f"Showing preview of {archive_to_analyze}:")
+            st.dataframe(df_archived.head())
 
 
         # باقي التابات شغالة زي ما هي، ما تغير شيء فيها
