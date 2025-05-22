@@ -198,28 +198,7 @@ if uploaded_file:
                     </div>
                     """, unsafe_allow_html=True)
 
-        # ✅ تحميل مباشر للملف المؤرشف الحالي
-        st.markdown("### 📤 Current Uploaded File")
-        with open(archive_path, "rb") as f:
-            st.download_button("⬇️ Download This File", data=f, file_name=archive_filename, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-        # ✅ عرض الملفات المؤرشفة سابقًا
-        st.markdown("### 🗂️ Archived Files")
-        archived_files = sorted(os.listdir(ARCHIVE_DIR), reverse=True)
-        if archived_files:
-            for file in archived_files[:10]:
-                st.markdown(f"📁 [Download {file}](/{ARCHIVE_DIR}/{file})")
-        else:
-            st.info("No archived files found yet.")
-
-        # ✅ تحليل ملف مؤرشف سابقًا
-        st.markdown("### 📈 Analyze Archived File")
-        archive_to_analyze = st.selectbox("Select a file to analyze:", archived_files)
-        if archive_to_analyze:
-            analyze_path = os.path.join(ARCHIVE_DIR, archive_to_analyze)
-            df_archived = pd.read_excel(analyze_path)
-            st.write(f"Showing preview of {archive_to_analyze}:")
-            st.dataframe(df_archived.head())
+       
 
 
         # باقي التابات شغالة زي ما هي، ما تغير شيء فيها
