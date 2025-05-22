@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import io
@@ -8,11 +7,12 @@ from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
+from collections import Counter
 
-# إعداد الصفحة
+# Page setup
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-# الساعة والتاريخ
+# Clock and date
 clock_html = """<div style="background: transparent;">
 <style>
 .clock-container {
@@ -85,6 +85,49 @@ def classify_note(note):
     else:
         return "MULTIPLE ISSUES"
 
+def problem_severity(note_type):
+    critical = ["WRONG DATE", "TERMINAL ID - WRONG DATE", "REJECTED RECEIPT"]
+    high = ["NO IMAGE", "UNCLEAR IMAGE", "NO RECEIPT"]
+    medium = ["NO SIGNATURE", "NO ENGINEER SIGNATURE"]
+    low = ["NO J.O", "PENDING"]
+    
+    if note_type in critical: return "Critical"
+    elif note_type in high: return "High"
+    elif note_type in medium: return "Medium"
+    elif note_type in low: return "Low"
+    else: return "Unclassified"
+
+def suggest_solutions(note_type):
+    solutions = {
+        "WRONG DATE": "Verify device date before leaving and sign the receipt",
+        "NO IMAGE": "Take clear photo of the device showing serial number",
+        "NO SIGNATURE": "Ensure both client and technician sign the receipt",
+        "UNCLEAR IMAGE": "Use proper lighting and take multiple photos as backup",
+        "NO RECEIPT": "Don't leave location without obtaining signed receipt"
+    }
+    return solutions.get(note_type, "Review general procedures and retrain")
+
+def generate_alerts(df):
+    alerts = []
+    # Warning if critical problems > 10%
+    critical_percent = (df['Problem_Severity'] == 'Critical').mean() * 100
+    if critical_percent > 10:
+        alerts.append(f"⚠️ High critical problems: {critical_percent:.1f}%")
+    
+    # Warning if any technician has >20% problems
+    tech_problems = df.groupby('Technician_Name')['Problem_Severity'].apply(
+        lambda x: (x != 'Low').mean() * 100)
+    for tech, percent in tech_problems.items():
+        if percent > 20:
+            alerts.append(f"👨‍🔧 Technician {tech} has high problem rate: {percent:.1f}%")
+    
+    return alerts
+
+def text_analysis(notes):
+    all_words = ' '.join(notes.dropna().astype(str)).upper().split()
+    word_counts = Counter(all_words)
+    return pd.DataFrame(word_counts.most_common(20), columns=['Word', 'Count'])
+
 if uploaded_file:
     try:
         df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
@@ -95,6 +138,8 @@ if uploaded_file:
         st.error(f"❌ Missing required columns. Available: {list(df.columns)}")
     else:
         df['Note_Type'] = df['NOTE'].apply(classify_note)
+        df['Problem_Severity'] = df['Note_Type'].apply(problem_severity)
+        df['Suggested_Solution'] = df['Note_Type'].apply(suggest_solutions)
         st.success("✅ File processed successfully!")
 
         note_counts = df['Note_Type'].value_counts().reset_index()
@@ -107,9 +152,17 @@ if uploaded_file:
             else:
                 st.info(f"🟢 All good! MULTIPLE ISSUES under control: {percent:.2f}%")
 
-        tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+        # Display alerts
+        alerts = generate_alerts(df)
+        if alerts:
+            with st.expander("🚨 Alerts", expanded=True):
+                for alert in alerts:
+                    st.warning(alert)
+
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
             "📊 Note Type Summary", "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians",
-            "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes", "✍️ Signature Issues"])
+            "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes", 
+            "✍️ Signature Issues", "🔍 Deep Problem Analysis"])
 
         with tab1:
             st.markdown("### 🔢 Count of Each Note Type")
@@ -192,6 +245,80 @@ if uploaded_file:
 
                 st.download_button("📥 Download Signature Issues Report", sig_output.getvalue(), "signature_issues.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
+        with tab8:
+            st.markdown("## 🔍 Deep Problem Analysis")
+            
+            # Common problems analysis
+            st.markdown("### 📌 Common Problems and Patterns")
+            common_problems = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
+            
+            # Problem frequency
+            problem_freq = common_problems['Note_Type'].value_counts().reset_index()
+            problem_freq.columns = ["Problem", "Count"]
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.dataframe(problem_freq, use_container_width=True)
+            
+            with col2:
+                fig_problems = px.pie(problem_freq, names='Problem', values='Count', 
+                                     title='Problem Distribution')
+                st.plotly_chart(fig_problems, use_container_width=True)
+            
+            # Problem severity analysis
+            st.markdown("### ⚠️ Problem Severity Analysis")
+            severity_counts = df['Problem_Severity'].value_counts().reset_index()
+            severity_counts.columns = ["Severity", "Count"]
+            fig_severity = px.bar(severity_counts, x='Severity', y='Count', 
+                                 color='Severity', title='Problem Severity Levels')
+            st.plotly_chart(fig_severity, use_container_width=True)
+            
+            # Ticket type vs problem analysis
+            st.markdown("### 🎫 Ticket Type vs Problem Type")
+            ticket_problem = pd.crosstab(df['Ticket_Type'], df['Note_Type'])
+            st.dataframe(ticket_problem.style.background_gradient(cmap='Blues'), 
+                        use_container_width=True)
+            
+            # Time analysis (if date column exists)
+            if 'Date' in df.columns:
+                st.markdown("### 📅 Problem Trends Over Time")
+                df['Date'] = pd.to_datetime(df['Date'])
+                time_analysis = df.groupby([df['Date'].dt.to_period('M'), 'Note_Type']).size().unstack()
+                fig_time = px.line(time_analysis, title='Monthly Problem Trends')
+                st.plotly_chart(fig_time, use_container_width=True)
+            
+            # Multiple issues analysis
+            st.markdown("### 🔄 Multiple Issues Analysis")
+            multi_issue_df = df[df['Note_Type'] == 'MULTIPLE ISSUES']
+            if not multi_issue_df.empty:
+                keywords = []
+                for note in multi_issue_df['NOTE']:
+                    words = str(note).upper().split()
+                    keywords.extend([w for w in words if w in [
+                        "TERMINAL", "DATE", "IMAGE", "SIGNATURE", "RECEIPT", 
+                        "WRONG", "MISSING", "NO", "PENDING"]])
+                
+                keyword_counts = pd.Series(keywords).value_counts().reset_index()
+                keyword_counts.columns = ["Keyword", "Count"]
+                
+                fig_keywords = px.bar(keyword_counts.head(10), 
+                                    x='Keyword', y='Count',
+                                    title='Top Keywords in Multiple Issues')
+                st.plotly_chart(fig_keywords, use_container_width=True)
+            else:
+                st.info("No multiple issues found in the data")
+            
+            # Text analysis of notes
+            st.markdown("### 🔤 Text Analysis of Notes")
+            word_freq = text_analysis(df['NOTE'])
+            fig_words = px.bar(word_freq, x='Word', y='Count', title='Most Frequent Words in Notes')
+            st.plotly_chart(fig_words, use_container_width=True)
+            
+            # Suggested solutions
+            st.markdown("### 💡 Suggested Solutions for Common Problems")
+            solutions_df = df[['Note_Type', 'Suggested_Solution']].drop_duplicates()
+            st.dataframe(solutions_df, use_container_width=True)
+
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
@@ -200,5 +327,6 @@ if uploaded_file:
             note_counts.to_excel(writer, sheet_name="Note Type Count", index=False)
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
             done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
+            solutions_df.to_excel(writer, sheet_name="Suggested Solutions", index=False)
 
         st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
