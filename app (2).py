@@ -111,7 +111,7 @@ def suggest_solutions(note_type):
 def generate_alerts(df):
     alerts = []
     critical_percent = (df['Problem_Severity'] == 'Critical').mean() * 100
-    if critical_percent > 5:
+    if critical_percent > 50:
         alerts.append(f"⚠️ High critical problems: {critical_percent:.1f}%")
     tech_problems = df.groupby('Technician_Name')['Problem_Severity'].apply(
         lambda x: (x != 'Low').mean() * 100)
@@ -169,7 +169,7 @@ if uploaded_file:
             if total_notes > 0:
                 percent = (multiple_count / total_notes) * 100
                 with st.expander("🔍 MULTIPLE ISSUES Status", expanded=False):
-                    if percent > 50:
+                    if percent > 10:
                         st.markdown(f"""
                         <div style='background-color:#f8d7da; color:#721c24; padding:8px 15px;
                                     border-left: 6px solid #f5c6cb; border-radius: 6px;
