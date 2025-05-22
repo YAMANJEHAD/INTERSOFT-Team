@@ -146,26 +146,34 @@ if uploaded_file:
         note_counts.columns = ["Note_Type", "Count"]
 
         if 'MULTIPLE ISSUES' in note_counts['Note_Type'].values:
-            percent = (note_counts[note_counts['Note_Type'] == 'MULTIPLE ISSUES']['Count'].values[0] / note_counts['Count'].sum()) * 100
-            if percent > 5:
-                st.warning(f"🔴 MULTIPLE ISSUES are high: {percent:.2f}%")
-            else:
-                st.info(f"🟢 All good! MULTIPLE ISSUES under control: {percent:.2f}%")
+    # استبعاد ملاحظات "DONE"
+    filtered_df = df[df['Note_Type'] != 'DONE']
+    total_notes = len(filtered_df)
+    multiple_count = len(filtered_df[filtered_df['Note_Type'] == 'MULTIPLE ISSUES'])
 
-        # Display alerts
-        alerts = generate_alerts(df)
-        # Display alerts (smaller styled)
-alerts = generate_alerts(df)
-if alerts:
-    with st.expander("🚨 Alerts", expanded=True):
-        for alert in alerts:
-            st.markdown(f"""
-            <div style='background-color:#fff3cd; color:#856404; padding:8px 15px;
-                        border-left: 6px solid #ffeeba; border-radius: 6px;
-                        font-size:14px; margin-bottom:8px'>
-            {alert}
-            </div>
-            """, unsafe_allow_html=True)
+    if total_notes > 0:
+        percent = (multiple_count / total_notes) * 100
+
+        with st.expander("🔍 MULTIPLE ISSUES Status", expanded=False):
+            if percent > 50:
+                st.markdown(f"""
+                <div style='background-color:#f8d7da; color:#721c24; padding:8px 15px;
+                            border-left: 6px solid #f5c6cb; border-radius: 6px;
+                            font-size:14px; margin-bottom:8px'>
+                🔴 MULTIPLE ISSUES are high: {percent:.2f}%
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div style='background-color:#d4edda; color:#155724; padding:8px 15px;
+                            border-left: 6px solid #c3e6cb; border-radius: 6px;
+                            font-size:14px; margin-bottom:8px'>
+                🟢 All good! MULTIPLE ISSUES under control: {percent:.2f}%
+                </div>
+                """, unsafe_allow_html=True)
+
+
+    
 
 
         tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
