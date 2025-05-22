@@ -9,7 +9,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 from collections import Counter
 
-# Page setup
+# Page setu
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
 # Clock and date
