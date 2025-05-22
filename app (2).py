@@ -70,6 +70,8 @@ required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
 def classify_note(note):
     note = str(note).strip().upper()
+    if '+' in note:
+        return "MULTIPLE ISSUES"
     known_keywords = [
         "TERMINAL ID - WRONG DATE", "NO IMAGE FOR THE DEVICE", "IMAGE FOR THE DEVICE ONLY",
         "WRONG DATE", "TERMINAL ID", "NO J.O", "DONE", "NO RETAILERS SIGNATURE",
@@ -90,7 +92,6 @@ def problem_severity(note_type):
     high = ["NO IMAGE", "UNCLEAR IMAGE", "NO RECEIPT"]
     medium = ["NO SIGNATURE", "NO ENGINEER SIGNATURE"]
     low = ["NO J.O", "PENDING"]
-    
     if note_type in critical: return "Critical"
     elif note_type in high: return "High"
     elif note_type in medium: return "Medium"
@@ -109,18 +110,14 @@ def suggest_solutions(note_type):
 
 def generate_alerts(df):
     alerts = []
-    # Warning if critical problems > 10%
     critical_percent = (df['Problem_Severity'] == 'Critical').mean() * 100
     if critical_percent > 10:
         alerts.append(f"⚠️ High critical problems: {critical_percent:.1f}%")
-    
-    # Warning if any technician has >20% problems
     tech_problems = df.groupby('Technician_Name')['Problem_Severity'].apply(
         lambda x: (x != 'Low').mean() * 100)
     for tech, percent in tech_problems.items():
         if percent > 20:
             alerts.append(f"👨‍🔧 Technician {tech} has high problem rate: {percent:.1f}%")
-    
     return alerts
 
 def text_analysis(notes):
@@ -146,31 +143,44 @@ if uploaded_file:
         note_counts.columns = ["Note_Type", "Count"]
 
         if 'MULTIPLE ISSUES' in note_counts['Note_Type'].values:
-    # استبعاد ملاحظات "DONE"
-    filtered_df = df[df['Note_Type'] != 'DONE']
-    total_notes = len(filtered_df)
-    multiple_count = len(filtered_df[filtered_df['Note_Type'] == 'MULTIPLE ISSUES'])
+            filtered_df_mi = df[df['Note_Type'] != 'DONE']
+            total_notes = len(filtered_df_mi)
+            multiple_count = len(filtered_df_mi[filtered_df_mi['Note_Type'] == 'MULTIPLE ISSUES'])
 
-        if total_notes > 0:
-        percent = (multiple_count / total_notes) * 100
+            if total_notes > 0:
+                percent = (multiple_count / total_notes) * 100
+                with st.expander("🔍 MULTIPLE ISSUES Status", expanded=False):
+                    if percent > 50:
+                        st.markdown(f"""
+                        <div style='background-color:#f8d7da; color:#721c24; padding:8px 15px;
+                                    border-left: 6px solid #f5c6cb; border-radius: 6px;
+                                    font-size:14px; margin-bottom:8px'>
+                        🔴 MULTIPLE ISSUES are high: {percent:.2f}%
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"""
+                        <div style='background-color:#d4edda; color:#155724; padding:8px 15px;
+                                    border-left: 6px solid #c3e6cb; border-radius: 6px;
+                                    font-size:14px; margin-bottom:8px'>
+                        🟢 All good! MULTIPLE ISSUES under control: {percent:.2f}%
+                        </div>
+                        """, unsafe_allow_html=True)
 
-        with st.expander("🔍 MULTIPLE ISSUES Status", expanded=False):
-            if percent > 50:
-                st.markdown(f"""
-                <div style='background-color:#f8d7da; color:#721c24; padding:8px 15px;
-                            border-left: 6px solid #f5c6cb; border-radius: 6px;
-                            font-size:14px; margin-bottom:8px'>
-                🔴 MULTIPLE ISSUES are high: {percent:.2f}%
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-                <div style='background-color:#d4edda; color:#155724; padding:8px 15px;
-                            border-left: 6px solid #c3e6cb; border-radius: 6px;
-                            font-size:14px; margin-bottom:8px'>
-                🟢 All good! MULTIPLE ISSUES under control: {percent:.2f}%
-                </div>
-                """, unsafe_allow_html=True)
+        alerts = generate_alerts(df)
+        if alerts:
+            with st.expander("🚨 Alerts", expanded=True):
+                for alert in alerts:
+                    st.markdown(f"""
+                    <div style='background-color:#fff3cd; color:#856404; padding:8px 15px;
+                                border-left: 6px solid #ffeeba; border-radius: 6px;
+                                font-size:14px; margin-bottom:8px'>
+                    {alert}
+                    </div>
+                    """, unsafe_allow_html=True)
+
+        # باقي التابات شغالة زي ما هي، ما تغير شيء فيها
+
 
 
     
