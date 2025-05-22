@@ -111,7 +111,7 @@ def suggest_solutions(note_type):
 def generate_alerts(df):
     alerts = []
     critical_percent = (df['Problem_Severity'] == 'Critical').mean() * 100
-    if critical_percent > 10:
+    if critical_percent > 5:
         alerts.append(f"⚠️ High critical problems: {critical_percent:.1f}%")
     tech_problems = df.groupby('Technician_Name')['Problem_Severity'].apply(
         lambda x: (x != 'Low').mean() * 100)
