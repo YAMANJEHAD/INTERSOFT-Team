@@ -208,7 +208,7 @@ if uploaded_file:
             total_notes = len(filtered_df_mi)
             multiple_count = len(filtered_df_mi[filtered_df_mi['Note_Type'] == 'MULTIPLE ISSUES'])
 
-            if 'Note_Type' in df.columns:
+    if 'Note_Type' in df.columns:
             filtered_df_not_done = df[df['Note_Type'] != 'DONE']
             total_notes = len(filtered_df_not_done)
             note_type_counts = filtered_df_not_done['Note_Type'].value_counts()
