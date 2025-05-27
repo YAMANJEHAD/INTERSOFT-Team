@@ -230,8 +230,8 @@ if uploaded_file:
                         </div>
                         """, unsafe_allow_html=True)
 
-        alerts = generate_alerts(df)
-        if alerts:
+    alerts = generate_alerts(df)
+    if alerts:
             with st.expander("🚨 Alerts", expanded=False):
                 for alert in alerts:
                     st.markdown(f"""
