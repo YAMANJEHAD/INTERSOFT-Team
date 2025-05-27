@@ -84,8 +84,7 @@ def classify_note(note):
         "TERMINAL ID": ["TERMINAL ID"],
         "NO J.O": ["NO JO", "NO J O"],
         "DONE": ["DONE"],
-        "NO RETAILERS SIGNATURE": ["NO RETAILERS SIGNATURE", "NO RETAILER SIGNATURE", "NO RETAILERS SIGNATURE", "NO RETAILER'S SIGNATURE"
-],
+        "NO RETAILERS SIGNATURE": ["NO RETAILERS SIGNATURE", "NO RETAILER SIGNATURE", "NO RETAILERS SIGNATURE", "NO RETAILER'S SIGNATURE"],
         "UNCLEAR IMAGE": ["UNCLEAR IMAGE"],
         "NO ENGINEER SIGNATURE": ["NO ENGINEER SIGNATURE"],
         "NO SIGNATURE": ["NO SIGNATURE","NO SIGNATURES"],
@@ -156,26 +155,8 @@ def text_analysis(notes):
 ARCHIVE_DIR = "uploaded_archive"
 os.makedirs(ARCHIVE_DIR, exist_ok=True)
 
-# باقي الكود للمعالجة والتحميل والتحليل يعمل تلقائياً بعد رفع الملف
-# يمكنك استكمال أي تبويبات أو وظائف بناءً على هذا الهيكل الجاهز
-
-# باقي الكود للمعالجة والتحميل والتحليل يعمل تلقائياً بعد رفع الملف
-# يمكنك اتكمال أي تبويبات أو وظائف بناءً على هذا الهيكل الجاهز
-
-# باقي الكود للقراءة والتحليل كما هو...
-# نفس الكود اللي كان عندك، وبتكمل من هون على حسب مكانك بالبناء
-# صار كل شيء جاهز ويدعم الملاحظات المرنة تمامًا
-
-
-import os
-import hashlib
-from datetime import datetime
-
-ARCHIVE_DIR = "uploaded_archive"
-os.makedirs(ARCHIVE_DIR, exist_ok=True)
-
 if uploaded_file:
-    # إنشاء اسم فريد للملف باستخدام hash وتاريخ الرفع
+    # Create unique filename with hash and upload timestamp
     uploaded_bytes = uploaded_file.read()
     uploaded_file.seek(0)
     file_hash = hashlib.md5(uploaded_bytes).hexdigest()
@@ -183,7 +164,7 @@ if uploaded_file:
     archive_filename = f"{timestamp}_{file_hash}.xlsx"
     archive_path = os.path.join(ARCHIVE_DIR, archive_filename)
 
-    # حفظ نسخة من الملف
+    # Save a copy of the file
     with open(archive_path, "wb") as f:
         f.write(uploaded_bytes)
 
@@ -203,12 +184,32 @@ if uploaded_file:
         note_counts = df['Note_Type'].value_counts().reset_index()
         note_counts.columns = ["Note_Type", "Count"]
 
-    if 'MULTIPLE ISSUES' in note_counts['Note_Type'].values:
+        if 'MULTIPLE ISSUES' in note_counts['Note_Type'].values:
             filtered_df_mi = df[df['Note_Type'] != 'DONE']
             total_notes = len(filtered_df_mi)
             multiple_count = len(filtered_df_mi[filtered_df_mi['Note_Type'] == 'MULTIPLE ISSUES'])
 
-    if 'Note_Type' in df.columns:
+            if total_notes > 0:
+                percent = (multiple_count / total_notes) * 100
+                with st.expander("🔍 MULTIPLE ISSUES Status", expanded=False):
+                    if percent > 10:
+                        st.markdown(f"""
+                        <div style='background-color:#f8d7da; color:#721c24; padding:8px 15px;
+                                    border-left: 6px solid #f5c6cb; border-radius: 6px;
+                                    font-size:14px; margin-bottom:8px'>
+                        🔴 MULTIPLE ISSUES are high: {percent:.2f}%
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"""
+                        <div style='background-color:#d4edda; color:#155724; padding:8px 15px;
+                                    border-left: 6px solid #c3e6cb; border-radius: 6px;
+                                    font-size:14px; margin-bottom:8px'>
+                        🟢 All good! MULTIPLE ISSUES under control: {percent:.2f}%
+                        </div>
+                        """, unsafe_allow_html=True)
+
+        if 'Note_Type' in df.columns:
             filtered_df_not_done = df[df['Note_Type'] != 'DONE']
             total_notes = len(filtered_df_not_done)
             note_type_counts = filtered_df_not_done['Note_Type'].value_counts()
@@ -230,8 +231,8 @@ if uploaded_file:
                         </div>
                         """, unsafe_allow_html=True)
 
-    alerts = generate_alerts(df)
-    if alerts:
+        alerts = generate_alerts(df)
+        if alerts:
             with st.expander("🚨 Alerts", expanded=False):
                 for alert in alerts:
                     st.markdown(f"""
@@ -241,16 +242,6 @@ if uploaded_file:
                     {alert}
                     </div>
                     """, unsafe_allow_html=True)
-
-       
-
-
-        # باقي التابات شغالة زي ما هي، ما تغير شيءها
-
-
-
-    
-
 
         tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
             "📊 Note Type Summary", "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians",
@@ -358,17 +349,11 @@ if uploaded_file:
                                      title='Problem Distribution')
                 st.plotly_chart(fig_problems, use_container_width=True)
             
-           
-            
-            # Ticket type vs problem analysisl
+            # Ticket type vs problem analysis
             st.markdown("### 🎫 Ticket Type vs Problem Type")
             ticket_problem = pd.crosstab(df['Ticket_Type'], df['Note_Type'])
             st.dataframe(ticket_problem.style.background_gradient(cmap='Blues'), 
                         use_container_width=True)
-            
-            
-                
-               
             
             # Suggested solutions
             st.markdown("### 💡 Suggested Solutions for Common Problems")
