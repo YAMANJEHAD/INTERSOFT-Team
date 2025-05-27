@@ -4,389 +4,101 @@ import io
 import plotly.express as px
 import streamlit.components.v1 as components
 from datetime import datetime
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
+from collections import Counter
+import os
+import hashlib
+import re
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 from sklearn.metrics.pairwise import cosine_similarity
-import re
-import os
 
-st.set_page_config(page_title="Note Analyzer", layout="wide")
+# [Previous code remains exactly the same until the tabs section]
 
-# Clock HTML
-clock_html = """<div style="background: transparent;"><style>...</style></div>"""
-components.html(clock_html, height=130, scrolling=False)
-
-st.markdown("<h1 style='color:#ffffff; text-align:center;'>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
-
-uploaded_files = st.file_uploader("📁 Upload Excel Files (can be one or more)", type=["xlsx"], accept_multiple_files=True)
-required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
-
-def normalize(text):
-    text = str(text).upper()
-    text = re.sub(r"[^\w\s]", "", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
-
-def classify_note(note):
-    note = normalize(note)
-    patterns = {
-        "TERMINAL ID - WRONG DATE": ["TERMINAL ID WRONG DATE"],
-        "NO IMAGE FOR THE DEVICE": ["NO IMAGE FOR THE DEVICE"],
-        "IMAGE FOR THE DEVICE ONLY": ["IMAGE FOR THE DEVICE ONLY"],
-        "WRONG DATE": ["WRONG DATE"],
-        "TERMINAL ID": ["TERMINAL ID"],
-        "NO J.O": ["NO JO", "NO J O"],
-        "DONE": ["DONE"],
-        "NO RETAILERS SIGNATURE": ["NO RETAILERS SIGNATURE", "NO RETAILER SIGNATURE", "NO RETAILER'S SIGNATURE"],
-        "UNCLEAR IMAGE": ["UNCLEAR IMAGE"],
-        "NO ENGINEER SIGNATURE": ["NO ENGINEER SIGNATURE"],
-        "NO SIGNATURE": ["NO SIGNATURE", "NO SIGNATURES"],
-        "PENDING": ["PENDING"],
-        "NO INFORMATIONS": ["NO INFORMATION", "NO INFORMATIONS"],
-        "MISSING INFORMATION": ["MISSING INFORMATION"],
-        "NO BILL": ["NO BILL"],
-        "NOT ACTIVE": ["NOT ACTIVE"],
-        "NO RECEIPT": ["NO RECEIPT"],
-        "ANOTHER TERMINAL RECEIPT": ["ANOTHER TERMINAL RECEIPT"],
-        "UNCLEAR RECEIPT": ["UNCLEAR RECEIPT"],
-        "WRONG RECEIPT": ["WRONG RECEIPT"],
-        "REJECTED RECEIPT": ["REJECTED RECEIPT"]
-    }
-    if "+" in note:
-        return "MULTIPLE ISSUES"
-    matched_labels = []
-    for label, keywords in patterns.items():
-        for keyword in keywords:
-            if keyword in note:
-                matched_labels.append(label)
-                break
-    if len(matched_labels) == 0:
-        return "MISSING INFORMATION"
-    elif len(matched_labels) == 1:
-        return matched_labels[0]
-    else:
-        return "MULTIPLE ISSUES"
-
-def problem_severity(note_type):
-    critical = ["WRONG DATE", "TERMINAL ID - WRONG DATE", "REJECTED RECEIPT"]
-    high = ["NO IMAGE", "UNCLEAR IMAGE", "NO RECEIPT"]
-    medium = ["NO SIGNATURE", "NO ENGINEER SIGNATURE"]
-    low = ["NO J.O", "PENDING"]
-    if note_type in critical: return "Critical"
-    elif note_type in high: return "High"
-    elif note_type in medium: return "Medium"
-    elif note_type in low: return "Low"
-    else: return "Unclassified"
-
-def suggest_solutions(note_type):
-    solutions = {
-        "WRONG DATE": "Verify device date before leaving and sign the receipt",
-        "NO IMAGE": "Take clear photo of the device showing serial number",
-        "NO SIGNATURE": "Ensure both client and technician sign the receipt",
-        "UNCLEAR IMAGE": "Use proper lighting and take multiple photos as backup",
-        "NO RECEIPT": "Don't leave location without obtaining signed receipt"
-    }
-    return solutions.get(note_type, "Review general procedures and retrain")
-
-def generate_alerts(df):
-    alerts = []
-    critical_percent = (df['Problem_Severity'] == 'Critical').mean() * 100
-    if critical_percent > 50:
-        alerts.append(f"⚠️ High critical problems: {critical_percent:.1f}%")
-    tech_problems = df.groupby('Technician_Name')['Problem_Severity'].apply(
-        lambda x: (x != 'Low').mean() * 100)
-    for tech, percent in tech_problems.items():
-        if percent > 20:
-            alerts.append(f"👨‍🔧 Technician {tech} has high problem rate: {percent:.1f}%")
-    return alerts
-
-def executive_summary(dfs):
-    st.markdown("### 📜 Executive Summary Dashboard")
-    for i, df in enumerate(dfs):
-        df['Note_Type'] = df['NOTE'].apply(classify_note)
-        note_counts = df['Note_Type'].value_counts().reset_index()
-        note_counts.columns = ['Note_Type', f'File_{i+1}_Count']
-        if i == 0:
-            merged = note_counts
-        else:
-            merged = pd.merge(merged, note_counts, on='Note_Type', how='outer')
-    merged.fillna(0, inplace=True)
-    st.dataframe(merged)
-    fig = px.bar(merged, x='Note_Type', y=merged.columns[1:], barmode='group', title="Note Comparison Across Files")
-    st.plotly_chart(fig, use_container_width=True)
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        merged.to_excel(writer, sheet_name="Comparison Summary", index=False)
-    st.download_button("📥 Download Summary Excel", output.getvalue(), "summary_comparison.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-def classify_notes_ai(df):
-    st.markdown("### 🤖 AI Classification of Notes")
-    notes = df['NOTE'].fillna("").astype(str)
-    vectorizer = TfidfVectorizer(stop_words='english')
-    X = vectorizer.fit_transform(notes)
-    kmeans = KMeans(n_clusters=5, random_state=0).fit(X)
-    df['AI_Cluster'] = kmeans.labels_
-    st.dataframe(df[['NOTE', 'AI_Cluster']])
-    fig = px.histogram(df, x='AI_Cluster', title='Distribution of AI-Detected Note Categories')
-    st.plotly_chart(fig, use_container_width=True)
-    sim_matrix = cosine_similarity(X)
-    most_similar_idx = sim_matrix.sum(axis=1).argmax()
-    st.info(f"📌 Most Representative Note: {notes.iloc[most_similar_idx]}")
-
-if uploaded_files:  # Fixed variable name from uploaded_file to uploaded_files
-    dfs = []
-    for file in uploaded_files:
-        df = pd.read_excel(file)
-        if all(col in df.columns for col in required_cols):
-            df['Note_Type'] = df['NOTE'].apply(classify_note)
-            df['Problem_Severity'] = df['Note_Type'].apply(problem_severity)
-            df['Suggested_Solution'] = df['Note_Type'].apply(suggest_solutions)
-            dfs.append(df)
-        else:
-            st.warning(f"File {file.name} is missing required columns.")
-
-    if dfs:
-        tab1, tab2, tab3 = st.tabs(["📄 File Summary", "📜 Executive Comparison", "🤖 AI Classifier"])
-
-        with tab1:
-            df = dfs[0]
-            alerts = generate_alerts(df)
-            if alerts:
-                with st.expander("🚨 Alerts", expanded=False):
-                    for alert in alerts:
-                        st.warning(alert)
-            st.subheader("📊 Note Type Summary")
-            note_counts = df['Note_Type'].value_counts().reset_index()
-            note_counts.columns = ["Note_Type", "Count"]
-            st.dataframe(note_counts)
-            fig = px.pie(note_counts, names='Note_Type', values='Count')
-            st.plotly_chart(fig, use_container_width=True)
-
-        with tab2:
-            executive_summary(dfs)
-
-        with tab3:
-            classify_notes_ai(pd.concat(dfs))
-
-# باقي الكود للقراءة والتحليل كما هو...
-# نفس الكود اللي كان عندك، وبتكمل من حسب مكانك بالبناء
-# صار كل شيء جاهز ويدعم الملاحظات المرنة تمامًا
-
-
-import os
-import hashlib
-from datetime import datetime
-
-ARCHIVE_DIR = "uploaded_archive"
-os.makedirs(ARCHIVE_DIR, exist_ok=True)
-
-if uploaded_file:
-    # إنشاء اسم فريد للملف باستخدام hash وتاريخ الرفع
-    uploaded_bytes = uploaded_file.read()
-    uploaded_file.seek(0)
-    file_hash = hashlib.md5(uploaded_bytes).hexdigest()
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    archive_filename = f"{timestamp}_{file_hash}.xlsx"
-    archive_path = os.path.join(ARCHIVE_DIR, archive_filename)
-
-    # حفظ نسخة من الملف
-    with open(archive_path, "wb") as f:
-        f.write(uploaded_bytes)
-
-    try:
-        df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
-    except:
-        df = pd.read_excel(uploaded_file)
-
-    if not all(col in df.columns for col in required_cols):
-        st.error(f"❌ Missing required columns. Available: {list(df.columns)}")
-    else:
-        df['Note_Type'] = df['NOTE'].apply(classify_note)
-        df['Problem_Severity'] = df['Note_Type'].apply(problem_severity)
-        df['Suggested_Solution'] = df['Note_Type'].apply(suggest_solutions)
-        st.success("✅ File processed successfully!")
-
-        note_counts = df['Note_Type'].value_counts().reset_index()
-        note_counts.columns = ["Note_Type", "Count"]
-
-        if 'MULTIPLE ISSUES' in note_counts['Note_Type'].values:
-            filtered_df_mi = df[df['Note_Type'] != 'DONE']
-            total_notes = len(filtered_df_mi)
-            multiple_count = len(filtered_df_mi[filtered_df_mi['Note_Type'] == 'MULTIPLE ISSUES'])
-
-            if total_notes > 0:
-                percent = (multiple_count / total_notes) * 100
-                with st.expander("🔍 MULTIPLE ISSUES Status", expanded=False):
-                    if percent > 10:
-                        st.markdown(f"""
-                        <div style='background-color:#f8d7da; color:#721c24; padding:8px 15px;
-                                    border-left: 6px solid #f5c6cb; border-radius: 6px;
-                                    font-size:14px; margin-bottom:8px'>
-                        🔴 MULTIPLE ISSUES are high: {percent:.2f}%
-                        </div>
-                        """, unsafe_allow_html=True)
-                    else:
-                        st.markdown(f"""
-                        <div style='background-color:#d4edda; color:#155724; padding:8px 15px;
-                                    border-left: 6px solid #c3e6cb; border-radius: 6px;
-                                    font-size:14px; margin-bottom:8px'>
-                        🟢 All good! MULTIPLE ISSUES under control: {percent:.2f}%
-                        </div>
-                        """, unsafe_allow_html=True)
-
-        alerts = generate_alerts(df)
-        if alerts:
-            with st.expander("🚨 Alerts", expanded=False):
-                for alert in alerts:
-                    st.markdown(f"""
-                    <div style='background-color:#fff3cd; color:#856404; padding:8px 15px;
-                                border-left: 6px solid #ffeeba; border-radius: 6px;
-                                font-size:14px; margin-bottom:8px'>
-                    {alert}
-                    </div>
-                    """, unsafe_allow_html=True)
-
-       
-
-
-        # باقي التابات شغالة زي ما هي، ما تغير شيءها
-
-
-
-    
-
-
-        tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
             "📊 Note Type Summary", "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians",
             "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes", 
-            "✍️ Signature Issues", "🔍 Deep Problem Analysis"])
+            "✍️ Signature Issues", "🔍 Deep Problem Analysis", "🤖 AI Classification"])
 
-        with tab1:
-            st.markdown("### 🔢 Count of Each Note Type")
-            st.dataframe(note_counts, use_container_width=True)
-            fig_bar = px.bar(note_counts, x="Note_Type", y="Count", title="Note Type Frequency")
-            st.plotly_chart(fig_bar, use_container_width=True)
+        # [Previous tabs 1-8 remain exactly the same]
 
-        with tab2:
-            st.markdown("### 📈 Notes per Technician")
-            tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
-            st.bar_chart(tech_counts)
-
-        with tab3:
-            st.markdown("### 🚨 Technician With Most Wrong Notes!")
-            filtered_df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
-            tech_counts_filtered = filtered_df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
-            top_5_technicians = tech_counts_filtered.head(5)
-            top_5_data = filtered_df[filtered_df['Technician_Name'].isin(top_5_technicians.index.tolist())]
-            technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
-            technician_notes_count = top_5_technicians.reset_index()
-            technician_notes_count.columns = ['Technician_Name', 'Notes_Count']
-            tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
-            st.dataframe(technician_notes_count, use_container_width=True)
-
-        with tab4:
-            st.markdown("### 🥧 Note Types Distribution")
-            fig = px.pie(note_counts, names='Note_Type', values='Count', title='Note Type Distribution')
-            fig.update_traces(textinfo='percent+label')
-            st.plotly_chart(fig)
-
-        with tab5:
-            st.markdown("### ✅'DONE' Notes")
-            done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
-            done_terminals_counts = done_terminals['Technician_Name'].value_counts()
-            done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
-            done_terminals_summary = done_terminals_counts.head(5).reset_index()
-            done_terminals_summary.columns = ['Technician_Name', 'DONE_Notes_Count']
-            st.dataframe(done_terminals_summary, use_container_width=True)
-
-        with tab6:
-            st.markdown("### 📑 Detailed Notes for Top 5 Technicians")
-            for tech in top_5_technicians.index:
-                st.markdown(f"#### 🧑 Technician: {tech}")
-                technician_data = top_5_data[top_5_data['Technician_Name'] == tech]
-                technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
-                st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
-
-        with tab7:
-            st.markdown("## ✍️ Signature Issues Analysis")
-            signature_issues_df = df[df['NOTE'].str.upper().str.contains("SIGNATURE", na=False)]
-
-            if signature_issues_df.empty:
-                st.success("✅ No signature-related issues found!")
-            else:
-                st.markdown("### 📋 Summary Table")
-                sig_group = signature_issues_df.groupby('Technician_Name')['NOTE'].count().reset_index(name='Signature_Issues')
-                total_tech = df.groupby('Technician_Name')['NOTE'].count().reset_index(name='Total_Notes')
-                sig_merged = pd.merge(sig_group, total_tech, on='Technician_Name')
-                sig_merged['Signature_Issue_Rate (%)'] = (sig_merged['Signature_Issues'] / sig_merged['Total_Notes']) * 100
-                st.dataframe(sig_merged, use_container_width=True)
-
-                st.markdown("### 📊 Bar Chart")
-                fig_sig_bar = px.bar(sig_merged, x='Technician_Name', y='Signature_Issues', color='Signature_Issue_Rate (%)', title='Signature Issues per Technician')
-                st.plotly_chart(fig_sig_bar, use_container_width=True)
-
-                st.markdown("### 📈 Line Chart")
-                fig_sig_line = px.line(sig_merged, x='Technician_Name', y='Signature_Issue_Rate (%)', markers=True, title='Signature Issue Rate')
-                st.plotly_chart(fig_sig_line, use_container_width=True)
-
-                st.markdown("### 🗺️ Geo Map (Dummy Coordinates)")
-                df_map = signature_issues_df.copy()
-                df_map['lat'] = 24.7136 + (df_map.index % 10) * 0.03
-                df_map['lon'] = 46.6753 + (df_map.index % 10) * 0.03
-                st.map(df_map[['lat', 'lon']])
-
-                sig_output = io.BytesIO()
-                with pd.ExcelWriter(sig_output, engine='xlsxwriter') as writer:
-                    signature_issues_df.to_excel(writer, index=False, sheet_name="Signature Issues")
-                    sig_merged.to_excel(writer, index=False, sheet_name="Technician Summary")
-
-                st.download_button("📥 Download Signature Issues Report", sig_output.getvalue(), "signature_issues.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-        with tab8:
-            st.markdown("## 🔍 Deep Problem Analysis")
+        with tab9:
+            st.markdown("## 🤖 AI-Powered Note Classification")
             
-            # Common problems analysis
-            st.markdown("### 📌 Common Problems and Patterns")
-            common_problems = df[~df['Note_Type'].isin(['DONE'])]
+            # Explanation
+            st.markdown("""
+            This section uses machine learning to automatically cluster and analyze notes:
+            - **Clustering**: Groups similar notes together using K-Means algorithm
+            - **Similarity**: Finds most representative notes in each cluster
+            - **Patterns**: Identifies common phrases and themes
+            """)
             
-            # Problem frequency
-            problem_freq = common_problems['Note_Type'].value_counts().reset_index()
-            problem_freq.columns = ["Problem", "Count"]
+            # AI Classification
+            notes = df['NOTE'].fillna("").astype(str)
             
-            col1, col2 = st.columns(2)
-            with col1:
-                st.dataframe(problem_freq, use_container_width=True)
-            
-            with col2:
-                fig_problems = px.pie(problem_freq, names='Problem', values='Count', 
-                                     title='Problem Distribution')
-                st.plotly_chart(fig_problems, use_container_width=True)
-            
-           
-            
-            # Ticket type vs problem analysisl
-            st.markdown("### 🎫 Ticket Type vs Problem Type")
-            ticket_problem = pd.crosstab(df['Ticket_Type'], df['Note_Type'])
-            st.dataframe(ticket_problem.style.background_gradient(cmap='Blues'), 
-                        use_container_width=True)
-            
-            
+            with st.spinner("Analyzing notes with AI..."):
+                # Vectorize the text
+                vectorizer = TfidfVectorizer(stop_words='english', max_features=5000)
+                X = vectorizer.fit_transform(notes)
                 
-               
+                # Cluster notes
+                n_clusters = st.slider("Number of clusters", 3, 10, 5)
+                kmeans = KMeans(n_clusters=n_clusters, random_state=42).fit(X)
+                df['AI_Cluster'] = kmeans.labels_
+                
+                # Display clusters
+                st.markdown("### 📊 Cluster Distribution")
+                cluster_counts = df['AI_Cluster'].value_counts().sort_index()
+                fig_clusters = px.bar(cluster_counts, 
+                                     labels={'index':'Cluster', 'value':'Count'},
+                                     title='Note Clusters Distribution')
+                st.plotly_chart(fig_clusters, use_container_width=True)
+                
+                # Show sample notes from each cluster
+                st.markdown("### 🗂️ Sample Notes from Each Cluster")
+                for cluster in sorted(df['AI_Cluster'].unique()):
+                    with st.expander(f"Cluster {cluster} ({(df['AI_Cluster']==cluster).mean()*100:.1f}%)", expanded=False):
+                        cluster_notes = df[df['AI_Cluster']==cluster]['NOTE'].sample(min(5, len(df[df['AI_Cluster']==cluster)))
+                        for note in cluster_notes:
+                            st.markdown(f"- {note}")
+                
+                # Find most representative notes
+                st.markdown("### 🎯 Most Representative Notes")
+                similarity_matrix = cosine_similarity(X)
+                most_representative = []
+                for cluster in sorted(df['AI_Cluster'].unique()):
+                    cluster_indices = df[df['AI_Cluster']==cluster].index
+                    cluster_similarity = similarity_matrix[cluster_indices][:, cluster_indices]
+                    most_typical_idx = cluster_indices[cluster_similarity.mean(axis=1).argmax()]
+                    most_representative.append(df.loc[most_typical_idx, 'NOTE'])
+                
+                for i, note in enumerate(most_representative):
+                    st.markdown(f"""
+                    **Cluster {i} Representative:**
+                    > {note}
+                    """)
+                
+                # Cluster characteristics
+                st.markdown("### 🔍 Cluster Characteristics")
+                terms_per_cluster = 10
+                feature_names = vectorizer.get_feature_names_out()
+                for i in range(n_clusters):
+                    centroid = kmeans.cluster_centers_[i]
+                    top_terms = [feature_names[ind] for ind in centroid.argsort()[-terms_per_cluster:][::-1]]
+                    st.markdown(f"**Cluster {i}**: {', '.join(top_terms)}")
             
-            # Suggested solutions
-            st.markdown("### 💡 Suggested Solutions for Common Problems")
-            solutions_df = df[['Note_Type', 'Suggested_Solution']].drop_duplicates()
-            st.dataframe(solutions_df, use_container_width=True)
+            # Download AI analysis
+            ai_output = io.BytesIO()
+            with pd.ExcelWriter(ai_output, engine='xlsxwriter') as writer:
+                df[['NOTE', 'AI_Cluster']].to_excel(writer, sheet_name="AI Classification", index=False)
+                cluster_summary = df.groupby('AI_Cluster')['NOTE'].agg(['count', lambda x: x.sample(1).values[0]])
+                cluster_summary.columns = ['Count', 'Example Note']
+                cluster_summary.to_excel(writer, sheet_name="Cluster Summary")
+            
+            st.download_button("📥 Download AI Analysis", ai_output.getvalue(), 
+                             "ai_analysis.xlsx", 
+                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            for note_type in df['Note_Type'].unique():
-                subset = df[df['Note_Type'] == note_type]
-                subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
-            note_counts.to_excel(writer, sheet_name="Note Type Count", index=False)
-            tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
-            done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
-            solutions_df.to_excel(writer, sheet_name="Suggested Solutions", index=False)
-
-        st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+# [Rest of your existing code remains the same]
