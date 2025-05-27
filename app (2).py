@@ -125,7 +125,15 @@ def problem_severity(note_type):
     elif note_type in low: return "Low"
     else: return "Unclassified"
 
-
+def suggest_solutions(note_type):
+    solutions = {
+        "WRONG DATE": "Verify device date before leaving and sign the receipt",
+        "NO IMAGE": "Take clear photo of the device showing serial number",
+        "NO SIGNATURE": "Ensure both client and technician sign the receipt",
+        "UNCLEAR IMAGE": "Use proper lighting and take multiple photos as backup",
+        "NO RECEIPT": "Don't leave location without obtaining signed receipt"
+    }
+    return solutions.get(note_type, "Review general procedures and retrain")
 
 def generate_alerts(df):
     alerts = []
@@ -146,6 +154,9 @@ def text_analysis(notes):
 
 ARCHIVE_DIR = "uploaded_archive"
 os.makedirs(ARCHIVE_DIR, exist_ok=True)
+
+# باقي الكود للمعالجة والتحميل والتحليل يعمل تلقائياً بعد رفع الملف
+# يمكنك استكمال أي تبويبات أو وظائف بناءً على هذا الهيكل الجاهز
 
 # باقي الكود للمعالجة والتحميل والتحليل يعمل تلقائياً بعد رفع الملف
 # يمكنك استكمال أي تبويبات أو وظائف بناءً على هذا الهيكل الجاهز
