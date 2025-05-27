@@ -155,6 +155,11 @@ def text_analysis(notes):
 ARCHIVE_DIR = "uploaded_archive"
 os.makedirs(ARCHIVE_DIR, exist_ok=True)
 
+# باقي الكود للقراءة والتحليل كما هو...
+# نفس الكود اللي كان عندك، وبتكمل من هون على حسب مكانك بالبناء
+# صار كل شيء جاهز ويدعم الملاحظات المرنة تمامًا
+
+
 import os
 import hashlib
 from datetime import datetime
