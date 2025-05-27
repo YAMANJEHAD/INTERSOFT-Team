@@ -8,13 +8,13 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 from collections import Counter
+import os
+import hashlib
+import re
 
-# Page setu
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-# Clock and date
-clock_html = """<div style="background: transparent;">
-<style>
+clock_html = """<div style="background: transparent;"><style>
 .clock-container {
     font-family: 'Courier New', monospace;
     font-size: 22px;
@@ -63,27 +63,54 @@ updateClock();
 </div>"""
 components.html(clock_html, height=130, scrolling=False)
 
-st.markdown("<h1 style='color:#ffffff; text-align:center;'>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='color:#ffffff; text-align:center;'>\ud83d\udcca INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
 
-uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
+uploaded_file = st.file_uploader("\ud83d\udcc1 Upload Excel File", type=["xlsx"])
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
+def normalize(text):
+    text = str(text).upper()
+    text = re.sub(r"[^\w\s]", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
 def classify_note(note):
-    note = str(note).strip().upper()
-    if '+' in note:
+    note = normalize(note)
+    patterns = {
+        "TERMINAL ID - WRONG DATE": ["TERMINAL ID WRONG DATE"],
+        "NO IMAGE FOR THE DEVICE": ["NO IMAGE FOR THE DEVICE"],
+        "IMAGE FOR THE DEVICE ONLY": ["IMAGE FOR THE DEVICE ONLY"],
+        "WRONG DATE": ["WRONG DATE"],
+        "TERMINAL ID": ["TERMINAL ID"],
+        "NO J.O": ["NO JO", "NO J O"],
+        "DONE": ["DONE"],
+        "NO RETAILERS SIGNATURE": ["NO RETAILERS SIGNATURE", "NO RETAILER SIGNATURE", "NO RETAILERS SIGNATURE", "NO RETAILER'S SIGNATURE"],
+        "UNCLEAR IMAGE": ["UNCLEAR IMAGE"],
+        "NO ENGINEER SIGNATURE": ["NO ENGINEER SIGNATURE"],
+        "NO SIGNATURE": ["NO SIGNATURE"],
+        "PENDING": ["PENDING"],
+        "NO INFORMATIONS": ["NO INFORMATION", "NO INFORMATIONS"],
+        "MISSING INFORMATION": ["MISSING INFORMATION"],
+        "NO BILL": ["NO BILL"],
+        "NOT ACTIVE": ["NOT ACTIVE"],
+        "NO RECEIPT": ["NO RECEIPT"],
+        "ANOTHER TERMINAL RECEIPT": ["ANOTHER TERMINAL RECEIPT"],
+        "UNCLEAR RECEIPT": ["UNCLEAR RECEIPT"],
+        "WRONG RECEIPT": ["WRONG RECEIPT"],
+        "REJECTED RECEIPT": ["REJECTED RECEIPT"]
+    }
+    if "+" in note:
         return "MULTIPLE ISSUES"
-    known_keywords = [
-        "TERMINAL ID - WRONG DATE", "NO IMAGE FOR THE DEVICE", "IMAGE FOR THE DEVICE ONLY",
-        "WRONG DATE", "TERMINAL ID", "NO J.O", "DONE", "NO RETAILERS SIGNATURE",
-        "UNCLEAR IMAGE", "NO ENGINEER SIGNATURE", "NO SIGNATURE", "PENDING",
-        "NO INFORMATIONS", "MISSING INFORMATION", "NO BILL", "NOT ACTIVE", "NO RECEIPT",
-        "ANOTHER TERMINAL RECEIPT", "UNCLEAR RECEIPT", "WRONG RECEIPT","NO RETAILER SIGNATURE", "REJECTED RECEIPT"
-    ]
-    matches = [kw for kw in known_keywords if kw in note]
-    if len(matches) == 0:
+    matched_labels = []
+    for label, keywords in patterns.items():
+        for keyword in keywords:
+            if keyword in note:
+                matched_labels.append(label)
+                break
+    if len(matched_labels) == 0:
         return "MISSING INFORMATION"
-    elif len(matches) == 1:
-        return matches[0]
+    elif len(matched_labels) == 1:
+        return matched_labels[0]
     else:
         return "MULTIPLE ISSUES"
 
@@ -112,18 +139,21 @@ def generate_alerts(df):
     alerts = []
     critical_percent = (df['Problem_Severity'] == 'Critical').mean() * 100
     if critical_percent > 50:
-        alerts.append(f"⚠️ High critical problems: {critical_percent:.1f}%")
+        alerts.append(f"\u26a0\ufe0f High critical problems: {critical_percent:.1f}%")
     tech_problems = df.groupby('Technician_Name')['Problem_Severity'].apply(
         lambda x: (x != 'Low').mean() * 100)
     for tech, percent in tech_problems.items():
         if percent > 20:
-            alerts.append(f"👨‍🔧 Technician {tech} has high problem rate: {percent:.1f}%")
+            alerts.append(f"\ud83d\udc68\u200d\ud83d\udd27 Technician {tech} has high problem rate: {percent:.1f}%")
     return alerts
 
 def text_analysis(notes):
     all_words = ' '.join(notes.dropna().astype(str)).upper().split()
     word_counts = Counter(all_words)
     return pd.DataFrame(word_counts.most_common(20), columns=['Word', 'Count'])
+
+ARCHIVE_DIR = "uploaded_archive"
+os.makedirs(ARCHIVE_DIR, exist_ok=True)
 
 import os
 import hashlib
