@@ -15,7 +15,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 from sklearn.metrics.pairwise import cosine_similarity
 
-# [Previous code remains exactly the same until the tabs section]
+# [All your previous code remains exactly the same until the tabs section]
 
         tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
             "📊 Note Type Summary", "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians",
@@ -60,7 +60,7 @@ from sklearn.metrics.pairwise import cosine_similarity
                 st.markdown("### 🗂️ Sample Notes from Each Cluster")
                 for cluster in sorted(df['AI_Cluster'].unique()):
                     with st.expander(f"Cluster {cluster} ({(df['AI_Cluster']==cluster).mean()*100:.1f}%)", expanded=False):
-                        cluster_notes = df[df['AI_Cluster']==cluster]['NOTE'].sample(min(5, len(df[df['AI_Cluster']==cluster)))
+                        cluster_notes = df[df['AI_Cluster']==cluster]['NOTE'].sample(min(5, len(df[df['AI_Cluster']==cluster])))
                         for note in cluster_notes:
                             st.markdown(f"- {note}")
                 
