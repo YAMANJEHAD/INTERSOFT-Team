@@ -133,7 +133,7 @@ def classify_notes_ai(df):
     most_similar_idx = sim_matrix.sum(axis=1).argmax()
     st.info(f"📌 Most Representative Note: {notes.iloc[most_similar_idx]}")
 
-if uploaded_files:
+if uploaded_files:  # Fixed variable name from uploaded_file to uploaded_files
     dfs = []
     for file in uploaded_files:
         df = pd.read_excel(file)
@@ -167,7 +167,6 @@ if uploaded_files:
 
         with tab3:
             classify_notes_ai(pd.concat(dfs))
-
 
 # باقي الكود للقراءة والتحليل كما هو...
 # نفس الكود اللي كان عندك، وبتكمل من حسب مكانك بالبناء
