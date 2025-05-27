@@ -203,30 +203,32 @@ if uploaded_file:
         note_counts = df['Note_Type'].value_counts().reset_index()
         note_counts.columns = ["Note_Type", "Count"]
 
-        if 'MULTIPLE ISSUES' in note_counts['Note_Type'].values:
-            filtered_df_mi = df[df['Note_Type'] != 'DONE']
-            total_notes = len(filtered_df_mi)
-            multiple_count = len(filtered_df_mi[filtered_df_mi['Note_Type'] == 'MULTIPLE ISSUES'])
+        # Filter notes that are not 'DONE'
+filtered_df_not_done = df[df['Note_Type'] != 'DONE']
+total_notes = len(filtered_df_not_done)
 
-            if total_notes > 0:
-                percent = (multiple_count / total_notes) * 100
-                with st.expander("🔍 MULTIPLE ISSUES Status", expanded=False):
-                    if percent > 10:
-                        st.markdown(f"""
-                        <div style='background-color:#f8d7da; color:#721c24; padding:8px 15px;
-                                    border-left: 6px solid #f5c6cb; border-radius: 6px;
-                                    font-size:14px; margin-bottom:8px'>
-                        🔴 MULTIPLE ISSUES are high: {percent:.2f}%
-                        </div>
-                        """, unsafe_allow_html=True)
-                    else:
-                        st.markdown(f"""
-                        <div style='background-color:#d4edda; color:#155724; padding:8px 15px;
-                                    border-left: 6px solid #c3e6cb; border-radius: 6px;
-                                    font-size:14px; margin-bottom:8px'>
-                        🟢 All good! MULTIPLE ISSUES under control: {percent:.2f}%
-                        </div>
-                        """, unsafe_allow_html=True)
+# Count each note type in the non-DONE notes
+note_type_counts = filtered_df_not_done['Note_Type'].value_counts()
+
+# Show percentage for each note type
+if total_notes > 0:
+    with st.expander("🔍 Non-DONE Note Types Overview", expanded=False):
+        for note_type, count in note_type_counts.items():
+            percent = (count / total_notes) * 100
+            color_box = "#f8d7da" if percent > 10 else "#d4edda"
+            color_border = "#f5c6cb" if percent > 10 else "#c3e6cb"
+            color_text = "#721c24" if percent > 10 else "#155724"
+            icon = "🔴" if percent > 10 else "🟢"
+
+            st.markdown(f"""
+            <div style='background-color:{color_box}; color:{color_text}; padding:8px 15px;
+                        border-left: 6px solid {color_border}; border-radius: 6px;
+                        font-size:14px; margin-bottom:8px'>
+            {icon} {note_type}: {percent:.2f}%
+            </div>
+            """, unsafe_allow_html=True)
+
+                        #ييسبيبيب
 
         alerts = generate_alerts(df)
         if alerts:
