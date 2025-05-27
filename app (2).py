@@ -215,13 +215,13 @@ if uploaded_file:
             note_type_counts = filtered_df_not_done['Note_Type'].value_counts()
 
             if total_notes > 0:
-                with st.expander("🔍 Non-DONE Note Types Overview", expanded=False):
+                with st.expander("❗Note Types Overview", expanded=False):
                     for note_type, count in note_type_counts.items():
                         percent = (count / total_notes) * 100
-                        color_box = "#f8d7da" if percent > 10 else "#d4edda"
-                        color_border = "#f5c6cb" if percent > 10 else "#c3e6cb"
-                        color_text = "#721c24" if percent > 10 else "#155724"
-                        icon = "🔴" if percent > 10 else "🟢"
+                        color_box = "#f8d7da" if percent > 5 else "#d4edda"
+                        color_border = "#f5c6cb" if percent > 5 else "#c3e6cb"
+                        color_text = "#721c24" if percent > 5 else "#155724"
+                        icon = "🔴" if percent > 5 else "🟢"
 
                         st.markdown(f"""
                         <div style='background-color:{color_box}; color:{color_text}; padding:8px 15px;
