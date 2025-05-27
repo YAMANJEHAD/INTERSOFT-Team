@@ -4,68 +4,21 @@ import io
 import plotly.express as px
 import streamlit.components.v1 as components
 from datetime import datetime
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.lib.utils import ImageReader
-from collections import Counter
-import os
-import hashlib
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
+from sklearn.metrics.pairwise import cosine_similarity
 import re
+import os
 
 st.set_page_config(page_title="Note Analyzer", layout="wide")
 
-clock_html = """<div style="background: transparent;"><style>
-.clock-container {
-    font-family: 'Courier New', monospace;
-    font-size: 22px;
-    color: #fff;
-    background: linear-gradient(135deg, #1abc9c, #16a085);
-    padding: 12px 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    animation: pulse 2s infinite;
-    position: fixed;
-    top: 15px;
-    right: 25px;
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-}
-.clock-time { font-size: 22px; font-weight: bold; }
-.clock-date { font-size: 16px; margin-top: 4px; }
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0.4); }
-    70% { box-shadow: 0 0 0 15px rgba(26, 188, 156, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0); }
-}
-</style>
-<div class="clock-container">
-    <div class="clock-time" id="clock"></div>
-    <div class="clock-date" id="date"></div>
-</div>
-<script>
-function updateClock() {
-    const now = new Date();
-    const time = now.toLocaleTimeString();
-    const date = now.toLocaleDateString(undefined, {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-    document.getElementById('clock').innerText = time;
-    document.getElementById('date').innerText = date;
-}
-setInterval(updateClock, 1000);
-updateClock();
-</script>
-</div>"""
+# Clock HTML
+clock_html = """<div style="background: transparent;"><style>...</style></div>"""
 components.html(clock_html, height=130, scrolling=False)
 
 st.markdown("<h1 style='color:#ffffff; text-align:center;'>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
 
-uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
+uploaded_files = st.file_uploader("📁 Upload Excel Files (can be one or more)", type=["xlsx"], accept_multiple_files=True)
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
 def normalize(text):
@@ -84,11 +37,10 @@ def classify_note(note):
         "TERMINAL ID": ["TERMINAL ID"],
         "NO J.O": ["NO JO", "NO J O"],
         "DONE": ["DONE"],
-        "NO RETAILERS SIGNATURE": ["NO RETAILERS SIGNATURE", "NO RETAILER SIGNATURE", "NO RETAILERS SIGNATURE", "NO RETAILER'S SIGNATURE"
-],
+        "NO RETAILERS SIGNATURE": ["NO RETAILERS SIGNATURE", "NO RETAILER SIGNATURE", "NO RETAILER'S SIGNATURE"],
         "UNCLEAR IMAGE": ["UNCLEAR IMAGE"],
         "NO ENGINEER SIGNATURE": ["NO ENGINEER SIGNATURE"],
-        "NO SIGNATURE": ["NO SIGNATURE","NO SIGNATURES"],
+        "NO SIGNATURE": ["NO SIGNATURE", "NO SIGNATURES"],
         "PENDING": ["PENDING"],
         "NO INFORMATIONS": ["NO INFORMATION", "NO INFORMATIONS"],
         "MISSING INFORMATION": ["MISSING INFORMATION"],
@@ -148,19 +100,74 @@ def generate_alerts(df):
             alerts.append(f"👨‍🔧 Technician {tech} has high problem rate: {percent:.1f}%")
     return alerts
 
-def text_analysis(notes):
-    all_words = ' '.join(notes.dropna().astype(str)).upper().split()
-    word_counts = Counter(all_words)
-    return pd.DataFrame(word_counts.most_common(20), columns=['Word', 'Count'])
+def executive_summary(dfs):
+    st.markdown("### 📜 Executive Summary Dashboard")
+    for i, df in enumerate(dfs):
+        df['Note_Type'] = df['NOTE'].apply(classify_note)
+        note_counts = df['Note_Type'].value_counts().reset_index()
+        note_counts.columns = ['Note_Type', f'File_{i+1}_Count']
+        if i == 0:
+            merged = note_counts
+        else:
+            merged = pd.merge(merged, note_counts, on='Note_Type', how='outer')
+    merged.fillna(0, inplace=True)
+    st.dataframe(merged)
+    fig = px.bar(merged, x='Note_Type', y=merged.columns[1:], barmode='group', title="Note Comparison Across Files")
+    st.plotly_chart(fig, use_container_width=True)
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        merged.to_excel(writer, sheet_name="Comparison Summary", index=False)
+    st.download_button("📥 Download Summary Excel", output.getvalue(), "summary_comparison.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-ARCHIVE_DIR = "uploaded_archive"
-os.makedirs(ARCHIVE_DIR, exist_ok=True)
+def classify_notes_ai(df):
+    st.markdown("### 🤖 AI Classification of Notes")
+    notes = df['NOTE'].fillna("").astype(str)
+    vectorizer = TfidfVectorizer(stop_words='english')
+    X = vectorizer.fit_transform(notes)
+    kmeans = KMeans(n_clusters=5, random_state=0).fit(X)
+    df['AI_Cluster'] = kmeans.labels_
+    st.dataframe(df[['NOTE', 'AI_Cluster']])
+    fig = px.histogram(df, x='AI_Cluster', title='Distribution of AI-Detected Note Categories')
+    st.plotly_chart(fig, use_container_width=True)
+    sim_matrix = cosine_similarity(X)
+    most_similar_idx = sim_matrix.sum(axis=1).argmax()
+    st.info(f"📌 Most Representative Note: {notes.iloc[most_similar_idx]}")
 
-# باقي الكود للمعالجة والتحميل والتحليل يعمل تلقائياً بعد رفع الملف
-# يمكنك استكمال أي تبويبات أو وظائف بناءً على هذا الهيكل الجاهز
+if uploaded_files:
+    dfs = []
+    for file in uploaded_files:
+        df = pd.read_excel(file)
+        if all(col in df.columns for col in required_cols):
+            df['Note_Type'] = df['NOTE'].apply(classify_note)
+            df['Problem_Severity'] = df['Note_Type'].apply(problem_severity)
+            df['Suggested_Solution'] = df['Note_Type'].apply(suggest_solutions)
+            dfs.append(df)
+        else:
+            st.warning(f"File {file.name} is missing required columns.")
 
-# باقي الكود للمعالجة والتحميل والتحليل يعمل تلقائياً بعد رفع الملف
-# يمكنك اتكمال أي تبويبات أو وظائف بناءً على هذا الهيكل الجاهز
+    if dfs:
+        tab1, tab2, tab3 = st.tabs(["📄 File Summary", "📜 Executive Comparison", "🤖 AI Classifier"])
+
+        with tab1:
+            df = dfs[0]
+            alerts = generate_alerts(df)
+            if alerts:
+                with st.expander("🚨 Alerts", expanded=False):
+                    for alert in alerts:
+                        st.warning(alert)
+            st.subheader("📊 Note Type Summary")
+            note_counts = df['Note_Type'].value_counts().reset_index()
+            note_counts.columns = ["Note_Type", "Count"]
+            st.dataframe(note_counts)
+            fig = px.pie(note_counts, names='Note_Type', values='Count')
+            st.plotly_chart(fig, use_container_width=True)
+
+        with tab2:
+            executive_summary(dfs)
+
+        with tab3:
+            classify_notes_ai(pd.concat(dfs))
+
 
 # باقي الكود للقراءة والتحليل كما هو...
 # نفس الكود اللي كان عندك، وبتكمل من هون على حسب مكانك بالبناء
