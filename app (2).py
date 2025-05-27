@@ -84,8 +84,7 @@ def classify_note(note):
         "TERMINAL ID": ["TERMINAL ID"],
         "NO J.O": ["NO JO", "NO J O"],
         "DONE": ["DONE"],
-        "NO RETAILERS SIGNATURE": ["NO RETAILERS SIGNATURE", "NO RETAILER SIGNATURE", "NO RETAILERS SIGNATURE", "NO RETAILER'S SIGNATURE"
-],
+        "NO RETAILERS SIGNATURE": ["NO RETAILERS SIGNATURE", "NO RETAILER SIGNATURE", "NO RETAILERS SIGNATURE", "NO RETAILER'S SIGNATURE"],
         "UNCLEAR IMAGE": ["UNCLEAR IMAGE"],
         "NO ENGINEER SIGNATURE": ["NO ENGINEER SIGNATURE"],
         "NO SIGNATURE": ["NO SIGNATURE","NO SIGNATURES"],
@@ -155,6 +154,37 @@ def text_analysis(notes):
 
 ARCHIVE_DIR = "uploaded_archive"
 os.makedirs(ARCHIVE_DIR, exist_ok=True)
+
+# ✅ بعد رفع الملف وقراءة البيانات
+if uploaded_file is not None:
+    df = pd.read_excel(uploaded_file)
+
+    # Apply classification
+    df['Note_Type'] = df['NOTE'].apply(classify_note)
+
+    # ✅ تحليل جميع الملاحظات اللي مش DONE
+    if 'Note_Type' in df.columns:
+        filtered_df_not_done = df[df['Note_Type'] != 'DONE']
+        total_notes = len(filtered_df_not_done)
+        note_type_counts = filtered_df_not_done['Note_Type'].value_counts()
+
+        if total_notes > 0:
+            with st.expander("🔍 Non-DONE Note Types Overview", expanded=False):
+                for note_type, count in note_type_counts.items():
+                    percent = (count / total_notes) * 100
+                    color_box = "#f8d7da" if percent > 10 else "#d4edda"
+                    color_border = "#f5c6cb" if percent > 10 else "#c3e6cb"
+                    color_text = "#721c24" if percent > 10 else "#155724"
+                    icon = "🔴" if percent > 10 else "🟢"
+
+                    st.markdown(f"""
+                    <div style='background-color:{color_box}; color:{color_text}; padding:8px 15px;
+                                border-left: 6px solid {color_border}; border-radius: 6px;
+                                font-size:14px; margin-bottom:8px'>
+                    {icon} <strong>{note_type}</strong>: {percent:.2f}%
+                    </div>
+                    """, unsafe_allow_html=True)
+
 
 # باقي الكود للمعالجة والتحميل والتحليل يعمل تلقائياً بعد رفع الملف
 # يمكنك استكمال أي تبويبات أو وظائفءً على هذا الهيكل الجاهز
