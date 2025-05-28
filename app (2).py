@@ -12,7 +12,7 @@ import os
 import hashlib
 import re
 
-st.set_page_config(page_title="Note Analyzer", layout="wide")
+st.set_page_config(page_title="INTERSOFT Analyzer", layout="wide")
 
 clock_html = """<div style="background: transparent;"><style>
 .clock-container {
