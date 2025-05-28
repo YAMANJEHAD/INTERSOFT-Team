@@ -125,6 +125,27 @@ def problem_severity(note_type):
     elif note_type in medium: return "Medium"
     elif note_type in low: return "Low"
     else: return "Unclassified"
+def suggest_solutions(note_type):
+    solutions = {
+        "WRONG DATE": "Verify device timestamp and sync with server.",
+        "TERMINAL ID - WRONG DATE": "Recheck terminal ID entry and date configuration.",
+        "NO IMAGE FOR THE DEVICE": "Capture and upload image of the device.",
+        "NO RETAILERS SIGNATURE": "Ensure the retailer signs the form.",
+        "NO ENGINEER SIGNATURE": "Engineer must provide a signature before submission.",
+        "NO SIGNATURE": "Capture necessary signatures from all parties.",
+        "UNCLEAR IMAGE": "Retake photo with better clarity and lighting.",
+        "NOT ACTIVE": "Check activation process and retry.",
+        "NO BILL": "Attach a valid billing document.",
+        "NO RECEIPT": "Upload a clear image of the transaction receipt.",
+        "ANOTHER TERMINAL RECEIPT": "Ensure the correct terminal's receipt is uploaded.",
+        "WRONG RECEIPT": "Verify and re-upload the correct receipt.",
+        "REJECTED RECEIPT": "Follow up on why receipt was rejected and correct it.",
+        "MULTIPLE ISSUES": "Resolve all mentioned issues and update note accordingly.",
+        "NO J.O": "Provide the Job Order number or details.",
+        "PENDING": "Complete and finalize the pending task.",
+        "MISSING INFORMATION": "Review note and provide complete details.",
+    }
+    return solutions.get(note_type, "No solution available.")
 
 
 def generate_alerts(df):
