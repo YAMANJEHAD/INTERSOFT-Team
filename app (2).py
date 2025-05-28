@@ -97,7 +97,8 @@ def classify_note(note):
         "ANOTHER TERMINAL RECEIPT": ["ANOTHER TERMINAL RECEIPT"],
         "UNCLEAR RECEIPT": ["UNCLEAR RECEIPT"],
         "WRONG RECEIPT": ["WRONG RECEIPT"],
-        "REJECTED RECEIPT": ["REJECTED RECEIPT"]
+        "REJECTED RECEIPT": ["REJECTED RECEIPT"],
+        "MULTIPLE ISSUES":["MULTIPLE ISSUES"]
     }
     if "+" in note:
         return "MULTIPLE ISSUES"
