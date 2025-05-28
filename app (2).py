@@ -166,17 +166,7 @@ if uploaded_file:
     except:
         df = pd.read_excel(uploaded_file)
 
-    if not all(col in df.columns for col in required_cols):
-        st.error(f"❌ Missing required columns. Available: {list(df.columns)}")
-    else:
-        df['Note_Type'] = df['NOTE'].apply(classify_note)
-        df['Problem_Severity'] = df['Note_Type'].apply(problem_severity)
-        df['Suggested_Solution'] = df['Note_Type'].apply(suggest_solutions)
-        st.success("✅ File processed successfully!")
-
-        note_counts = df['Note_Type'].value_counts().reset_index()
-        note_counts.columns = ["Note_Type", "Count"]
-
+    
         if 'MULTIPLE ISSUES' in note_counts['Note_Type'].values:
             filtered_df_mi = df[df['Note_Type'] != 'DONE']
             total_notes = len(filtered_df_mi)
