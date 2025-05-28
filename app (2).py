@@ -125,7 +125,27 @@ def problem_severity(note_type):
     elif note_type in medium: return "Medium"
     elif note_type in low: return "Low"
     else: return "Unclassified"
-
+def suggest_solutions(note_type):
+    solutions = {
+        "WRONG DATE": "Verify device timestamp and sync with server.",
+        "TERMINAL ID - WRONG DATE": "Recheck terminal ID entry and date configuration.",
+        "NO IMAGE FOR THE DEVICE": "Capture and upload image of the device.",
+        "NO RETAILERS SIGNATURE": "Ensure the retailer signs the form.",
+        "NO ENGINEER SIGNATURE": "Engineer must provide a signature before submission.",
+        "NO SIGNATURE": "Capture necessary signatures from all parties.",
+        "UNCLEAR IMAGE": "Retake photo with better clarity and lighting.",
+        "NOT ACTIVE": "Check activation process and retry.",
+        "NO BILL": "Attach a valid billing document.",
+        "NO RECEIPT": "Upload a clear image of the transaction receipt.",
+        "ANOTHER TERMINAL RECEIPT": "Ensure the correct terminal's receipt is uploaded.",
+        "WRONG RECEIPT": "Verify and re-upload the correct receipt.",
+        "REJECTED RECEIPT": "Follow up on why receipt was rejected and correct it.",
+        "MULTIPLE ISSUES": "Resolve all mentioned issues and update note accordingly.",
+        "NO J.O": "Provide the Job Order number or details.",
+        "PENDING": "Complete and finalize the pending task.",
+        "MISSING INFORMATION": "Review note and provide complete details.",
+    }
+    return solutions.get(note_type, "No solution available.")
 
 
 def generate_alerts(df):
@@ -166,7 +186,17 @@ if uploaded_file:
     except:
         df = pd.read_excel(uploaded_file)
 
-    
+    if not all(col in df.columns for col in required_cols):
+        st.error(f"❌ Missing required columns. Available: {list(df.columns)}")
+    else:
+        df['Note_Type'] = df['NOTE'].apply(classify_note)
+        df['Problem_Severity'] = df['Note_Type'].apply(problem_severity)
+        df['Suggested_Solution'] = df['Note_Type'].apply(suggest_solutions)
+        st.success("✅ File processed successfully!")
+
+        note_counts = df['Note_Type'].value_counts().reset_index()
+        note_counts.columns = ["Note_Type", "Count"]
+
         if 'MULTIPLE ISSUES' in note_counts['Note_Type'].values:
             filtered_df_mi = df[df['Note_Type'] != 'DONE']
             total_notes = len(filtered_df_mi)
@@ -338,7 +368,10 @@ if uploaded_file:
             st.dataframe(ticket_problem.style.background_gradient(cmap='Blues'), 
                         use_container_width=True)
             
-            
+            # Suggested solutions
+            st.markdown("### 💡 Suggested Solutions for Common Problems")
+            solutions_df = df[['Note_Type', 'Suggested_Solution']].drop_duplicates()
+            st.dataframe(solutions_df, use_container_width=True)
 
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
