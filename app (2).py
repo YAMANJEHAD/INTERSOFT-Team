@@ -359,4 +359,4 @@ if uploaded_file:
             done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
             solutions_df.to_excel(writer, sheet_name="Suggested Solutions", index=False)
 
-        st.download_button("📥 Download Summary Excel", output.getvalue(), "summary.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        st.download_button("📥 Download Summary Excel", output.getvalue(), "FULL_SUMMARY.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
