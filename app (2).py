@@ -12,7 +12,7 @@ import os
 import hashlib
 import re
 
-# Add dark/light mode toggle
+# Add dark mode toggle
 st.markdown("""
 <style>
     .stApp {
