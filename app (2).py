@@ -12,66 +12,6 @@ import os
 import hashlib
 import re
 
-# Add dark/light mode toggle
-st.markdown("""
-<style>
-    .stApp {
-        max-width: 100%;
-    }
-    .mode-toggle {
-        position: fixed;
-        top: 15px;
-        left: 15px;
-        z-index: 9999;
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        font-size: 24px;
-    }
-    .dark-mode {
-        background-color: #0E1117;
-        color: white;
-    }
-    .light-mode {
-        background-color: white;
-        color: black;
-    }
-</style>
-<button class="mode-toggle" id="modeToggle">🌙</button>
-<script>
-    const modeToggle = document.getElementById('modeToggle');
-    const body = document.querySelector('body');
-    
-    // Check for saved user preference or use system preference
-    const savedMode = localStorage.getItem('mode') || 
-                     (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    
-    // Apply the saved mode
-    if (savedMode === 'dark') {
-        body.classList.add('dark-mode');
-        modeToggle.textContent = '☀️';
-    } else {
-        body.classList.add('light-mode');
-        modeToggle.textContent = '🌙';
-    }
-    
-    // Toggle between dark and light mode
-    modeToggle.addEventListener('click', () => {
-        if (body.classList.contains('dark-mode')) {
-            body.classList.remove('dark-mode');
-            body.classList.add('light-mode');
-            modeToggle.textContent = '🌙';
-            localStorage.setItem('mode', 'light');
-        } else {
-            body.classList.remove('light-mode');
-            body.classList.add('dark-mode');
-            modeToggle.textContent = '☀️';
-            localStorage.setItem('mode', 'dark');
-        }
-    });
-</script>
-""", unsafe_allow_html=True)
-
 st.set_page_config(page_title="INTERSOFT Analyzer",layout="wide")
 
 clock_html = """<div style="background: transparent;"><style>
