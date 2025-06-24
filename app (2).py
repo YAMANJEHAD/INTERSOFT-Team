@@ -359,36 +359,7 @@ if uploaded_file:
             done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
             solutions_df.to_excel(writer, sheet_name="Suggested Solutions", index=False)
 
-        st.markdown("## 📊 Visualization for Each Sheet")
-st.markdown("### Select chart type to visualize all sheets")
-chart_type = st.selectbox("📈 Chart Type", ["Bar", "Line", "Pie"], key="sheet_chart_type")
-
-if uploaded_file:
-    excel_sheets = pd.ExcelFile(uploaded_file)
-    all_sheet_names = excel_sheets.sheet_names
-
-    for sheet in all_sheet_names:
-        try:
-            df_sheet = pd.read_excel(excel_sheets, sheet_name=sheet)
-            df_sheet = df_sheet.dropna(how='all')  # Drop completely empty rows
-
-            st.subheader(f"📄 Sheet: {sheet}")
-            if df_sheet.shape[1] >= 2:
-                x_col = df_sheet.columns[0]
-                y_col = df_sheet.columns[1]
-
-                if chart_type == "Bar":
-                    fig = px.bar(df_sheet, x=x_col, y=y_col, title=f"{sheet} - Bar Chart")
-                elif chart_type == "Line":
-                    fig = px.line(df_sheet, x=x_col, y=y_col, title=f"{sheet} - Line Chart")
-                elif chart_type == "Pie":
-                    fig = px.pie(df_sheet, names=x_col, values=y_col, title=f"{sheet} - Pie Chart")
-
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.warning(f"❗ Sheet '{sheet}' does not have at least two columns to generate a chart.")
-        except Exception as e:
-            st.error(f"⚠️ Error in sheet '{sheet}': {e}")
+       
 
 
         st.download_button("📥 Download Summary Excel", output.getvalue(), "FULL_SUMMARY.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
