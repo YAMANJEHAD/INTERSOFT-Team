@@ -8,10 +8,11 @@ import os
 import hashlib
 import re
 from PIL import Image, ImageDraw, ImageFont
+from collections import defaultdict
 
 # Page Configuration
 st.set_page_config(
-    page_title="INTERSOFT Analyzer",
+    page_title="INTERSOFT Analyzer Pro",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -37,7 +38,7 @@ def load_logo():
         return create_default_logo()
 
 def set_dark_mode():
-    """Enable dark mode"""
+    """Enable dark mode styling"""
     st.markdown("""
     <style>
     .stApp {
@@ -50,8 +51,47 @@ def set_dark_mode():
     .widget-label, .st-bb, .st-at, .st-ae, .st-af, .st-ag, .st-ah, .st-ai, .st-aj {
         color: white !important;
     }
+    .metric-card {
+        background-color: #2E2E2E;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-left: 5px solid #4e79a7;
+    }
+    .duplicate-badge {
+        color: white;
+        background-color: #ff4b4b;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        margin-left: 10px;
+    }
+    .unique-badge {
+        color: white;
+        background-color: #59a14f;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        margin-left: 10px;
+    }
+    .header-style {
+        border-bottom: 2px solid #4e79a7;
+        padding-bottom: 5px;
+        margin-top: 20px;
+    }
     </style>
     """, unsafe_allow_html=True)
+
+def analyze_duplicates(df, column_name):
+    """Analyze duplicates and return detailed information"""
+    duplicates = df[df.duplicated(subset=[column_name], keep=False)]
+    duplicate_counts = duplicates[column_name].value_counts().to_dict()
+    
+    duplicate_details = defaultdict(list)
+    for _, row in duplicates.iterrows():
+        duplicate_details[row[column_name]].append(row.to_dict())
+    
+    return duplicates, duplicate_counts, duplicate_details
 
 def normalize(text):
     """Normalize text format"""
@@ -146,7 +186,7 @@ with col1:
     except:
         st.markdown("### 🏢")
 with col2:
-    st.markdown("<h1 style='color:#ffffff; margin-top:15px;'>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='color:#ffffff; margin-top:15px;'>📊 INTERSOFT Analyzer Pro</h1>", unsafe_allow_html=True)
 
 # Digital Clock
 components.html("""
@@ -165,7 +205,7 @@ updateTime();
 """, height=50)
 
 # ========== Pending Tickets Section ==========
-st.markdown("## 📌 Pending Tickets Analysis")
+st.markdown('<div class="header-style">📌 Pending Tickets Analysis</div>', unsafe_allow_html=True)
 
 with st.expander("🧮 Filter Unprocessed Tickets by Ticket_Id", expanded=True):
     col1, col2 = st.columns(2)
@@ -176,175 +216,75 @@ with st.expander("🧮 Filter Unprocessed Tickets by Ticket_Id", expanded=True):
 
     if all_file and done_file:
         try:
+            # Read files
             all_df = pd.read_excel(all_file)
             done_df = pd.read_excel(done_file)
 
-            if 'Ticket_Id' not in all_df.columns or 'Ticket_Id' not in done_df.columns:
-                st.error("❌ Both files must contain a 'Ticket_Id' column")
-            else:
-                # Remove duplicates
-                all_df = all_df.drop_duplicates(subset=['Ticket_Id'], keep='first')
-                done_df = done_df.drop_duplicates(subset=['Ticket_Id'], keep='first')
-                
-                pending_df = all_df[~all_df['Ticket_Id'].isin(done_df['Ticket_Id'])]
-                
-                # KPIs
-                st.markdown("### 📊 Performance Metrics")
-                cols = st.columns(4)
-                with cols[0]:
-                    st.metric("Total Tickets", len(all_df))
-                with cols[1]:
-                    st.metric("Completed", len(done_df))
-                with cols[2]:
-                    st.metric("Pending", len(pending_df))
-                with cols[3]:
-                    percent = (len(pending_df)/len(all_df))*100 if len(all_df)>0 else 0
-                    st.metric("Pending Percentage", f"{percent:.1f}%")
+            # Analyze duplicates
+            all_duplicates, all_dup_counts, all_dup_details = analyze_duplicates(all_df, 'Ticket_Id')
+            done_duplicates, done_dup_counts, done_dup_details = analyze_duplicates(done_df, 'Ticket_Id')
 
-                # Filters
-                st.markdown("### 🔍 Filter Results")
-                filter_cols = st.columns(3)
-                filters = {}
-                
-                if 'Date' in pending_df.columns:
-                    with filter_cols[0]:
-                        date_options = ["All Periods", "Last Week", "Last Month"]
-                        date_sel = st.selectbox("Time Period", date_options)
-                        if date_sel == "Last Week":
-                            pending_df = pending_df[pending_df['Date'] >= (datetime.now() - timedelta(days=7))]
-                        elif date_sel == "Last Month":
-                            pending_df = pending_df[pending_df['Date'] >= (datetime.now() - timedelta(days=30))]
-                
-                if 'Technician_Name' in pending_df.columns:
-                    with filter_cols[1]:
-                        techs = st.multiselect("Technician", pending_df['Technician_Name'].unique())
-                        if techs:
-                            pending_df = pending_df[pending_df['Technician_Name'].isin(techs)]
-                
-                if 'Ticket_Type' in pending_df.columns:
-                    with filter_cols[2]:
-                        types = st.multiselect("Ticket Type", pending_df['Ticket_Type'].unique())
-                        if types:
-                            pending_df = pending_df[pending_df['Ticket_Type'].isin(types)]
-                
-                # Display results
-                st.dataframe(pending_df, use_container_width=True)
-                
-                # Export options
-                st.download_button(
-                    "📥 Download Pending Tickets (Excel)",
-                    pending_df.to_excel(index=False),
-                    "pending_tickets.xlsx",
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-
-        except Exception as e:
-            st.error(f"❌ Error processing files: {str(e)}")
-
-# ========== Main Analysis ==========
-st.markdown("## 📊 Comprehensive Analysis Dashboard")
-
-uploaded_file = st.file_uploader("📁 Upload Data File for Analysis", type=["xlsx"])
-required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
-
-if uploaded_file:
-    try:
-        df = pd.read_excel(uploaded_file)
-        
-        if not all(col in df.columns for col in required_cols):
-            st.error(f"❌ Required columns missing. Available columns: {list(df.columns)}")
-        else:
-            # Data cleaning
-            if 'Ticket_Id' in df.columns:
-                df = df.drop_duplicates(subset=['Ticket_Id'], keep='first')
+            # Clean data (keep first occurrence)
+            all_df_clean = all_df.drop_duplicates(subset=['Ticket_Id'], keep='first')
+            done_df_clean = done_df.drop_duplicates(subset=['Ticket_Id'], keep='first')
             
-            df['Note_Type'] = df['NOTE'].apply(classify_note)
-            df['Problem_Severity'] = df['Note_Type'].apply(problem_severity)
-            df['Suggested_Solution'] = df['Note_Type'].apply(suggest_solutions)
+            # Find pending tickets
+            pending_df = all_df_clean[~all_df_clean['Ticket_Id'].isin(done_df_clean['Ticket_Id'])]
             
-            # Severity colors
-            severity_colors = {
-                "Critical": "#FF0000",  # Red
-                "High": "#FFA500",      # Orange
-                "Medium": "#FFFF00",    # Yellow
-                "Low": "#00FF00",       # Green
-                "Unclassified": "#808080" # Gray
+            # Calculate statistics
+            stats = {
+                'total_all': len(all_df),
+                'total_completed': len(done_df),
+                'total_pending': len(pending_df),
+                'all_duplicates': len(all_duplicates),
+                'completed_duplicates': len(done_duplicates),
+                'unique_all': len(all_df_clean),
+                'unique_completed': len(done_df_clean),
+                'duplicate_percentage': (len(all_duplicates)/len(all_df))*100 if len(all_df) > 0 else 0
             }
-            
-            # KPIs
-            st.markdown("### 📈 Performance Overview")
-            kpi_cols = st.columns(4)
-            
-            with kpi_cols[0]:
-                st.metric("Total Tickets", len(df))
-            with kpi_cols[1]:
-                done = len(df[df['Note_Type'] == 'DONE'])
-                st.metric("Completed", done)
-            with kpi_cols[2]:
-                critical = len(df[df['Problem_Severity'] == 'Critical'])
-                st.metric("Critical Issues", critical)
-            with kpi_cols[3]:
-                st.metric("Avg Resolution Time", "3 days")  # Replace with actual calculation
-            
-            # Visualizations
-            st.markdown("### 📊 Data Visualizations")
-            
-            # Note types chart
-            fig1 = px.pie(
-                df['Note_Type'].value_counts().reset_index(),
-                names='Note_Type',
-                values='count',
-                title="Note Type Distribution"
-            )
-            st.plotly_chart(fig1, use_container_width=True)
-            
-            # Severity chart
-            severity_df = df['Problem_Severity'].value_counts().reset_index()
-            fig2 = px.bar(
-                severity_df,
-                x='Problem_Severity',
-                y='count',
-                color='Problem_Severity',
-                color_discrete_map=severity_colors,
-                title="Problems by Severity Level"
-            )
-            st.plotly_chart(fig2, use_container_width=True)
-            
-            # Technicians analysis
-            st.markdown("### 👨‍🔧 Technician Performance Analysis")
-            
-            tech_df = df.groupby('Technician_Name').agg({
-                'Ticket_Type': 'count',
-                'Problem_Severity': lambda x: (x == 'Critical').sum()
-            }).rename(columns={
-                'Ticket_Type': 'Total_Tickets',
-                'Problem_Severity': 'Critical_Issues'
-            }).sort_values('Total_Tickets', ascending=False)
-            
-            st.dataframe(tech_df, use_container_width=True)
-            
-            # Export final report
-            st.markdown("### 📤 Export Results")
-            
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                df.to_excel(writer, sheet_name="Complete Data", index=False)
-                tech_df.to_excel(writer, sheet_name="Technician Performance", index=True)
-            
-            st.download_button(
-                "📥 Download Full Report",
-                output.getvalue(),
-                "full_report.xlsx",
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
 
-    except Exception as e:
-        st.error(f"❌ Error processing file: {str(e)}")
-
-# Footer
-st.markdown("""
-<div style="text-align:center; margin-top:50px; padding:20px; background:#f0f2f6;">
-    <p>INTERSOFT Analyzer - Version 1.0</p>
-    <p>© 2023 All Rights Reserved</p>
-</div>
-""", unsafe_allow_html=True)
+            # Display results
+            st.success("✅ Data analyzed successfully")
+            st.markdown("---")
+            
+            # Key Metrics
+            st.markdown('<div class="header-style">📈 Key Metrics</div>', unsafe_allow_html=True)
+            cols = st.columns(4)
+            
+            with cols[0]:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <h3>Total Tickets</h3>
+                    <h2>{stats['total_all']:,}</h2>
+                    <div style="margin-top: 10px;">
+                        <span class="unique-badge">{stats['unique_all']:,} unique</span>
+                        <span class="duplicate-badge">{stats['all_duplicates']:,} duplicates</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with cols[1]:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <h3>Completed Tickets</h3>
+                    <h2>{stats['total_completed']:,}</h2>
+                    <div style="margin-top: 10px;">
+                        <span class="unique-badge">{stats['unique_completed']:,} unique</span>
+                        <span class="duplicate-badge">{stats['completed_duplicates']:,} duplicates</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with cols[2]:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <h3>Pending Tickets</h3>
+                    <h2>{stats['total_pending']:,}</h2>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with cols[3]:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <h3>Duplicate Rate</h3>
+                    <h2>{stats
