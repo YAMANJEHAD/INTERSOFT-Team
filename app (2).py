@@ -341,6 +341,11 @@ if uploaded_file:
 
             tab9 = st.tabs(["📌 Pending Tickets Based on DONE Status"])[0]
 
+
+
+
+       tab9 = st.tabs(["📌 Pending Tickets Based on DONE Status"])[0]
+
 with tab9:
     st.markdown("## 🧮 Filter Unprocessed Tickets Based on Ticket_ID")
 
@@ -364,6 +369,9 @@ with tab9:
 
         except Exception as e:
             st.error(f"❌ Error processing files: {e}")
+
+
+
 
 
             
