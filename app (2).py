@@ -179,14 +179,14 @@ with st.expander("🧮 تصفية التذاكر غير المكتملة حسب 
             all_df = pd.read_excel(all_file)
             done_df = pd.read_excel(done_file)
 
-            if 'Ticket_ID' not in all_df.columns or 'Ticket_ID' not in done_df.columns:
-                st.error("❌ يجب أن يحتوي الملفان على عمود 'Ticket_ID'")
+            if 'Ticket_Id' not in all_df.columns or 'Ticket_Id' not in done_df.columns:
+                st.error("❌ يجب أن يحتوي الملفان على عمود 'Ticket_Id'")
             else:
                 # إزالة التكرارات
-                all_df = all_df.drop_duplicates(subset=['Ticket_ID'], keep='first')
-                done_df = done_df.drop_duplicates(subset=['Ticket_ID'], keep='first')
+                all_df = all_df.drop_duplicates(subset=['Ticket_Id'], keep='first')
+                done_df = done_df.drop_duplicates(subset=['Ticket_Id'], keep='first')
                 
-                pending_df = all_df[~all_df['Ticket_ID'].isin(done_df['Ticket_ID'])]
+                pending_df = all_df[~all_df['Ticket_Id'].isin(done_df['Ticket_Id'])]
                 
                 # مؤشرات الأداء
                 st.markdown("### 📊 مقاييس الأداء")
@@ -255,8 +255,8 @@ if uploaded_file:
             st.error(f"❌ الأعمدة المطلوبة غير موجودة. الأعمدة المتاحة: {list(df.columns)}")
         else:
             # تنظيف البيانات
-            if 'Ticket_ID' in df.columns:
-                df = df.drop_duplicates(subset=['Ticket_ID'], keep='first')
+            if 'Ticket_Id' in df.columns:
+                df = df.drop_duplicates(subset=['Ticket_Id'], keep='first')
             
             df['Note_Type'] = df['NOTE'].apply(classify_note)
             df['Problem_Severity'] = df['Note_Type'].apply(problem_severity)
