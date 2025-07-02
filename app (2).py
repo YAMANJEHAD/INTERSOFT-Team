@@ -99,10 +99,7 @@ updateClock();
 </div>"""
 components.html(clock_html, height=130, scrolling=False)
 
-# Main Title with Logo
-col1, col2 = st.columns([1, 4])
-with col1:
-    st.image(Image.open("logo.png"), width=80)  # Replace with your logo path
+
 with col2:
     st.markdown("<h1 style='color:#ffffff; margin-top:15px;'>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
 
