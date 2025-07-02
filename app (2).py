@@ -338,13 +338,7 @@ if uploaded_file:
                                      title='Problem Distribution')
                 st.plotly_chart(fig_problems, use_container_width=True)
 
-
             tab9 = st.tabs(["📌 Pending Tickets Based on DONE Status"])[0]
-
-
-
-
-       tab9 = st.tabs(["📌 Pending Tickets Based on DONE Status"])[0]
 
 with tab9:
     st.markdown("## 🧮 Filter Unprocessed Tickets Based on Ticket_ID")
@@ -371,6 +365,8 @@ with tab9:
             st.error(f"❌ Error processing files: {e}")
 
 
+
+           
 
 
 
