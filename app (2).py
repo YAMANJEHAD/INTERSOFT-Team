@@ -232,112 +232,137 @@ if uploaded_file:
                     </div>
                     """, unsafe_allow_html=True)
 
-        tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
-            "📊 Note Type Summary", "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians",
-            "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes", 
-            "✍️ Signature Issues", "🔍 Deep Problem Analysis"])
+       tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
+    "📊 Note Type Summary", "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians",
+    "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes", 
+    "✍️ Signature Issues", "🔍 Deep Problem Analysis", "📌 Pending Tickets Based on DONE Status"
+])
 
-        with tab1:
-            st.markdown("### 🔢 Count of Each Note Type")
-            st.dataframe(note_counts, use_container_width=True)
-            fig_bar = px.bar(note_counts, x="Note_Type", y="Count", title="Note Type Frequency")
-            st.plotly_chart(fig_bar, use_container_width=True)
+with tab1:
+    st.markdown("### 🔢 Count of Each Note Type")
+    st.dataframe(note_counts, use_container_width=True)
+    fig_bar = px.bar(note_counts, x="Note_Type", y="Count", title="Note Type Frequency")
+    st.plotly_chart(fig_bar, use_container_width=True)
 
-        with tab2:
-            st.markdown("### 📈 Notes per Technician")
-            tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
-            st.bar_chart(tech_counts)
+with tab2:
+    st.markdown("### 📈 Notes per Technician")
+    tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
+    st.bar_chart(tech_counts)
 
-        with tab3:
-            st.markdown("### 🚨 Technician With Most Wrong Notes!")
-            filtered_df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
-            tech_counts_filtered = filtered_df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
-            top_5_technicians = tech_counts_filtered.head(5)
-            top_5_data = filtered_df[filtered_df['Technician_Name'].isin(top_5_technicians.index.tolist())]
-            technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
-            technician_notes_count = top_5_technicians.reset_index()
-            technician_notes_count.columns = ['Technician_Name', 'Notes_Count']
-            tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
-            st.dataframe(technician_notes_count, use_container_width=True)
+with tab3:
+    st.markdown("### 🚨 Technician With Most Wrong Notes!")
+    filtered_df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
+    tech_counts_filtered = filtered_df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
+    top_5_technicians = tech_counts_filtered.head(5)
+    top_5_data = filtered_df[filtered_df['Technician_Name'].isin(top_5_technicians.index.tolist())]
+    technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
+    technician_notes_count = top_5_technicians.reset_index()
+    technician_notes_count.columns = ['Technician_Name', 'Notes_Count']
+    tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
+    st.dataframe(technician_notes_count, use_container_width=True)
 
-        with tab4:
-            st.markdown("### 🥧 Note Types Distribution")
-            fig = px.pie(note_counts, names='Note_Type', values='Count', title='Note Type Distribution')
-            fig.update_traces(textinfo='percent+label')
-            st.plotly_chart(fig)
+with tab4:
+    st.markdown("### 🥧 Note Types Distribution")
+    fig = px.pie(note_counts, names='Note_Type', values='Count', title='Note Type Distribution')
+    fig.update_traces(textinfo='percent+label')
+    st.plotly_chart(fig)
 
-        with tab5:
-            st.markdown("### ✅'DONE' Notes")
-            done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
-            done_terminals_counts = done_terminals['Technician_Name'].value_counts()
-            done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
-            done_terminals_summary = done_terminals_counts.head(5).reset_index()
-            done_terminals_summary.columns = ['Technician_Name', 'DONE_Notes_Count']
-            st.dataframe(done_terminals_summary, use_container_width=True)
+with tab5:
+    st.markdown("### ✅'DONE' Notes")
+    done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
+    done_terminals_counts = done_terminals['Technician_Name'].value_counts()
+    done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
+    done_terminals_summary = done_terminals_counts.head(5).reset_index()
+    done_terminals_summary.columns = ['Technician_Name', 'DONE_Notes_Count']
+    st.dataframe(done_terminals_summary, use_container_width=True)
 
-        with tab6:
-            st.markdown("### 📑 Detailed Notes for Top 5 Technicians")
-            for tech in top_5_technicians.index:
-                st.markdown(f"#### 🧑 Technician: {tech}")
-                technician_data = top_5_data[top_5_data['Technician_Name'] == tech]
-                technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
-                st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
+with tab6:
+    st.markdown("### 📑 Detailed Notes for Top 5 Technicians")
+    for tech in top_5_technicians.index:
+        st.markdown(f"#### 🧑 Technician: {tech}")
+        technician_data = top_5_data[top_5_data['Technician_Name'] == tech]
+        technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
+        st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
 
-        with tab7:
-            st.markdown("## ✍️ Signature Issues Analysis")
-            signature_issues_df = df[df['NOTE'].str.upper().str.contains("SIGNATURE", na=False)]
+with tab7:
+    st.markdown("## ✍️ Signature Issues Analysis")
+    signature_issues_df = df[df['NOTE'].str.upper().str.contains("SIGNATURE", na=False)]
 
-            if signature_issues_df.empty:
-                st.success("✅ No signature-related issues found!")
+    if signature_issues_df.empty:
+        st.success("✅ No signature-related issues found!")
+    else:
+        st.markdown("### 📋 Summary Table")
+        sig_group = signature_issues_df.groupby('Technician_Name')['NOTE'].count().reset_index(name='Signature_Issues')
+        total_tech = df.groupby('Technician_Name')['NOTE'].count().reset_index(name='Total_Notes')
+        sig_merged = pd.merge(sig_group, total_tech, on='Technician_Name')
+        sig_merged['Signature_Issue_Rate (%)'] = (sig_merged['Signature_Issues'] / sig_merged['Total_Notes']) * 100
+        st.dataframe(sig_merged, use_container_width=True)
+
+        st.markdown("### 📊 Bar Chart")
+        fig_sig_bar = px.bar(sig_merged, x='Technician_Name', y='Signature_Issues', color='Signature_Issue_Rate (%)', title='Signature Issues per Technician')
+        st.plotly_chart(fig_sig_bar, use_container_width=True)
+
+        st.markdown("### 📈 Line Chart")
+        fig_sig_line = px.line(sig_merged, x='Technician_Name', y='Signature_Issue_Rate (%)', markers=True, title='Signature Issue Rate')
+        st.plotly_chart(fig_sig_line, use_container_width=True)
+
+        st.markdown("### 🗺️ Geo Map (Dummy Coordinates)")
+        df_map = signature_issues_df.copy()
+        df_map['lat'] = 24.7136 + (df_map.index % 10) * 0.03
+        df_map['lon'] = 46.6753 + (df_map.index % 10) * 0.03
+        st.map(df_map[['lat', 'lon']])
+
+        sig_output = io.BytesIO()
+        with pd.ExcelWriter(sig_output, engine='xlsxwriter') as writer:
+            signature_issues_df.to_excel(writer, index=False, sheet_name="Signature Issues")
+            sig_merged.to_excel(writer, index=False, sheet_name="Technician Summary")
+
+        st.download_button("📥 Download Signature Issues Report", sig_output.getvalue(), "signature_issues.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+with tab8:
+    st.markdown("## 🔍 Deep Problem Analysis")
+    
+    # Common problems analysis
+    st.markdown("### 📌 Common Problems and Patterns")
+    common_problems = df[~df['Note_Type'].isin(['DONE'])]
+    
+    # Problem frequency
+    problem_freq = common_problems['Note_Type'].value_counts().reset_index()
+    problem_freq.columns = ["Problem", "Count"]
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.dataframe(problem_freq, use_container_width=True)
+    
+    with col2:
+        fig_problems = px.pie(problem_freq, names='Problem', values='Count', 
+                             title='Problem Distribution')
+        st.plotly_chart(fig_problems, use_container_width=True)
+
+# New Tab 9 for Pending Tickets
+with tab9:
+    st.markdown("## 🧮 Filter Unprocessed Tickets Based on Ticket_ID")
+
+    all_file = st.file_uploader("🔄 Upload All Tickets File", type=["xlsx"], key="all_file")
+    done_file = st.file_uploader("✅ Upload Done Tickets File", type=["xlsx"], key="done_file")
+
+    if all_file and done_file:
+        try:
+            all_df = pd.read_excel(all_file)
+            done_df = pd.read_excel(done_file)
+
+            if 'Ticket_ID' not in all_df.columns or 'Ticket_ID' not in done_df.columns:
+                st.error("❌ Both files must contain a 'Ticket_ID' column.")
             else:
-                st.markdown("### 📋 Summary Table")
-                sig_group = signature_issues_df.groupby('Technician_Name')['NOTE'].count().reset_index(name='Signature_Issues')
-                total_tech = df.groupby('Technician_Name')['NOTE'].count().reset_index(name='Total_Notes')
-                sig_merged = pd.merge(sig_group, total_tech, on='Technician_Name')
-                sig_merged['Signature_Issue_Rate (%)'] = (sig_merged['Signature_Issues'] / sig_merged['Total_Notes']) * 100
-                st.dataframe(sig_merged, use_container_width=True)
+                pending_df = all_df[~all_df['Ticket_ID'].isin(done_df['Ticket_ID'])]
+                st.success(f"✅ Found {len(pending_df)} pending tickets.")
+                st.dataframe(pending_df, use_container_width=True)
 
-                st.markdown("### 📊 Bar Chart")
-                fig_sig_bar = px.bar(sig_merged, x='Technician_Name', y='Signature_Issues', color='Signature_Issue_Rate (%)', title='Signature Issues per Technician')
-                st.plotly_chart(fig_sig_bar, use_container_width=True)
+                csv = pending_df.to_csv(index=False).encode('utf-8')
+                st.download_button("📥 Download Pending Tickets", csv, "pending_tickets.csv", mime="text/csv")
 
-                st.markdown("### 📈 Line Chart")
-                fig_sig_line = px.line(sig_merged, x='Technician_Name', y='Signature_Issue_Rate (%)', markers=True, title='Signature Issue Rate')
-                st.plotly_chart(fig_sig_line, use_container_width=True)
-
-                st.markdown("### 🗺️ Geo Map (Dummy Coordinates)")
-                df_map = signature_issues_df.copy()
-                df_map['lat'] = 24.7136 + (df_map.index % 10) * 0.03
-                df_map['lon'] = 46.6753 + (df_map.index % 10) * 0.03
-                st.map(df_map[['lat', 'lon']])
-
-                sig_output = io.BytesIO()
-                with pd.ExcelWriter(sig_output, engine='xlsxwriter') as writer:
-                    signature_issues_df.to_excel(writer, index=False, sheet_name="Signature Issues")
-                    sig_merged.to_excel(writer, index=False, sheet_name="Technician Summary")
-
-                st.download_button("📥 Download Signature Issues Report", sig_output.getvalue(), "signature_issues.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-        with tab8:
-            st.markdown("## 🔍 Deep Problem Analysis")
-            
-            # Common problems analysis
-            st.markdown("### 📌 Common Problems and Patterns")
-            common_problems = df[~df['Note_Type'].isin(['DONE'])]
-            
-            # Problem frequency
-            problem_freq = common_problems['Note_Type'].value_counts().reset_index()
-            problem_freq.columns = ["Problem", "Count"]
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                st.dataframe(problem_freq, use_container_width=True)
-            
-            with col2:
-                fig_problems = px.pie(problem_freq, names='Problem', values='Count', 
-                                     title='Problem Distribution')
-                st.plotly_chart(fig_problems, use_container_width=True)
-
+        except Exception as e:
+            st.error(f"❌ Error processing files: {e}")
 
 
 
