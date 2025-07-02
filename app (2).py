@@ -64,10 +64,77 @@ updateClock();
 </div>"""
 components.html(clock_html, height=130, scrolling=False)
 
-st.markdown("<h1 style='color:#ffffff; text-align:center;'>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
+# Pending Tickets Analysis - First Section
+st.markdown("<h1 style='color:#ffffff; text-align:center;'>📌 Pending Tickets Analysis</h1>", unsafe_allow_html=True)
+
+with st.expander("🧮 Filter Unprocessed Tickets Based on Ticket_ID", expanded=True):
+    st.markdown("""
+    <div style='background-color:#e6f7ff; padding:10px; border-radius:5px; margin-bottom:15px;'>
+    ℹ️ <strong>Instructions:</strong> Upload two Excel files - one with <strong>all tickets</strong> and another with <strong>completed (DONE) tickets</strong>. 
+    The system will identify pending tickets based on Ticket_ID.
+    </div>
+    """, unsafe_allow_html=True)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        all_file = st.file_uploader("🔄 Upload ALL Tickets File", type=["xlsx"], key="all_file")
+    with col2:
+        done_file = st.file_uploader("✅ Upload DONE Tickets File", type=["xlsx"], key="done_file")
+
+    if all_file and done_file:
+        try:
+            all_df = pd.read_excel(all_file)
+            done_df = pd.read_excel(done_file)
+
+            if 'Ticket_ID' not in all_df.columns or 'Ticket_ID' not in done_df.columns:
+                st.error("❌ Both files must contain a 'Ticket_ID' column.")
+            else:
+                pending_df = all_df[~all_df['Ticket_ID'].isin(done_df['Ticket_ID'])]
+                
+                st.success(f"✅ Found {len(pending_df)} pending tickets out of {len(all_df)} total tickets.")
+                
+                # Display summary metrics
+                pending_percent = (len(pending_df) / len(all_df)) * 100
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Total Tickets", len(all_df))
+                col2.metric("Completed Tickets", len(done_df))
+                col3.metric("Pending Tickets", len(pending_df), f"{pending_percent:.1f}%")
+                
+                # Display pending tickets
+                st.dataframe(pending_df, use_container_width=True)
+
+                # Download options
+                csv = pending_df.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    "📥 Download Pending Tickets as CSV", 
+                    csv, 
+                    "pending_tickets.csv", 
+                    mime="text/csv",
+                    help="Download the list of pending tickets in CSV format"
+                )
+
+                # Excel download with both sheets
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                    pending_df.to_excel(writer, sheet_name="Pending_Tickets", index=False)
+                    done_df.to_excel(writer, sheet_name="Completed_Tickets", index=False)
+                
+                st.download_button(
+                    "📥 Download Full Report (Excel)", 
+                    output.getvalue(), 
+                    "pending_tickets_report.xlsx", 
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    help="Download full report with both pending and completed tickets"
+                )
+
+        except Exception as e:
+            st.error(f"❌ Error processing files: {e}")
+
+# Main Analyzer Section
+st.markdown("<h1 style='color:#ffffff; text-align:center; margin-top:30px;'>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
 
 # File uploader and processing functions
-uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
+uploaded_file = st.file_uploader("📁 Upload Excel File for Full Analysis", type=["xlsx"])
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
 def normalize(text):
@@ -235,11 +302,11 @@ if uploaded_file:
                     """, unsafe_allow_html=True)
 
         # Create tabs for different analyses
-        tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
-            "📊 Note Type Summary", "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians",
-            "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes", 
-            "✍️ Signature Issues", "🔍 Deep Problem Analysis", "📌 Pending Tickets Based on DONE Status"
-        ])
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+                "📊 Note Type Summary", "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians",
+                "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes", 
+                "✍️ Signature Issues", "🔍 Deep Problem Analysis"
+            ])
 
         with tab1:
             st.markdown("### 🔢 Count of Each Note Type")
@@ -352,30 +419,6 @@ if uploaded_file:
             st.markdown("### 💡 Suggested Solutions for Common Problems")
             solutions_df = df[['Note_Type', 'Suggested_Solution']].drop_duplicates()
             st.dataframe(solutions_df, use_container_width=True)
-
-        with tab9:
-            st.markdown("## 🧮 Filter Unprocessed Tickets Based on Ticket_ID")
-
-            all_file = st.file_uploader("🔄 Upload All Tickets File", type=["xlsx"], key="all_file")
-            done_file = st.file_uploader("✅ Upload Done Tickets File", type=["xlsx"], key="done_file")
-
-            if all_file and done_file:
-                try:
-                    all_df = pd.read_excel(all_file)
-                    done_df = pd.read_excel(done_file)
-
-                    if 'Ticket_ID' not in all_df.columns or 'Ticket_ID' not in done_df.columns:
-                        st.error("❌ Both files must contain a 'Ticket_ID' column.")
-                    else:
-                        pending_df = all_df[~all_df['Ticket_ID'].isin(done_df['Ticket_ID'])]
-                        st.success(f"✅ Found {len(pending_df)} pending tickets.")
-                        st.dataframe(pending_df, use_container_width=True)
-
-                        csv = pending_df.to_csv(index=False).encode('utf-8')
-                        st.download_button("📥 Download Pending Tickets", csv, "pending_tickets.csv", mime="text/csv")
-
-                except Exception as e:
-                    st.error(f"❌ Error processing files: {e}")
 
         # Generate and download full report
         output = io.BytesIO()
