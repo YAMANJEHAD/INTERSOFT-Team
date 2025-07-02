@@ -7,111 +7,172 @@ from datetime import datetime, timedelta
 import os
 import hashlib
 import re
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
-# Configuration
+# تهيئة الصفحة
 st.set_page_config(
     page_title="INTERSOFT Analyzer",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Dark Mode Switch
+# ========== وظائف مساعدة ==========
+
+def create_default_logo():
+    """إنشاء شعار افتراضي إذا لم يوجد ملف الصورة"""
+    img = Image.new('RGB', (100, 100), color=(73, 109, 137))
+    d = ImageDraw.Draw(img)
+    try:
+        font = ImageFont.truetype("arial.ttf", 20)
+    except:
+        font = ImageFont.load_default()
+    d.text((10,10), "LOGO", fill=(255,255,0), font=font)
+    return img
+
+def load_logo():
+    """تحميل شعار التطبيق"""
+    try:
+        return Image.open("logo.png")
+    except:
+        return create_default_logo()
+
 def set_dark_mode():
+    """تفعيل الوضع الليلي"""
     st.markdown("""
     <style>
     .stApp {
         background-color: #1E1E1E;
         color: white;
     }
-    .css-1d391kg, .css-1y4p8pa, .css-1oe5cao {
-        background-color: #2E2E2E !important;
+    .sidebar .sidebar-content {
+        background-color: #2E2E2E;
     }
-    .st-bb, .st-at, .st-ae, .st-af, .st-ag, .st-ah, .st-ai, .st-aj {
+    .widget-label, .st-bb, .st-at, .st-ae, .st-af, .st-ag, .st-ah, .st-ai, .st-aj {
         color: white !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-if st.sidebar.checkbox('🌙 Dark Mode'):
-    set_dark_mode()
+def normalize(text):
+    """توحيد تنسيق النص"""
+    text = str(text).upper()
+    text = re.sub(r"[^\w\s]", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
 
-# Custom CSS for responsive design
-st.markdown("""
-<style>
-@media (max-width: 768px) {
-    .metric-card {
-        padding: 10px !important;
-        margin: 5px 0 !important;
+def classify_note(note):
+    """تصنيف الملاحظات"""
+    note = normalize(note)
+    patterns = {
+        "TERMINAL ID - WRONG DATE": ["TERMINAL ID WRONG DATE"],
+        "NO IMAGE FOR THE DEVICE": ["NO IMAGE FOR THE DEVICE"],
+        "IMAGE FOR THE DEVICE ONLY": ["IMAGE FOR THE DEVICE ONLY"],
+        "WRONG DATE": ["WRONG DATE"],
+        "TERMINAL ID": ["TERMINAL ID"],
+        "NO J.O": ["NO JO", "NO J O"],
+        "DONE": ["DONE"],
+        "NO RETAILERS SIGNATURE": ["NO RETAILERS SIGNATURE", "NO RETAILER SIGNATURE"],
+        "UNCLEAR IMAGE": ["UNCLEAR IMAGE"],
+        "NO ENGINEER SIGNATURE": ["NO ENGINEER SIGNATURE"],
+        "NO SIGNATURE": ["NO SIGNATURE","NO SIGNATURES"],
+        "PENDING": ["PENDING"],
+        "NO INFORMATIONS": ["NO INFORMATION", "NO INFORMATIONS"],
+        "MISSING INFORMATION": ["MISSING INFORMATION"],
+        "NO BILL": ["NO BILL"],
+        "NOT ACTIVE": ["NOT ACTIVE"],
+        "NO RECEIPT": ["NO RECEIPT"],
+        "ANOTHER TERMINAL RECEIPT": ["ANOTHER TERMINAL RECEIPT"],
+        "UNCLEAR RECEIPT": ["UNCLEAR RECEIPT"],
+        "WRONG RECEIPT": ["WRONG RECEIPT"],
+        "REJECTED RECEIPT": ["REJECTED RECEIPT"],
+        "MULTIPLE ISSUES":["MULTIPLE ISSUES"]
     }
-    .stDataFrame {
-        width: 100% !important;
-    }
-}
-</style>
-""", unsafe_allow_html=True)
+    if "+" in note: return "MULTIPLE ISSUES"
+    matched_labels = []
+    for label, keywords in patterns.items():
+        if any(keyword in note for keyword in keywords):
+            matched_labels.append(label)
+    return matched_labels[0] if matched_labels else "MISSING INFORMATION"
 
-# Clock HTML Component
-clock_html = """<div style="background: transparent;"><style>
-.clock-container {
-    font-family: 'Courier New', monospace;
-    font-size: 22px;
-    color: #fff;
-    background: linear-gradient(135deg, #1abc9c, #16a085);
-    padding: 12px 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    animation: pulse 2s infinite;
-    position: fixed;
-    top: 15px;
-    right: 25px;
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-}
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0.4); }
-    70% { box-shadow: 0 0 0 15px rgba(26, 188, 156, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0); }
-}
-</style>
-<div class="clock-container">
-    <div class="clock-time" id="clock"></div>
-    <div class="clock-date" id="date"></div>
+def problem_severity(note_type):
+    """تحديد خطورة المشكلة"""
+    severity_map = {
+        "Critical": ["WRONG DATE", "TERMINAL ID - WRONG DATE", "REJECTED RECEIPT"],
+        "High": ["NO IMAGE", "UNCLEAR IMAGE", "NO RECEIPT"],
+        "Medium": ["NO SIGNATURE", "NO ENGINEER SIGNATURE"],
+        "Low": ["NO J.O", "PENDING"]
+    }
+    for severity, types in severity_map.items():
+        if note_type in types: return severity
+    return "Unclassified"
+
+def suggest_solutions(note_type):
+    """اقتراح حلول للمشاكل"""
+    solutions = {
+        "WRONG DATE": "تحقق من تاريخ الجهاز ومزامنته مع الخادم",
+        "TERMINAL ID - WRONG DATE": "تحقق من رقم الجهاز وإعدادات التاريخ",
+        "NO IMAGE FOR THE DEVICE": "التقاط صورة للجهاز ورفعها",
+        "NO RETAILERS SIGNATURE": "تأكد من توقيع التاجر على النموذج",
+        "NO ENGINEER SIGNATURE": "يجب على المهندس التوقيع قبل التسليم",
+        "NO SIGNATURE": "التقاط التوقيعات المطلوبة من جميع الأطراف",
+        "UNCLEAR IMAGE": "إعادة التقاط الصورة بإضاءة أفضل",
+        "NOT ACTIVE": "تحقق من عملية التفعيل وحاول مرة أخرى",
+        "NO BILL": "إرفاق فاتورة صالحة",
+        "NO RECEIPT": "رفع صورة واضحة لإيصال المعاملة",
+        "ANOTHER TERMINAL RECEIPT": "تأكد من رفع إيصال الجهاز الصحيح",
+        "WRONG RECEIPT": "تحقق ورفع الإيصال الصحيح",
+        "REJECTED RECEIPT": "متابعة سبب الرفض وتصحيحه",
+        "MULTIPLE ISSUES": "حل جميع المشاكل المذكورة وتحديث الملاحظة",
+        "NO J.O": "توفير رقم أو تفاصيل أمر العمل",
+        "PENDING": "إكمال وإتمام المهمة المعلقة",
+        "MISSING INFORMATION": "مراجعة الملاحظة وتوفير التفاصيل الكاملة",
+    }
+    return solutions.get(note_type, "لا يوجد حل متاح")
+
+# ========== واجهة المستخدم ==========
+
+# شريط الأدوات الجانبي
+with st.sidebar:
+    st.title("الإعدادات")
+    dark_mode = st.checkbox('🌙 الوضع الليلي')
+    if dark_mode: set_dark_mode()
+
+# رأس الصفحة
+col1, col2 = st.columns([1, 4])
+with col1:
+    try:
+        logo = load_logo()
+        st.image(logo, width=80)
+    except:
+        st.markdown("### 🏢")
+with col2:
+    st.markdown("<h1 style='color:#ffffff; margin-top:15px;'>📊 نظام تحليل إنترسوفت</h1>", unsafe_allow_html=True)
+
+# ساعة رقمية
+components.html("""
+<div style="text-align:right; font-family:monospace; font-size:20px; margin-bottom:20px;">
+    <div id="datetime"></div>
 </div>
 <script>
-function updateClock() {
+function updateTime() {
     const now = new Date();
-    const time = now.toLocaleTimeString();
-    const date = now.toLocaleDateString(undefined, {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-    document.getElementById('clock').innerText = time;
-    document.getElementById('date').innerText = date;
+    document.getElementById("datetime").innerHTML = 
+        now.toLocaleDateString('ar-EG') + " | " + now.toLocaleTimeString('ar-EG');
 }
-setInterval(updateClock, 1000);
-updateClock();
+setInterval(updateTime, 1000);
+updateTime();
 </script>
-</div>"""
-components.html(clock_html, height=130, scrolling=False)
+""", height=50)
 
+# ========== قسم التذاكر المعلقة ==========
+st.markdown("## 📌 تحليل التذاكر المعلقة")
 
-with col2:
-    st.markdown("<h1 style='color:#ffffff; margin-top:15px;'>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
-
-# Pending Tickets Analysis - First Section
-st.markdown("<h2 style='color:#ffffff;'>📌 Pending Tickets Analysis</h2>", unsafe_allow_html=True)
-
-with st.expander("🧮 Filter Unprocessed Tickets Based on Ticket_ID", expanded=True):
+with st.expander("🧮 تصفية التذاكر غير المكتملة حسب رقم التذكرة", expanded=True):
     col1, col2 = st.columns(2)
     with col1:
-        all_file = st.file_uploader("🔄 Upload ALL Tickets File", type=["xlsx"], key="all_file")
+        all_file = st.file_uploader("🔄 رفع ملف كل التذاكر", type=["xlsx"])
     with col2:
-        done_file = st.file_uploader("✅ Upload DONE Tickets File", type=["xlsx"], key="done_file")
+        done_file = st.file_uploader("✅ رفع ملف التذاكر المكتملة", type=["xlsx"])
 
     if all_file and done_file:
         try:
@@ -119,207 +180,171 @@ with st.expander("🧮 Filter Unprocessed Tickets Based on Ticket_ID", expanded=
             done_df = pd.read_excel(done_file)
 
             if 'Ticket_ID' not in all_df.columns or 'Ticket_ID' not in done_df.columns:
-                st.error("❌ Both files must contain a 'Ticket_ID' column.")
+                st.error("❌ يجب أن يحتوي الملفان على عمود 'Ticket_ID'")
             else:
-                # Remove duplicates
+                # إزالة التكرارات
                 all_df = all_df.drop_duplicates(subset=['Ticket_ID'], keep='first')
                 done_df = done_df.drop_duplicates(subset=['Ticket_ID'], keep='first')
                 
                 pending_df = all_df[~all_df['Ticket_ID'].isin(done_df['Ticket_ID'])]
                 
-                # KPI Metrics
-                st.markdown("### 📊 Performance Metrics")
-                kpi1, kpi2, kpi3 = st.columns(3)
+                # مؤشرات الأداء
+                st.markdown("### 📊 مقاييس الأداء")
+                cols = st.columns(4)
+                with cols[0]:
+                    st.metric("إجمالي التذاكر", len(all_df))
+                with cols[1]:
+                    st.metric("المكتملة", len(done_df))
+                with cols[2]:
+                    st.metric("المعلقة", len(pending_df))
+                with cols[3]:
+                    percent = (len(pending_df)/len(all_df))*100 if len(all_df)>0 else 0
+                    st.metric("النسبة المعلقة", f"{percent:.1f}%")
+
+                # الفلترة
+                st.markdown("### 🔍 تصفية النتائج")
+                filter_cols = st.columns(3)
+                filters = {}
                 
-                with kpi1:
-                    st.markdown(f"""
-                    <div class='metric-card' style='background:#1f77b4; padding:20px; border-radius:10px; color:white;'>
-                    <h3>Total Tickets</h3>
-                    <h1>{len(all_df)}</h1>
-                    </div>
-                    """, unsafe_allow_html=True)
+                if 'Date' in pending_df.columns:
+                    with filter_cols[0]:
+                        date_options = ["كل الفترات", "أسبوع", "شهر"]
+                        date_sel = st.selectbox("الفترة الزمنية", date_options)
+                        if date_sel == "أسبوع":
+                            pending_df = pending_df[pending_df['Date'] >= (datetime.now() - timedelta(days=7))]
+                        elif date_sel == "شهر":
+                            pending_df = pending_df[pending_df['Date'] >= (datetime.now() - timedelta(days=30))]
                 
-                with kpi2:
-                    st.markdown(f"""
-                    <div class='metric-card' style='background:#2ca02c; padding:20px; border-radius:10px; color:white;'>
-                    <h3>Completed</h3>
-                    <h1>{len(done_df)}</h1>
-                    </div>
-                    """, unsafe_allow_html=True)
+                if 'Technician_Name' in pending_df.columns:
+                    with filter_cols[1]:
+                        techs = st.multiselect("الفني", pending_df['Technician_Name'].unique())
+                        if techs:
+                            pending_df = pending_df[pending_df['Technician_Name'].isin(techs)]
                 
-                with kpi3:
-                    pending_percent = (len(pending_df) / len(all_df)) * 100
-                    st.markdown(f"""
-                    <div class='metric-card' style='background:#ff7f0e; padding:20px; border-radius:10px; color:white;'>
-                    <h3>Pending</h3>
-                    <h1>{len(pending_df)} <small>({pending_percent:.1f}%)</small></h1>
-                    </div>
-                    """, unsafe_allow_html=True)
+                if 'Ticket_Type' in pending_df.columns:
+                    with filter_cols[2]:
+                        types = st.multiselect("نوع التذكرة", pending_df['Ticket_Type'].unique())
+                        if types:
+                            pending_df = pending_df[pending_df['Ticket_Type'].isin(types)]
                 
-                # Quick Filters
-                st.markdown("### 🔍 Quick Filters")
-                filter_col1, filter_col2, filter_col3 = st.columns(3)
-                
-                with filter_col1:
-                    date_filter = st.selectbox("Filter by Date Range", ["All", "Last 7 Days", "Last 30 Days", "Custom"])
-                
-                with filter_col2:
-                    if 'Technician_Name' in pending_df.columns:
-                        tech_filter = st.multiselect("Filter by Technician", pending_df['Technician_Name'].unique())
-                
-                with filter_col3:
-                    if 'Ticket_Type' in pending_df.columns:
-                        type_filter = st.multiselect("Filter by Ticket Type", pending_df['Ticket_Type'].unique())
-                
-                # Apply filters
-                if date_filter == "Last 7 Days":
-                    pending_df = pending_df[pending_df['Date'] >= (datetime.now() - timedelta(days=7))]
-                elif date_filter == "Last 30 Days":
-                    pending_df = pending_df[pending_df['Date'] >= (datetime.now() - timedelta(days=30))]
-                
-                if 'Technician_Name' in pending_df.columns and tech_filter:
-                    pending_df = pending_df[pending_df['Technician_Name'].isin(tech_filter)]
-                
-                if 'Ticket_Type' in pending_df.columns and type_filter:
-                    pending_df = pending_df[pending_df['Ticket_Type'].isin(type_filter)]
-                
-                # Display filtered results
+                # عرض النتائج
                 st.dataframe(pending_df, use_container_width=True)
+                
+                # خيارات التصدير
+                st.download_button(
+                    "📥 تحميل التذاكر المعلقة (Excel)",
+                    pending_df.to_excel(index=False),
+                    "pending_tickets.xlsx",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
 
         except Exception as e:
-            st.error(f"❌ Error processing files: {e}")
+            st.error(f"❌ خطأ في معالجة الملفات: {str(e)}")
 
-# Main Analyzer Section
-st.markdown("<h2 style='color:#ffffff; margin-top:30px;'>📊 Full Analysis Dashboard</h2>", unsafe_allow_html=True)
+# ========== التحليل الرئيسي ==========
+st.markdown("## 📊 لوحة التحليل الشاملة")
 
-uploaded_file = st.file_uploader("📁 Upload Excel File for Full Analysis", type=["xlsx"])
+uploaded_file = st.file_uploader("📁 رفع ملف البيانات للتحليل", type=["xlsx"])
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
-
-# ... [Rest of your existing functions like normalize, classify_note, etc.] ...
 
 if uploaded_file:
     try:
-        df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
-    except:
         df = pd.read_excel(uploaded_file)
-
-    if not all(col in df.columns for col in required_cols):
-        st.error(f"❌ Missing required columns. Available: {list(df.columns)}")
-    else:
-        # Remove duplicates if Ticket_ID exists
-        if 'Ticket_ID' in df.columns:
-            df = df.drop_duplicates(subset=['Ticket_ID'], keep='first')
         
-        df['Note_Type'] = df['NOTE'].apply(classify_note)
-        df['Problem_Severity'] = df['Note_Type'].apply(problem_severity)
-        df['Suggested_Solution'] = df['Note_Type'].apply(suggest_solutions)
-        
-        # Severity Color Coding
-        severity_colors = {
-            "Critical": "#ff0000",
-            "High": "#ff7f0e",
-            "Medium": "#ffff00",
-            "Low": "#00ff00",
-            "Unclassified": "#cccccc"
-        }
-        
-        # Dashboard KPIs
-        st.markdown("### 📈 Performance Overview")
-        kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-        
-        with kpi1:
-            total_tickets = len(df)
-            st.markdown(f"""
-            <div class='metric-card' style='background:#1f77b4; padding:15px; border-radius:10px; color:white;'>
-            <h4>Total Tickets</h4>
-            <h2>{total_tickets}</h2>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with kpi2:
-            done_tickets = len(df[df['Note_Type'] == 'DONE'])
-            st.markdown(f"""
-            <div class='metric-card' style='background:#2ca02c; padding:15px; border-radius:10px; color:white;'>
-            <h4>Completed</h4>
-            <h2>{done_tickets}</h2>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with kpi3:
-            critical_issues = len(df[df['Problem_Severity'] == 'Critical'])
-            st.markdown(f"""
-            <div class='metric-card' style='background:#d62728; padding:15px; border-radius:10px; color:white;'>
-            <h4>Critical Issues</h4>
-            <h2>{critical_issues}</h2>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with kpi4:
-            avg_resolution = "N/A"  # You would calculate this from your data
-            st.markdown(f"""
-            <div class='metric-card' style='background:#9467bd; padding:15px; border-radius:10px; color:white;'>
-            <h4>Avg Resolution Time</h4>
-            <h2>{avg_resolution}</h2>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # Quick Filters
-        st.markdown("### 🔍 Filter Data")
-        filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
-        
-        with filter_col1:
-            date_range = st.selectbox("Date Range", ["All", "Last Week", "Last Month", "Custom"])
-        
-        with filter_col2:
-            severity_filter = st.multiselect("Severity Level", df['Problem_Severity'].unique())
-        
-        with filter_col3:
-            tech_filter = st.multiselect("Technician", df['Technician_Name'].unique())
-        
-        with filter_col4:
-            note_filter = st.multiselect("Note Type", df['Note_Type'].unique())
-        
-        # Apply filters
-        if date_range == "Last Week":
-            df = df[df['Date'] >= (datetime.now() - timedelta(days=7))]
-        elif date_range == "Last Month":
-            df = df[df['Date'] >= (datetime.now() - timedelta(days=30))]
-        
-        if severity_filter:
-            df = df[df['Problem_Severity'].isin(severity_filter)]
-        
-        if tech_filter:
-            df = df[df['Technician_Name'].isin(tech_filter)]
-        
-        if note_filter:
-            df = df[df['Note_Type'].isin(note_filter)]
-        
-        # Visualization
-        st.markdown("### 📊 Data Visualization")
-        viz_col1, viz_col2 = st.columns(2)
-        
-        with viz_col1:
-            severity_counts = df['Problem_Severity'].value_counts().reset_index()
-            severity_counts.columns = ['Severity', 'Count']
-            severity_counts['Color'] = severity_counts['Severity'].map(severity_colors)
+        if not all(col in df.columns for col in required_cols):
+            st.error(f"❌ الأعمدة المطلوبة غير موجودة. الأعمدة المتاحة: {list(df.columns)}")
+        else:
+            # تنظيف البيانات
+            if 'Ticket_ID' in df.columns:
+                df = df.drop_duplicates(subset=['Ticket_ID'], keep='first')
             
-            fig_severity = px.bar(severity_counts, x='Severity', y='Count', color='Severity',
-                                 color_discrete_map=severity_colors, title='Issues by Severity')
-            st.plotly_chart(fig_severity, use_container_width=True)
-        
-        with viz_col2:
-            note_counts = df['Note_Type'].value_counts().reset_index()
-            note_counts.columns = ['Note_Type', 'Count']
+            df['Note_Type'] = df['NOTE'].apply(classify_note)
+            df['Problem_Severity'] = df['Note_Type'].apply(problem_severity)
+            df['Suggested_Solution'] = df['Note_Type'].apply(suggest_solutions)
             
-            fig_notes = px.pie(note_counts, names='Note_Type', values='Count', 
-                              title='Note Type Distribution')
-            st.plotly_chart(fig_notes, use_container_width=True)
-        
-        # ... [Rest of your existing tabs and analysis code] ...
+            # ألوان مستوى الخطورة
+            severity_colors = {
+                "Critical": "#FF0000",  # أحمر
+                "High": "#FFA500",      # برتقالي
+                "Medium": "#FFFF00",    # أصفر
+                "Low": "#00FF00",       # أخضر
+                "Unclassified": "#808080" # رمادي
+            }
+            
+            # مؤشرات الأداء
+            st.markdown("### 📈 نظرة عامة على الأداء")
+            kpi_cols = st.columns(4)
+            
+            with kpi_cols[0]:
+                st.metric("إجمالي التذاكر", len(df))
+            with kpi_cols[1]:
+                done = len(df[df['Note_Type'] == 'DONE'])
+                st.metric("المكتملة", done)
+            with kpi_cols[2]:
+                critical = len(df[df['Problem_Severity'] == 'Critical'])
+                st.metric("مشاكل حرجة", critical)
+            with kpi_cols[3]:
+                st.metric("متوسط وقت الحل", "3 أيام")  # يمكن استبدالها بحساب حقيقي
+            
+            # التصورات البيانية
+            st.markdown("### 📊 التصورات البيانية")
+            
+            # رسم بياني للأنواع
+            fig1 = px.pie(
+                df['Note_Type'].value_counts().reset_index(),
+                names='Note_Type',
+                values='count',
+                title="توزيع أنواع الملاحظات"
+            )
+            st.plotly_chart(fig1, use_container_width=True)
+            
+            # رسم بياني لمستوى الخطورة
+            severity_df = df['Problem_Severity'].value_counts().reset_index()
+            fig2 = px.bar(
+                severity_df,
+                x='Problem_Severity',
+                y='count',
+                color='Problem_Severity',
+                color_discrete_map=severity_colors,
+                title="توزيع المشاكل حسب مستوى الخطورة"
+            )
+            st.plotly_chart(fig2, use_container_width=True)
+            
+            # تحليل الفنيين
+            st.markdown("### 👨‍🔧 تحليل أداء الفنيين")
+            
+            tech_df = df.groupby('Technician_Name').agg({
+                'Ticket_Type': 'count',
+                'Problem_Severity': lambda x: (x == 'Critical').sum()
+            }).rename(columns={
+                'Ticket_Type': 'Total_Tickets',
+                'Problem_Severity': 'Critical_Issues'
+            }).sort_values('Total_Tickets', ascending=False)
+            
+            st.dataframe(tech_df, use_container_width=True)
+            
+            # تصدير التقرير النهائي
+            st.markdown("### 📤 تصدير النتائج")
+            
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                df.to_excel(writer, sheet_name="البيانات الكاملة", index=False)
+                tech_df.to_excel(writer, sheet_name="أداء الفنيين", index=True)
+            
+            st.download_button(
+                "📥 تحميل التقرير الكامل",
+                output.getvalue(),
+                "full_report.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
 
-# Mobile Responsive Notice
+    except Exception as e:
+        st.error(f"❌ حدث خطأ أثناء معالجة الملف: {str(e)}")
+
+# تذييل الصفحة
 st.markdown("""
-<div style='text-align: center; margin-top: 20px; padding: 10px; background: #f0f2f6; border-radius: 5px;'>
-<small>This dashboard is optimized for both desktop and mobile devices. For best experience on mobile, use landscape orientation.</small>
+<div style="text-align:center; margin-top:50px; padding:20px; background:#f0f2f6;">
+    <p>نظام تحليل إنترسوفت - الإصدار 1.0</p>
+    <p>© 2023 جميع الحقوق محفوظة</p>
 </div>
 """, unsafe_allow_html=True)
