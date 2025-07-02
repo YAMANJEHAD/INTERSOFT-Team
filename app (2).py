@@ -338,35 +338,6 @@ if uploaded_file:
                                      title='Problem Distribution')
                 st.plotly_chart(fig_problems, use_container_width=True)
 
-            tab9 = st.tabs(["📌 Pending Tickets Based on DONE Status"])[0]
-
-with tab9:
-    st.markdown("## 🧮 Filter Unprocessed Tickets Based on Ticket_ID")
-
-    all_file = st.file_uploader("🔄 Upload All Tickets File", type=["xlsx"], key="all_file")
-    done_file = st.file_uploader("✅ Upload Done Tickets File", type=["xlsx"], key="done_file")
-
-    if all_file and done_file:
-        try:
-            all_df = pd.read_excel(all_file)
-            done_df = pd.read_excel(done_file)
-
-            if 'Ticket_ID' not in all_df.columns or 'Ticket_ID' not in done_df.columns:
-                st.error("❌ Both files must contain a 'Ticket_ID' column.")
-            else:
-                pending_df = all_df[~all_df['Ticket_ID'].isin(done_df['Ticket_ID'])]
-                st.success(f"✅ Found {len(pending_df)} pending tickets.")
-                st.dataframe(pending_df, use_container_width=True)
-
-                csv = pending_df.to_csv(index=False).encode('utf-8')
-                st.download_button("📥 Download Pending Tickets", csv, "pending_tickets.csv", mime="text/csv")
-
-        except Exception as e:
-            st.error(f"❌ Error processing files: {e}")
-
-
-
-           
 
 
 
