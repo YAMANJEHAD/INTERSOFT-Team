@@ -364,3 +364,122 @@ else:
 
 # Auto-refresh the clock every second
 st_autorefresh(interval=1000, limit=100, key="clock_refresh")
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+from datetime import datetime
+from io import BytesIO
+
+# Configure page settings
+st.set_page_config(
+    page_title="⏱ نظام تتبع الوقت الاحترافي", 
+    layout="wide",
+    page_icon="⏱"
+)
+
+# Professional CSS styling
+st.markdown("""
+    <style>
+    .main .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+    .stDataFrame {
+        border: 1px solid #e1e4e8;
+        border-radius: 8px;
+    }
+    .stDataFrame thead tr th {
+        background-color: #f8f9fa;
+        color: #212529;
+        font-weight: 600;
+    }
+    .stButton>button {
+        background-color: #4a6fa5;
+        color: white;
+        border-radius: 4px;
+        padding: 0.5rem 1rem;
+        border: none;
+    }
+    .stButton>button:hover {
+        background-color: #3a5a80;
+        color: white;
+    }
+    .stTextInput>div>div>input, 
+    .stTextArea>div>div>textarea,
+    .stDateInput>div>div>input,
+    .stTimeInput>div>div>input {
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+    }
+    .css-1aumxhk {
+        background-color: #f8f9fa;
+        border: 1px solid #e1e4e8;
+        border-radius: 8px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Initialize session state
+if "timesheet" not in st.session_state:
+    st.session_state.timesheet = []
+
+# Employee names (can be loaded from database or config)
+EMPLOYEES = ["أحمد محمد", "سارة علي", "محمد خالد", "نورا عبدالله"]
+CATEGORIES = ["PAPER REQUIST", "TOMS", "CRM", "J.O", "Development", "Meeting", "Research", "Administrative", "Other"]
+
+# --- Header Section ---
+st.title("⏱ نظام تتبع الوقت الاحترافي")
+st.markdown("""
+    <div style='border-bottom: 1px solid #e1e4e8; margin-bottom: 2rem;'></div>
+""", unsafe_allow_html=True)
+
+# --- Sidebar Filters ---
+with st.sidebar:
+    st.header("🔍 خيارات التصفية")
+    selected_employee = st.selectbox(
+        "تصفية حسب الموظف", 
+        options=["جميع الموظفين"] + EMPLOYEES,
+        index=0
+    )
+    selected_project = st.selectbox(
+        "تصفية حسب المشروع", 
+        options=["جميع المشاريع"] + sorted(list(set([row["Project"] for row in st.session_state.timesheet if "Project" in row]))),
+        index=0
+    )
+    selected_category = st.selectbox(
+        "تصفية حسب الفئة", 
+        options=["جميع الفئات"] + CATEGORIES,
+        index=0
+    )
+    selected_date = st.date_input(
+        "تصفية حسب التاريخ", 
+        value=None,
+        help="تصفية المدخلات حسب تاريخ محدد"
+    )
+    
+    st.markdown("""
+        <div style='margin-top: 2rem;'>
+        <h4>ملخص النظام</h4>
+        <p>إجمالي المدخلات: <strong>{}</strong></p>
+        <p>إجمالي الساعات: <strong>{:.1f}</strong></p>
+        <p>عدد الموظفين: <strong>{}</strong></p>
+        </div>
+    """.format(
+        len(st.session_state.timesheet),
+        sum([row["Duration (hrs)"] for row in st.session_state.timesheet if "Duration (hrs)" in row]),
+        len(EMPLOYEES)
+    ), unsafe_allow_html=True)
+
+# --- Time Entry Form ---
+with st.expander("➕ إضافة مدخلة وقت جديدة", expanded=True):
+    with st.form("time_entry_form"):
+        cols = st.columns([1, 1, 1])
+        with cols[0]:
+            employee = st.selectbox("اسم الموظف*", EMPLOYEES)
+            date = st.date_input("التاريخ*", datetime.today())
+        with cols[1]:
+            start_time = st.time_input("وقت البدء*")
+            project = st.text_input("اسم المشروع*", placeholder="مشروع ١")
+        with cols[2]:
+            end_time = st.time_input("وقت الانتهاء*")
+            category
