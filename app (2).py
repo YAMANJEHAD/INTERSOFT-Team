@@ -4,7 +4,7 @@ import plotly.express as px
 from datetime import datetime, time
 from io import BytesIO
 
-# Configure page settings
+
 st.set_page_config(
     page_title="⏱ Time Sheet InterSoft", 
     layout="wide",
