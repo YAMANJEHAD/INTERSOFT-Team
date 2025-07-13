@@ -101,14 +101,6 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# Current time display
-current_time = datetime.now().strftime("%A, %B %d, %Y | %I:%M:%S %p")
-st.markdown(f"""
-    <div style="background:#f8f9fa; padding:1rem; border-radius:10px; margin-bottom:2rem; text-align:center;">
-        <strong>{current_time}</strong>
-    </div>
-""", unsafe_allow_html=True)
-
 # --- Sidebar Filters ---
 with st.sidebar:
     st.header("🔍 Filter Options")
@@ -184,11 +176,11 @@ with st.expander("➕ Add New Attendance Entry", expanded=True):
                 
                 # Calculate late arrival
                 late_minutes = max(0, (datetime.combine(datetime.today(), actual_start) - 
-                                     datetime.combine(datetime.today(), shift['start'])).total_seconds() / 60)
+                                     datetime.combine(datetime.today(), shift['start'])).total_seconds() / 60
                 
                 # Calculate early departure
                 early_minutes = max(0, (datetime.combine(datetime.today(), shift['end']) - 
-                                      datetime.combine(datetime.today(), actual_end)).total_seconds() / 60)
+                                      datetime.combine(datetime.today(), actual_end)).total_seconds() / 60
                 
                 st.session_state.timesheet.append({
                     "Employee": employee,
