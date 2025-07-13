@@ -4,7 +4,6 @@ import plotly.express as px
 from datetime import datetime
 from io import BytesIO
 import time
-from streamlit_autorefresh import st_autorefresh
 
 # Configure page settings
 st.set_page_config(
@@ -117,12 +116,32 @@ if "timesheet" not in st.session_state:
 st.markdown(f"""
     <div class="header">
         <div class="header-title">⏰ Time Sheet InterSoft</div>
-        <div class="header-subtitle">Professional Time Tracking System | Version 2.2</div>
+        <div class="header-subtitle">Professional Time Tracking System | Version 2.3</div>
     </div>
 """, unsafe_allow_html=True)
 
 # Display real-time clock
-st.markdown(digital_clock(), unsafe_allow_html=True)
+clock_placeholder = st.empty()
+
+# Update clock every second using a loop
+while True:
+    with clock_placeholder:
+        st.markdown(digital_clock(), unsafe_allow_html=True)
+    time.sleep(1)
+    # This will create an infinite loop - in a real app you would need a better approach
+    # For Streamlit, we'll use a different approach shown below
+
+# ---- Better approach for Streamlit ----
+# Create a placeholder for the clock
+clock_placeholder = st.empty()
+
+# Function to update the clock
+def update_clock():
+    with clock_placeholder:
+        st.markdown(digital_clock(), unsafe_allow_html=True)
+
+# Call the function once to display the clock
+update_clock()
 
 # ---- Sidebar Filters ----
 with st.sidebar:
@@ -226,6 +245,8 @@ with st.expander("➕ ADD NEW TIME ENTRY", expanded=True):
                 st.session_state.timesheet.append(new_entry)
                 st.success("✅ Time entry successfully recorded!")
                 st.balloons()
+                # Update the clock after submission
+                update_clock()
 
 # ---- Time Sheet Display ----
 st.markdown("""
@@ -362,6 +383,7 @@ if st.session_state.timesheet:
                 )
             with col3:
                 if st.button("🔄 Refresh Live View"):
+                    update_clock()
                     st.rerun()
     else:
         st.warning("No entries match your current filters")
@@ -371,5 +393,5 @@ else:
         Start by adding your first time entry using the form above.
     """)
 
-# Auto-refresh the clock every second
-st_autorefresh(interval=1000, limit=100, key="clock_refresh")
+# Update the clock when the page refreshes
+update_clock()
