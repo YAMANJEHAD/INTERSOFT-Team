@@ -47,7 +47,7 @@ st.markdown("""
         color: #00FFAA;
         padding: 1rem;
         border-radius: 10px;
-        font-family: 'Courier New', monospace;
+        font-family: 'Digital', monospace;
         font-size: 1.8rem;
         text-align: center;
         margin-bottom: 1.5rem;
@@ -105,6 +105,7 @@ def digital_clock():
     return clock_html
 
 # ---- System Constants ----
+EMPLOYEES = ["Alex Johnson", "Sarah Williams", "Michael Brown", "Emily Davis", "David Lee"]
 CATEGORIES = ["PAPER REQUEST", "TOMS", "CRM", "J.O", "Development", "Client Meeting", "Research", "Administrative", "Training", "Support"]
 DEPARTMENTS = ["IT", "Finance", "Operations", "HR", "Marketing"]
 
@@ -116,32 +117,12 @@ if "timesheet" not in st.session_state:
 st.markdown(f"""
     <div class="header">
         <div class="header-title">⏰ Time Sheet InterSoft</div>
-        <div class="header-subtitle">Professional Time Tracking System | Version 2.3</div>
+        <div class="header-subtitle">Professional Time Tracking System | Version 2.1</div>
     </div>
 """, unsafe_allow_html=True)
 
 # Display real-time clock
-clock_placeholder = st.empty()
-
-# Update clock every second using a loop
-while True:
-    with clock_placeholder:
-        st.markdown(digital_clock(), unsafe_allow_html=True)
-    time.sleep(1)
-    # This will create an infinite loop - in a real app you would need a better approach
-    # For Streamlit, we'll use a different approach shown below
-
-# ---- Better approach for Streamlit ----
-# Create a placeholder for the clock
-clock_placeholder = st.empty()
-
-# Function to update the clock
-def update_clock():
-    with clock_placeholder:
-        st.markdown(digital_clock(), unsafe_allow_html=True)
-
-# Call the function once to display the clock
-update_clock()
+st.markdown(digital_clock(), unsafe_allow_html=True)
 
 # ---- Sidebar Filters ----
 with st.sidebar:
@@ -151,11 +132,10 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
     
-    # Employee name free text input instead of dropdown
-    selected_employee = st.text_input(
-        "Employee Name",
-        placeholder="Enter employee name",
-        value=""
+    selected_employee = st.selectbox(
+        "By Employee", 
+        options=["All Employees"] + EMPLOYEES,
+        index=0
     )
     
     selected_category = st.selectbox(
@@ -171,7 +151,7 @@ with st.sidebar:
     )
     
     selected_date = st.date_input(
-        "By Date",
+        "By Date Range",
         value=None,
         help="Filter entries by specific date"
     )
@@ -181,10 +161,12 @@ with st.sidebar:
         <h4 style="color:#4A4A4A;">System Analytics</h4>
         <p>📊 Total Entries: <strong>{}</strong></p>
         <p>⏱️ Total Hours: <strong>{:.1f}</strong></p>
+        <p>👥 Active Employees: <strong>{}/5</strong></p>
         </div>
     """.format(
         len(st.session_state.timesheet),
-        sum([row.get("Duration (hrs)", 0) for row in st.session_state.timesheet])
+        sum([row.get("Duration (hrs)", 0) for row in st.session_state.timesheet]),
+        len(set([row.get("Employee", "") for row in st.session_state.timesheet]))
     ), unsafe_allow_html=True)
 
 # ---- Time Entry Form ----
@@ -193,7 +175,7 @@ with st.expander("➕ ADD NEW TIME ENTRY", expanded=True):
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            employee = st.text_input("Employee Name*", placeholder="John Doe")
+            employee = st.selectbox("Employee*", EMPLOYEES)
             project = st.text_input("Project Name*", placeholder="Project Alpha")
             department = st.selectbox("Department*", DEPARTMENTS)
             
@@ -228,7 +210,7 @@ with st.expander("➕ ADD NEW TIME ENTRY", expanded=True):
                 
                 new_entry = {
                     "Timestamp": datetime.now(),
-                    "Employee": employee.strip(),
+                    "Employee": employee,
                     "Department": department,
                     "Date": date,
                     "Start Time": start_time.strftime("%H:%M"),
@@ -245,8 +227,6 @@ with st.expander("➕ ADD NEW TIME ENTRY", expanded=True):
                 st.session_state.timesheet.append(new_entry)
                 st.success("✅ Time entry successfully recorded!")
                 st.balloons()
-                # Update the clock after submission
-                update_clock()
 
 # ---- Time Sheet Display ----
 st.markdown("""
@@ -259,8 +239,8 @@ if st.session_state.timesheet:
     df = pd.DataFrame(st.session_state.timesheet)
     
     # Apply filters
-    if selected_employee:
-        df = df[df["Employee"].str.contains(selected_employee, case=False, na=False)]
+    if selected_employee != "All Employees":
+        df = df[df["Employee"] == selected_employee]
     if selected_category != "All Categories":
         df = df[df["Category"] == selected_category]
     if selected_department != "All Departments":
@@ -268,130 +248,119 @@ if st.session_state.timesheet:
     if selected_date:
         df = df[df["Date"] == pd.to_datetime(selected_date)]
     
-    # Safe column selection
+    # Display dataframe with custom columns
     display_cols = ["Employee", "Department", "Date", "Start Time", "End Time", 
                    "Duration (hrs)", "Project", "Category", "Priority"]
     
-    # Filter only existing columns
-    existing_cols = [col for col in display_cols if col in df.columns]
+    st.dataframe(
+        df[display_cols].sort_values("Date", ascending=False),
+        column_config={
+            "Duration (hrs)": st.column_config.NumberColumn(format="%.2f"),
+            "Date": st.column_config.DateColumn(format="YYYY-MM-DD")
+        },
+        use_container_width=True,
+        height=600
+    )
     
-    if not df.empty:
-        st.dataframe(
-            df[existing_cols].sort_values("Date", ascending=False),
-            column_config={
-                "Duration (hrs)": st.column_config.NumberColumn(format="%.2f"),
-                "Date": st.column_config.DateColumn(format="YYYY-MM-DD")
-            },
-            use_container_width=True,
-            height=600
-        )
+    # ---- Analytics Dashboard ----
+    st.markdown("""
+        <div style="border-top:1px solid #E6E9F0; margin:2rem 0;"></div>
+        <div style="font-size:1.5rem; font-weight:600; margin-bottom:1rem; color:#4A4A4A;">
+        📊 Analytics Dashboard
+        </div>
+    """, unsafe_allow_html=True)
+    
+    tab1, tab2, tab3 = st.tabs(["Time Distribution", "Productivity Metrics", "Data Export"])
+    
+    with tab1:
+        col1, col2 = st.columns(2)
+        with col1:
+            fig1 = px.pie(df, names="Category", values="Duration (hrs)",
+                         title="Time Allocation by Category",
+                         hole=0.3, color_discrete_sequence=px.colors.qualitative.Pastel)
+            st.plotly_chart(fig1, use_container_width=True)
         
-        # ---- Analytics Dashboard ----
+        with col2:
+            fig2 = px.bar(df.groupby("Employee")["Duration (hrs)"].sum().reset_index(),
+                         x="Employee", y="Duration (hrs)",
+                         title="Hours by Employee",
+                         color="Employee")
+            st.plotly_chart(fig2, use_container_width=True)
+    
+    with tab2:
+        fig3 = px.line(df.groupby("Date")["Duration (hrs)"].sum().reset_index(),
+                      x="Date", y="Duration (hrs)",
+                      title="Daily Productivity Trend",
+                      markers=True, line_shape="spline")
+        st.plotly_chart(fig3, use_container_width=True)
+        
+        fig4 = px.sunburst(df, path=["Department", "Employee", "Category"],
+                          values="Duration (hrs)",
+                          title="Departmental Time Distribution")
+        st.plotly_chart(fig4, use_container_width=True)
+    
+    with tab3:
         st.markdown("""
-            <div style="border-top:1px solid #E6E9F0; margin:2rem 0;"></div>
-            <div style="font-size:1.5rem; font-weight:600; margin-bottom:1rem; color:#4A4A4A;">
-            📊 Analytics Dashboard
+            <div style="background:#F9FAFF; padding:1.5rem; border-radius:12px;">
+            <h4 style="color:#4A4A4A;">Export Options</h4>
+            <p style="color:#6C757D;">Generate reports for payroll, client billing, or performance analysis</p>
             </div>
         """, unsafe_allow_html=True)
         
-        tab1, tab2, tab3 = st.tabs(["Time Distribution", "Productivity Metrics", "Data Export"])
-        
-        with tab1:
-            col1, col2 = st.columns(2)
-            with col1:
-                if not df.empty:
-                    fig1 = px.pie(df, names="Category", values="Duration (hrs)",
-                                 title="Time Allocation by Category",
-                                 hole=0.3, color_discrete_sequence=px.colors.qualitative.Pastel)
-                    st.plotly_chart(fig1, use_container_width=True)
-            
-            with col2:
-                if not df.empty and "Employee" in df.columns:
-                    fig2 = px.bar(df.groupby("Employee")["Duration (hrs)"].sum().reset_index(),
-                                 x="Employee", y="Duration (hrs)",
-                                 title="Hours by Employee",
-                                 color="Employee")
-                    st.plotly_chart(fig2, use_container_width=True)
-        
-        with tab2:
-            if not df.empty:
-                fig3 = px.line(df.groupby("Date")["Duration (hrs)"].sum().reset_index(),
-                              x="Date", y="Duration (hrs)",
-                              title="Daily Productivity Trend",
-                              markers=True, line_shape="spline")
-                st.plotly_chart(fig3, use_container_width=True)
+        def generate_excel(df):
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                df.to_excel(writer, index=False, sheet_name='TimeEntries')
+                workbook = writer.book
+                worksheet = writer.sheets['TimeEntries']
                 
-                if "Department" in df.columns:
-                    fig4 = px.sunburst(df, path=["Department", "Employee", "Category"],
-                                      values="Duration (hrs)",
-                                      title="Departmental Time Distribution")
-                    st.plotly_chart(fig4, use_container_width=True)
-        
-        with tab3:
-            st.markdown("""
-                <div style="background:#F9FAFF; padding:1.5rem; border-radius:12px;">
-                <h4 style="color:#4A4A4A;">Export Options</h4>
-                <p style="color:#6C757D;">Generate reports for payroll, client billing, or performance analysis</p>
-                </div>
-            """, unsafe_allow_html=True)
-            
-            def generate_excel(df):
-                output = BytesIO()
-                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                    df.to_excel(writer, index=False, sheet_name='TimeEntries')
-                    workbook = writer.book
-                    worksheet = writer.sheets['TimeEntries']
-                    
-                    # Add formatting
-                    header_format = workbook.add_format({
-                        'bold': True,
-                        'text_wrap': True,
-                        'valign': 'top',
-                        'fg_color': '#6B73FF',
-                        'font_color': 'white',
-                        'border': 1
-                    })
-                    
-                    for col_num, value in enumerate(df.columns.values):
-                        worksheet.write(0, col_num, value, header_format)
-                    
-                    # Auto-adjust columns
-                    worksheet.autofit()
-                    
-                    # Add InterSoft branding
-                    worksheet.header_footer = {
-                        'first_header': '&C&"Poppins,Bold"&14Time Sheet InterSoft Report',
-                        'first_footer': '&C&"Poppins"&12Generated on &D at &T'
-                    }
+                # Add formatting
+                header_format = workbook.add_format({
+                    'bold': True,
+                    'text_wrap': True,
+                    'valign': 'top',
+                    'fg_color': '#6B73FF',
+                    'font_color': 'white',
+                    'border': 1
+                })
                 
-                return output.getvalue()
+                for col_num, value in enumerate(df.columns.values):
+                    worksheet.write(0, col_num, value, header_format)
+                
+                # Auto-adjust columns
+                worksheet.autofit()
+                
+                # Add InterSoft branding
+                worksheet.header_footer = {
+                    'first_header': '&C&"Poppins,Bold"&14Time Sheet InterSoft Report',
+                    'first_footer': '&C&"Poppins"&12Generated on &D at &T'
+                }
             
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.download_button(
-                    label="💾 Excel Report",
-                    data=generate_excel(df),
-                    file_name=f"InterSoft_Time_Report_{datetime.now().strftime('%Y%m%d')}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-            with col2:
-                st.download_button(
-                    label="📄 CSV Export",
-                    data=df.to_csv(index=False).encode('utf-8'),
-                    file_name=f"Time_Data_{datetime.now().strftime('%Y%m%d')}.csv",
-                    mime="text/csv"
-                )
-            with col3:
-                if st.button("🔄 Refresh Live View"):
-                    update_clock()
-                    st.rerun()
-    else:
-        st.warning("No entries match your current filters")
+            return output.getvalue()
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.download_button(
+                label="💾 Excel Report",
+                data=generate_excel(df),
+                file_name=f"InterSoft_Time_Report_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+        with col2:
+            st.download_button(
+                label="📄 CSV Export",
+                data=df.to_csv(index=False).encode('utf-8'),
+                file_name=f"Time_Data_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv"
+            )
+        with col3:
+            if st.button("🔄 Refresh Live View"):
+                st.rerun()
 else:
     st.info("""
         ℹ️ No time entries found. 
         Start by adding your first time entry using the form above.
     """)
 
-# Update the clock when the page refreshes
-update_clock()
+# Auto-refresh the clock every second
+st_autorefresh(interval=1000, limit=100, key="clock_refresh")
