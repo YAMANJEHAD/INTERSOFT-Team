@@ -8,7 +8,7 @@ from io import BytesIO
 st.set_page_config(
     page_title="⏱ Time Tracking Dashboard", 
     layout="wide",
-    page_icon="⏱"
+    page_icon=""
 )
 
 # Professional CSS styling
