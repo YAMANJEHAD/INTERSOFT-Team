@@ -5,7 +5,7 @@ from datetime import datetime
 from io import BytesIO
 import time
 
-# Configure page settings
+# Configure page settingS
 st.set_page_config(
     page_title="⏰ Time Sheet InterSoft",
     layout="wide",
