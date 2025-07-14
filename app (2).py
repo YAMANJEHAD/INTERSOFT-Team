@@ -2,162 +2,175 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import datetime, time
+from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 # Page Configuration
 st.set_page_config(
-    page_title="⏱ INTERSOFT POS FLM Time Tracker",
+    page_title="⏱ Time Sheet | INTERSOFT POS - FLM",
     layout="wide",
     page_icon="⏱️"
 )
 
-# Custom CSS
+# Dark Theme Styling
 st.markdown("""
     <style>
-    body {
-        background-color: #111827;
-        color: #f3f4f6;
+    html, body, [class*="css"] {
+        font-family: 'Poppins', sans-serif;
+        background-color: #121212;
+        color: #E0E0E0;
     }
     .header {
-        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+        background: linear-gradient(135deg, #6B73FF 0%, #000DFF 100%);
         color: white;
-        padding: 1.5rem;
-        border-radius: 0 0 12px 12px;
+        padding: 2rem;
+        border-radius: 0 0 15px 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         margin-bottom: 2rem;
+        text-align: center;
     }
-    .company-logo {
-        font-size: 1.8rem;
-        font-weight: bold;
-    }
-    .dept-name {
-        font-size: 1.1rem;
-        opacity: 0.85;
+    .status-card {
+        background: #1E1E1E;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        border: 1px solid #333;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Session init
-if "timesheet" not in st.session_state:
-    st.session_state.timesheet = []
-
-# Constants
-SHIFTS = {
-    "Morning (8:30-5:30)": {"start": time(8, 30), "end": time(17, 30)},
-    "Evening (3:00-11:00)": {"start": time(15, 0), "end": time(23, 0)},
-}
-
-TASK_CATEGORIES = {
-    "TOMS": {"requires_device_count": True, "requires_task_time": True, "description": "TOMS System Maintenance"},
-    "Paper Request": {"requires_device_count": False, "requires_task_time": False, "description": "Paper Request Handling"},
-    "J.O": {"requires_device_count": False, "requires_task_time": True, "description": "Job Order Processing"},
-    "CRM": {"requires_device_count": False, "requires_task_time": True, "description": "CRM System Tasks"},
-}
-
 # Header
 st.markdown("""
     <div class="header">
-        <div class="company-logo">INTERSOFT POS</div>
-        <div class="dept-name">FLM Department - Time Tracking System</div>
+        <h1>INTERSOFT POS</h1>
+        <h3>FLM Department - Time Tracking System</h3>
     </div>
 """, unsafe_allow_html=True)
 
-# Sidebar filters
-with st.sidebar:
-    st.header("Filters")
-    all_employees = list({e["Employee"] for e in st.session_state.timesheet})
-    selected_emp = st.selectbox("Employee", ["All"] + sorted(all_employees))
-    selected_task = st.selectbox("Task", ["All"] + list(TASK_CATEGORIES.keys()))
-    selected_date = st.date_input("Date", value=None)
+# Session State Init
+if "timesheet" not in st.session_state:
+    st.session_state.timesheet = []
 
-    total_hours = sum(r.get("Duration (hrs)", 0) for r in st.session_state.timesheet)
-    st.metric("Total Hours", f"{total_hours:.2f}")
-    st.metric("Entries", len(st.session_state.timesheet))
+# Shifts
+SHIFTS = {
+    "Morning Shift (8:30 AM - 5:30 PM)": {'start': time(8, 30), 'end': time(17, 30)},
+    "Evening Shift (3:00 PM - 11:00 PM)": {'start': time(15, 0), 'end': time(23, 0)}
+}
+
+# Tasks
+TASK_CATEGORIES = {
+    "TOMS": {"requires_devices": True, "requires_task_time": True},
+    "Paper Request": {"requires_devices": False, "requires_task_time": False},
+    "J.O": {"requires_devices": False, "requires_task_time": True},
+    "CRM": {"requires_devices": False, "requires_task_time": True}
+}
 
 # Time Entry Form
-with st.expander("➕ Add Time Entry", expanded=True):
+with st.expander("➕ Add New Time Entry", expanded=True):
     with st.form("entry_form", clear_on_submit=True):
         col1, col2, col3 = st.columns(3)
+
         with col1:
-            employee = st.text_input("Employee Name")
-            shift = st.selectbox("Shift", list(SHIFTS.keys()))
+            employee = st.text_input("Employee Name *")
+            shift_type = st.selectbox("Shift Type *", list(SHIFTS.keys()))
+
         with col2:
-            start_time = st.time_input("Start Time", value=time(8, 30))
-            end_time = st.time_input("End Time", value=time(17, 30))
+            start_time = st.time_input("Start Time *", value=time(8, 30), format="%I:%M %p")
+            end_time = st.time_input("End Time *", value=time(17, 30), format="%I:%M %p")
+
         with col3:
-            task = st.selectbox("Task Category", list(TASK_CATEGORIES.keys()))
+            task_category = st.selectbox("Task Category", list(TASK_CATEGORIES.keys()))
 
         device_count = None
-        task_time = None
+        task_duration = None
+        if TASK_CATEGORIES[task_category].get("requires_devices"):
+            device_count = st.number_input("Number of Devices (TOMS)", min_value=1, step=1)
+        if TASK_CATEGORIES[task_category].get("requires_task_time"):
+            task_duration = st.time_input("Task Duration (optional)", value=time(0, 30), format="%I:%M %p")
 
-        if TASK_CATEGORIES[task]["requires_device_count"]:
-            device_count = st.number_input("TOMS Devices", min_value=1, value=1)
-
-        if TASK_CATEGORIES[task]["requires_task_time"]:
-            task_time = st.time_input("Task Time", value=time(0, 30))
-
-        details = st.text_area("Work Details (optional)")
-
+        work_description = st.text_area("Work Description (optional)", height=100)
         submitted = st.form_submit_button("Submit Entry")
 
         if submitted:
-            if not employee or end_time <= start_time:
-                st.error("Please fill all fields correctly.")
+            if not employee or not shift_type or not start_time or not end_time:
+                st.error("Please fill all required fields (*)")
+            elif end_time <= start_time:
+                st.error("End time must be after start time")
             else:
-                duration = (datetime.combine(datetime.today(), end_time) -
-                            datetime.combine(datetime.today(), start_time)).total_seconds() / 3600
+                duration = (datetime.combine(datetime.today(), end_time) - datetime.combine(datetime.today(), start_time)).total_seconds() / 3600
                 entry = {
                     "Employee": employee,
                     "Date": datetime.today().date(),
-                    "Shift": shift,
-                    "Start Time": start_time.strftime("%H:%M"),
-                    "End Time": end_time.strftime("%H:%M"),
+                    "Shift": shift_type,
+                    "Task Category": task_category,
+                    "Start Time": start_time.strftime("%I:%M %p"),
+                    "End Time": end_time.strftime("%I:%M %p"),
                     "Duration (hrs)": round(duration, 2),
-                    "Task Category": task,
-                    "Task Description": TASK_CATEGORIES[task]["description"],
-                    "Work Details": details,
-                    "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    "Work Description": work_description,
                 }
-                if device_count is not None:
-                    entry["TOMS Devices Count"] = device_count
-                if task_time is not None:
-                    entry["Task Time"] = task_time.strftime("%H:%M")
+                if device_count:
+                    entry["TOMS Devices"] = device_count
+                if task_duration:
+                    entry["Task Duration"] = task_duration.strftime("%I:%M %p")
 
                 st.session_state.timesheet.append(entry)
-                st.success("✅ Entry added!")
-                st.balloons()
+                st.success("✅ Time entry added successfully!")
 
-# Data Display
+# Timesheet Display
 if st.session_state.timesheet:
     df = pd.DataFrame(st.session_state.timesheet)
+    st.markdown("## 📋 Time Entries")
+    st.dataframe(df.sort_values("Date", ascending=False), use_container_width=True)
 
-    # Filters
-    if selected_emp != "All":
-        df = df[df["Employee"] == selected_emp]
-    if selected_task != "All":
-        df = df[df["Task Category"] == selected_task]
-    if selected_date:
-        df = df[df["Date"] == pd.to_datetime(selected_date)]
+    st.markdown("## 📊 Summary")
+    st.metric("Total Hours", f"{df['Duration (hrs)'].sum():.2f}")
+    fig = px.bar(df, x="Employee", y="Duration (hrs)", color="Task Category", title="Work Distribution")
+    st.plotly_chart(fig, use_container_width=True)
 
-    if not df.empty:
-        st.subheader("📋 Time Entries")
-        st.dataframe(df, use_container_width=True)
+    st.markdown("## 📤 Export Options")
+    export_employee = st.selectbox("Filter by Employee for Export", ["All"] + sorted(df["Employee"].unique()))
+    export_df = df if export_employee == "All" else df[df["Employee"] == export_employee]
 
-        st.subheader("📊 Analytics")
-        tab1, tab2 = st.tabs(["Task Summary", "Employee Summary"])
+    # Export to Excel
+    excel_buffer = BytesIO()
+    with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+        export_df.to_excel(writer, index=False, sheet_name="Timesheet")
+    st.download_button(
+        label="📥 Download Excel",
+        data=excel_buffer.getvalue(),
+        file_name="timesheet_export.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
-        with tab1:
-            fig = px.pie(df, names="Task Category", title="Task Distribution")
-            st.plotly_chart(fig, use_container_width=True)
+    # Export to PDF
+    def generate_pdf(data):
+        buffer = BytesIO()
+        c = canvas.Canvas(buffer, pagesize=letter)
+        c.setFont("Helvetica", 12)
+        y = 750
+        c.drawString(220, 780, "INTERSOFT POS - FLM Timesheet Report")
+        for _, row in data.iterrows():
+            text = f"{row['Date']} | {row['Employee']} | {row['Task Category']} | {row['Duration (hrs)']} hrs"
+            c.drawString(50, y, text)
+            y -= 20
+            if y < 50:
+                c.showPage()
+                c.setFont("Helvetica", 12)
+                y = 750
+        c.save()
+        return buffer.getvalue()
 
-        with tab2:
-            agg = df.groupby("Employee")["Duration (hrs)"].sum().reset_index()
-            fig2 = px.bar(agg, x="Employee", y="Duration (hrs)", title="Total Hours by Employee")
-            st.plotly_chart(fig2, use_container_width=True)
-
-    else:
-        st.info("No entries match your filters.")
+    st.download_button(
+        label="📄 Download PDF",
+        data=generate_pdf(export_df),
+        file_name="timesheet_report.pdf",
+        mime="application/pdf"
+    )
 else:
-    st.info("No data yet. Start by adding entries.")
+    st.info("No time entries yet. Please add your first record.")
 
 # Footer
 st.markdown("---")
-st.markdown("<center>© 2025 INTERSOFT POS FLM Tracker</center>", unsafe_allow_html=True)
+st.markdown("<center>INTERSOFT POS - FLM Department • v1.0</center>", unsafe_allow_html=True)
