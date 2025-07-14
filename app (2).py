@@ -60,14 +60,6 @@ st.markdown("""
         content: " *";
         color: #ef4444;
     }
-    
-    .task-time-input {
-        margin-top: 10px;
-    }
-    
-    .toms-devices-input {
-        margin-bottom: 10px;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -87,27 +79,23 @@ SHIFTS = {
     }
 }
 
-# Task Categories with specific requirements
+# Task Categories with TOMS devices option
 TASK_CATEGORIES = {
     "TOMS": {
         "requires_device_count": True,
-        "requires_task_time": True,
-        "description": "TOMS System Maintenance"
+        "requires_task_time": True
     },
     "Paper Request": {
         "requires_device_count": False,
-        "requires_task_time": False,
-        "description": "Paper Request Processing"
+        "requires_task_time": False
     },
     "J.O": {
         "requires_device_count": False,
-        "requires_task_time": True,
-        "description": "Job Order Processing"
+        "requires_task_time": True
     },
     "CRM": {
         "requires_device_count": False,
-        "requires_task_time": True,
-        "description": "CRM System Tasks"
+        "requires_task_time": True
     }
 }
 
@@ -130,11 +118,10 @@ with st.sidebar:
     
     # Statistics
     total_hours = sum(r.get("Duration (hrs)", 0) for r in st.session_state.timesheet)
-    total_entries = len(st.session_state.timesheet)
     st.markdown(f"""
         <div class="status-card">
             <p>Total Recorded Hours: <strong>{total_hours:.1f}</strong></p>
-            <p>Total Entries: <strong>{total_entries}</strong></p>
+            <p>Total Entries: <strong>{len(st.session_state.timesheet)}</strong></p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -163,16 +150,14 @@ with st.expander("➕ Add New Time Entry", expanded=True):
             
             # Dynamic fields based on task category
             if TASK_CATEGORIES[task_category]["requires_device_count"]:
-                st.markdown('<div class="toms-devices-input">Number of TOMS Devices</div>', unsafe_allow_html=True)
-                device_count = st.number_input("Number of TOMS Devices", min_value=1, value=1, label_visibility="collapsed")
+                device_count = st.number_input("Number of TOMS Devices Worked On", min_value=1, value=1)
             
             if TASK_CATEGORIES[task_category]["requires_task_time"]:
-                st.markdown('<div class="task-time-input">Time Spent on Task</div>', unsafe_allow_html=True)
-                task_time = st.time_input("Task Time", value=time(0, 30), format="12h", label_visibility="collapsed")
+                task_time = st.time_input("Time Spent on Task", value=time(1, 0), format="12h")
         
         work_details = st.text_area("Work Details (Optional)", placeholder="Describe the work performed...")
         
-        submitted = st.form_submit_button("Submit Time Entry", use_container_width=True)
+        submitted = st.form_submit_button("Submit Time Entry")
         
         if submitted:
             if not all([employee, shift_type, start_time, end_time, task_category]):
@@ -196,9 +181,7 @@ with st.expander("➕ Add New Time Entry", expanded=True):
                     "End Time": end_time.strftime("%I:%M %p"),
                     "Duration (hrs)": round(duration, 2),
                     "Task Category": task_category,
-                    "Task Description": TASK_CATEGORIES[task_category]["description"],
-                    "Work Details": work_details,
-                    "Entry Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    "Work Details": work_details
                 }
                 
                 # Add task-specific fields
@@ -226,14 +209,13 @@ if st.session_state.timesheet:
     
     if not df.empty:
         # Display Time Entries
-        st.markdown("## 📋 Time Entries")
+        st.markdown("## Time Entries")
         
         # Format columns for display
         display_cols = [
             "Employee", "Date", "Shift", 
             "Start Time", "End Time", 
-            "Duration (hrs)", "Task Category",
-            "Task Description"
+            "Duration (hrs)", "Task Category"
         ]
         
         # Add conditional columns
@@ -251,42 +233,25 @@ if st.session_state.timesheet:
         )
         
         # Analytics Section
-        st.markdown("## 📊 Analytics")
+        st.markdown("## Analytics")
         
         tab1, tab2 = st.tabs(["Task Analysis", "Employee Productivity"])
         
         with tab1:
-            col1, col2 = st.columns(2)
+            fig1 = px.pie(df, names="Task Category", title="Time Distribution by Task Type")
+            st.plotly_chart(fig1, use_container_width=True)
             
-            with col1:
-                fig1 = px.pie(df, names="Task Category", 
-                             title="Time Distribution by Task Type",
-                             color_discrete_sequence=px.colors.qualitative.Pastel)
-                fig1.update_layout(showlegend=True)
-                st.plotly_chart(fig1, use_container_width=True)
-            
-            with col2:
-                if "TOMS" in df["Task Category"].values:
-                    toms_df = df[df["Task Category"] == "TOMS"]
-                    if not toms_df.empty:
-                        fig2 = px.bar(toms_df, x="Employee", y="TOMS Devices Count", 
-                                     title="TOMS Devices Serviced by Employee",
-                                     color="Employee")
-                        st.plotly_chart(fig2, use_container_width=True)
+            if "TOMS" in df["Task Category"].values:
+                toms_df = df[df["Task Category"] == "TOMS"]
+                fig2 = px.bar(toms_df, x="Employee", y="TOMS Devices Count", 
+                             title="TOMS Devices Serviced by Employee")
+                st.plotly_chart(fig2, use_container_width=True)
         
         with tab2:
             fig3 = px.bar(df.groupby("Employee")["Duration (hrs)"].sum().reset_index(), 
                          x="Employee", y="Duration (hrs)", 
-                         title="Total Hours Worked by Employee",
-                         color="Employee")
+                         title="Total Hours Worked by Employee")
             st.plotly_chart(fig3, use_container_width=True)
-            
-            # Weekly productivity trend
-            df['Date'] = pd.to_datetime(df['Date'])
-            weekly_trend = df.groupby([pd.Grouper(key='Date', freq='W'), 'Employee'])['Duration (hrs)'].sum().reset_index()
-            fig4 = px.line(weekly_trend, x="Date", y="Duration (hrs)", color="Employee",
-                          title="Weekly Productivity Trend")
-            st.plotly_chart(fig4, use_container_width=True)
     else:
         st.info("No records match your filters")
 else:
@@ -294,9 +259,4 @@ else:
 
 # Footer
 st.markdown("---")
-st.markdown("""
-    <div style="text-align: center; padding: 1rem;">
-        <p>INTERSOFT POS FLM Department • Professional Time Tracking System © 2023</p>
-        <p style="font-size: 0.8rem; opacity: 0.7;">v2.0 | All rights reserved</p>
-    </div>
-""", unsafe_allow_html=True)
+st.markdown("INTERSOFT POS FLM Department • Professional Time Tracking System © 2023")
