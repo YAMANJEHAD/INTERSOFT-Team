@@ -10,7 +10,7 @@ st.set_page_config(
     page_icon="⏱️"
 )
 
-# Custom CSS for Professional Appearance
+# Custom CSS 
 st.markdown("""
     <style>
     :root {
