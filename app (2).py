@@ -106,7 +106,7 @@ with st.sidebar:
     st.header("🔍 Filter Options")
     selected_employee = st.selectbox(
         "Employee Filter", 
-        options=["All Employees"] + sorted(list(set([row.get("Employee", "") for row in st.session_state.timesheet]))),
+        options=["All Employees"] + sorted(list(set([row.get("Employee", "") for row in st.session_state.timesheet if "Employee" in row]))),
         index=0
     )
     selected_shift = st.selectbox(
@@ -121,7 +121,7 @@ with st.sidebar:
     )
     
     # Statistics
-    total_hours = sum([row.get("Duration (hrs)", 0) for row in st.session_state.timesheet])
+    total_hours = sum([row.get("Duration (hrs)", 0) for row in st.session_state.timesheet if "Duration (hrs)" in row])
     late_entries = sum([1 for row in st.session_state.timesheet if row.get("Late (min)", 0) > 0])
     
     st.markdown("""
@@ -171,16 +171,17 @@ with st.expander("➕ Add New Attendance Entry", expanded=True):
                 shift = MORNING_SHIFT if shift_type == MORNING_SHIFT['name'] else EVENING_SHIFT
                 
                 # Calculate duration
-                duration = (datetime.combine(datetime.today(), actual_end) - 
-                          datetime.combine(datetime.today(), actual_start)).total_seconds() / 3600
+                start_datetime = datetime.combine(datetime.today(), actual_start)
+                end_datetime = datetime.combine(datetime.today(), actual_end)
+                duration = (end_datetime - start_datetime).total_seconds() / 3600
                 
                 # Calculate late arrival
-                late_minutes = max(0, (datetime.combine(datetime.today(), actual_start) - 
-                                     datetime.combine(datetime.today(), shift['start'])).total_seconds() / 60
+                scheduled_start = datetime.combine(datetime.today(), shift['start'])
+                late_minutes = max(0, (start_datetime - scheduled_start).total_seconds() / 60)
                 
                 # Calculate early departure
-                early_minutes = max(0, (datetime.combine(datetime.today(), shift['end']) - 
-                                      datetime.combine(datetime.today(), actual_end)).total_seconds() / 60
+                scheduled_end = datetime.combine(datetime.today(), shift['end'])
+                early_minutes = max(0, (scheduled_end - end_datetime).total_seconds() / 60)
                 
                 st.session_state.timesheet.append({
                     "Employee": employee,
