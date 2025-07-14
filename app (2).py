@@ -182,7 +182,7 @@ with st.sidebar:
         <div style='margin-top: 2rem; background: var(--dark-card); padding:1.5rem; border-radius:10px; border: 1px solid var(--dark-border);'>
         <h4>Shift Information</h4>
         <p><strong>Morning Shift:</strong> {}</p>
-        <p><em>{}</em></p>
+        <em>{}</em>
         <p><strong>Evening Shift:</strong> {}</p>
         <em>{}</em>
         </div>
@@ -390,7 +390,7 @@ if st.session_state.timesheet:
                              color_discrete_sequence=px.colors.qualitative.Dark24)
                 fig2.update_layout(plot_bgcolor='rgba(0,0,0,0)',
                                  paper_bgcolor='rgba(0,0,0,0)',
-                                 font_color=st.get_option("theme.textColor")))
+                                 font_color=st.get_option("theme.textColor"))
                 st.plotly_chart(fig2, use_container_width=True)
         
         with tab2:
@@ -403,7 +403,7 @@ if st.session_state.timesheet:
                              color_discrete_sequence=px.colors.qualitative.Dark24)
                 fig3.update_layout(plot_bgcolor='rgba(0,0,0,0)',
                                  paper_bgcolor='rgba(0,0,0,0)',
-                                 font_color=st.get_option("theme.textColor")))
+                                 font_color=st.get_option("theme.textColor"))
                 st.plotly_chart(fig3, use_container_width=True)
             
             with col2:
@@ -414,7 +414,7 @@ if st.session_state.timesheet:
                              color_discrete_sequence=px.colors.qualitative.Dark24)
                 fig4.update_layout(plot_bgcolor='rgba(0,0,0,0)',
                                  paper_bgcolor='rgba(0,0,0,0)',
-                                 font_color=st.get_option("theme.textColor")))
+                                 font_color=st.get_option("theme.textColor"))
                 st.plotly_chart(fig4, use_container_width=True)
         
         with tab3:
@@ -427,7 +427,7 @@ if st.session_state.timesheet:
                              color_discrete_sequence=px.colors.qualitative.Dark24)
                 fig5.update_layout(plot_bgcolor='rgba(0,0,0,0)',
                                  paper_bgcolor='rgba(0,0,0,0)',
-                                 font_color=st.get_option("theme.textColor")))
+                                 font_color=st.get_option("theme.textColor"))
                 st.plotly_chart(fig5, use_container_width=True)
             
             with col2:
@@ -437,7 +437,7 @@ if st.session_state.timesheet:
                              color_discrete_sequence=px.colors.qualitative.Dark24)
                 fig6.update_layout(plot_bgcolor='rgba(0,0,0,0)',
                                  paper_bgcolor='rgba(0,0,0,0)',
-                                 font_color=st.get_option("theme.textColor")))
+                                 font_color=st.get_option("theme.textColor"))
                 st.plotly_chart(fig6, use_container_width=True)
         
         with tab4:
