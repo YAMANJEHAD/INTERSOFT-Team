@@ -1,362 +1,631 @@
 import streamlit as st
 import pandas as pd
+import io
 import plotly.express as px
-from datetime import datetime, time
-from io import BytesIO
+import streamlit.components.v1 as components
+from datetime import datetime, timedelta
+import os
+import hashlib
+import re
+from PIL import Image, ImageDraw, ImageFont
+from collections import defaultdict
 
-
+# Page Configuration
 st.set_page_config(
-    page_title="⏱ Time Sheet InterSoft", 
+    page_title="INTERSOFT Analyzer Pro",
     layout="wide",
-    page_icon="⏱️"
+    initial_sidebar_state="expanded"
 )
 
-# Professional CSS styling
-st.markdown("""
+# ========== Helper Functions ==========
+
+def create_default_logo():
+    """Create default logo if image file doesn't exist"""
+    img = Image.new('RGB', (100, 100), color=(73, 109, 137))
+    d = ImageDraw.Draw(img)
+    try:
+        font = ImageFont.truetype("arial.ttf", 20)
+    except:
+        font = ImageFont.load_default()
+    d.text((10,10), "LOGO", fill=(255,255,0), font=font)
+    return img
+
+def load_logo():
+    """Load application logo"""
+    try:
+        return Image.open("logo.png")
+    except:
+        return create_default_logo()
+
+def set_dark_mode():
+    """Enable dark mode styling"""
+    st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
-    
-    html, body, [class*="css"] {
-        font-family: 'Poppins', sans-serif;
-    }
-    
-    .header {
-        background: linear-gradient(135deg, #6B73FF 0%, #000DFF 100%);
+    .stApp {
+        background-color: #1E1E1E;
         color: white;
-        padding: 2rem;
-        border-radius: 0 0 15px 15px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        margin-bottom: 2rem;
     }
-    
-    .header-title {
-        font-size: 2.5rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
+    .sidebar .sidebar-content {
+        background-color: #2E2E2E;
     }
-    
-    .header-subtitle {
-        font-size: 1.1rem;
-        opacity: 0.9;
+    .widget-label, .st-bb, .st-at, .st-ae, .st-af, .st-ag, .st-ah, .st-ai, .st-aj {
+        color: white !important;
     }
-    
-    .status-card {
-        background: white;
+    .metric-card {
+        background-color: #2E2E2E;
         border-radius: 10px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        padding: 15px;
+        margin-bottom: 15px;
+        border-left: 5px solid #4e79a7;
     }
-    
-    .status-value {
-        font-size: 1.8rem;
-        font-weight: 600;
-        color: #4a6fa5;
-    }
-    
-    .stDataFrame {
-        border-radius: 12px !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important;
-    }
-    
-    .stButton>button {
-        background: linear-gradient(135deg, #6B73FF 0%, #000DFF 100%);
+    .duplicate-badge {
         color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 0.7rem 1.5rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
+        background-color: #ff4b4b;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        margin-left: 10px;
     }
-    
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(107, 115, 255, 0.3);
+    .unique-badge {
+        color: white;
+        background-color: #59a14f;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        margin-left: 10px;
+    }
+    .header-style {
+        border-bottom: 2px solid #4e79a7;
+        padding-bottom: 5px;
+        margin-top: 20px;
     }
     </style>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-# Shift configurations
-MORNING_SHIFT = {
-    'start': time(8, 30),
-    'end': time(17, 30),
-    'name': 'Morning Shift (8:30 AM - 5:30 PM)'
-}
+def analyze_duplicates(df, column_name):
+    """Analyze duplicates and return detailed information"""
+    duplicates = df[df.duplicated(subset=[column_name], keep=False)]
+    duplicate_counts = duplicates[column_name].value_counts().to_dict()
+    
+    duplicate_details = defaultdict(list)
+    for _, row in duplicates.iterrows():
+        duplicate_details[row[column_name]].append(row.to_dict())
+    
+    return duplicates, duplicate_counts, duplicate_details
 
-EVENING_SHIFT = {
-    'start': time(15, 0),
-    'end': time(23, 0),
-    'name': 'Evening Shift (3:00 PM - 11:00 PM)'
-}
+def normalize(text):
+    """Normalize text format"""
+    text = str(text).upper()
+    text = re.sub(r"[^\w\s]", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
 
-# Initialize session state
-if "timesheet" not in st.session_state:
-    st.session_state.timesheet = []
+def classify_note(note):
+    """Classify notes"""
+    note = normalize(note)
+    patterns = {
+        "TERMINAL ID - WRONG DATE": ["TERMINAL ID WRONG DATE"],
+        "NO IMAGE FOR THE DEVICE": ["NO IMAGE FOR THE DEVICE"],
+        "IMAGE FOR THE DEVICE ONLY": ["IMAGE FOR THE DEVICE ONLY"],
+        "WRONG DATE": ["WRONG DATE"],
+        "TERMINAL ID": ["TERMINAL ID"],
+        "NO J.O": ["NO JO", "NO J O"],
+        "DONE": ["DONE"],
+        "NO RETAILERS SIGNATURE": ["NO RETAILERS SIGNATURE", "NO RETAILER SIGNATURE"],
+        "UNCLEAR IMAGE": ["UNCLEAR IMAGE"],
+        "NO ENGINEER SIGNATURE": ["NO ENGINEER SIGNATURE"],
+        "NO SIGNATURE": ["NO SIGNATURE","NO SIGNATURES"],
+        "PENDING": ["PENDING"],
+        "NO INFORMATIONS": ["NO INFORMATION", "NO INFORMATIONS"],
+        "MISSING INFORMATION": ["MISSING INFORMATION"],
+        "NO BILL": ["NO BILL"],
+        "NOT ACTIVE": ["NOT ACTIVE"],
+        "NO RECEIPT": ["NO RECEIPT"],
+        "ANOTHER TERMINAL RECEIPT": ["ANOTHER TERMINAL RECEIPT"],
+        "UNCLEAR RECEIPT": ["UNCLEAR RECEIPT"],
+        "WRONG RECEIPT": ["WRONG RECEIPT"],
+        "REJECTED RECEIPT": ["REJECTED RECEIPT"],
+        "MULTIPLE ISSUES":["MULTIPLE ISSUES"]
+    }
+    if "+" in note: return "MULTIPLE ISSUES"
+    matched_labels = []
+    for label, keywords in patterns.items():
+        if any(keyword in note for keyword in keywords):
+            matched_labels.append(label)
+    return matched_labels[0] if matched_labels else "MISSING INFORMATION"
 
-# --- Header Section ---
-st.markdown(f"""
-    <div class="header">
-        <div class="header-title">⏱ Time Sheet InterSoft</div>
-        <div class="header-subtitle">Professional Attendance & Time Tracking System | v2.0</div>
-    </div>
-""", unsafe_allow_html=True)
+def problem_severity(note_type):
+    """Determine problem severity"""
+    severity_map = {
+        "Critical": ["WRONG DATE", "TERMINAL ID - WRONG DATE", "REJECTED RECEIPT"],
+        "High": ["NO IMAGE", "UNCLEAR IMAGE", "NO RECEIPT"],
+        "Medium": ["NO SIGNATURE", "NO ENGINEER SIGNATURE"],
+        "Low": ["NO J.O", "PENDING"]
+    }
+    for severity, types in severity_map.items():
+        if note_type in types: return severity
+    return "Unclassified"
 
-# --- Sidebar Filters ---
+def suggest_solutions(note_type):
+    """Suggest solutions for problems"""
+    solutions = {
+        "WRONG DATE": "Verify device timestamp and sync with server",
+        "TERMINAL ID - WRONG DATE": "Recheck terminal ID and date configuration",
+        "NO IMAGE FOR THE DEVICE": "Capture and upload device image",
+        "NO RETAILERS SIGNATURE": "Ensure retailer signs the form",
+        "NO ENGINEER SIGNATURE": "Engineer must sign before submission",
+        "NO SIGNATURE": "Capture required signatures from all parties",
+        "UNCLEAR IMAGE": "Retake photo with better lighting",
+        "NOT ACTIVE": "Check activation process and retry",
+        "NO BILL": "Attach valid billing document",
+        "NO RECEIPT": "Upload clear transaction receipt image",
+        "ANOTHER TERMINAL RECEIPT": "Ensure correct terminal's receipt is uploaded",
+        "WRONG RECEIPT": "Verify and re-upload correct receipt",
+        "REJECTED RECEIPT": "Follow up on rejection reason and correct",
+        "MULTIPLE ISSUES": "Resolve all mentioned issues and update note",
+        "NO J.O": "Provide Job Order number/details",
+        "PENDING": "Complete and finalize pending task",
+        "MISSING INFORMATION": "Review note and provide complete details",
+    }
+    return solutions.get(note_type, "No solution available")
+
+# ========== UI Components ==========
+
+# Sidebar
 with st.sidebar:
-    st.header("🔍 Filter Options")
-    selected_employee = st.selectbox(
-        "Employee Filter", 
-        options=["All Employees"] + sorted(list(set([row.get("Employee", "") for row in st.session_state.timesheet]))),
-        index=0
-    )
-    selected_shift = st.selectbox(
-        "Shift Filter",
-        options=["All Shifts", MORNING_SHIFT['name'], EVENING_SHIFT['name']],
-        index=0
-    )
-    selected_date = st.date_input(
-        "Date Filter", 
-        value=None,
-        help="Filter entries by specific date"
-    )
-    
-    # Statistics
-    total_hours = sum([row.get("Duration (hrs)", 0) for row in st.session_state.timesheet])
-    late_entries = sum([1 for row in st.session_state.timesheet if row.get("Late (min)", 0) > 0])
-    
-    st.markdown("""
-        <div style='margin-top: 2rem; background:#f8f9fa; padding:1.5rem; border-radius:10px;'>
-        <h4>System Statistics</h4>
-        <p>Total Entries: <strong>{}</strong></p>
-        <p>Total Hours: <strong>{:.1f}</strong></p>
-        <p>Late Arrivals: <strong>{}</strong></p>
-        </div>
-    """.format(
-        len(st.session_state.timesheet),
-        total_hours,
-        late_entries
-    ), unsafe_allow_html=True)
+    st.title("Settings")
+    dark_mode = st.checkbox('🌙 Dark Mode')
+    if dark_mode: set_dark_mode()
 
-# --- Time Entry Form ---
-with st.expander("➕ Add New Attendance Entry", expanded=True):
-    with st.form("attendance_form", clear_on_submit=True):
-        cols = st.columns([1, 1, 1])
-        with cols[0]:
-            employee = st.text_input("Employee Name*", placeholder="John Smith")
-            date = st.date_input("Date*", datetime.today())
-            shift_type = st.selectbox("Shift Type*", [MORNING_SHIFT['name'], EVENING_SHIFT['name']])
-            
-        with cols[1]:
-            actual_start = st.time_input("Actual Start Time*")
-            project = st.text_input("Project Name*", placeholder="Project Alpha")
-            
-        with cols[2]:
-            actual_end = st.time_input("Actual End Time*")
-            status = st.selectbox("Status", ["Present", "Half Day", "Leave"])
-        
-        task_description = st.text_area("Work Description", 
-                                      placeholder="Describe work performed...",
-                                      height=100)
-        
-        submitted = st.form_submit_button("Submit Attendance", 
-                                        help="All fields marked with * are required")
+# Header
+col1, col2 = st.columns([1, 4])
+with col1:
+    try:
+        logo = load_logo()
+        st.image(logo, width=80)
+    except:
+        st.markdown("### 🏢")
+with col2:
+    st.markdown("<h1 style='color:#ffffff; margin-top:15px;'>📊 INTERSOFT Analyzer Pro</h1>", unsafe_allow_html=True)
 
-        if submitted:
-            if not all([employee, project, actual_start, actual_end]):
-                st.error("Please complete all required fields (*)")
-            elif actual_end <= actual_start:
-                st.error("End time must be after start time")
+# Digital Clock
+components.html("""
+<div style="text-align:right; font-family:monospace; font-size:20px; margin-bottom:20px;">
+    <div id="datetime"></div>
+</div>
+<script>
+function updateTime() {
+    const now = new Date();
+    document.getElementById("datetime").innerHTML = 
+        now.toLocaleDateString() + " | " + now.toLocaleTimeString();
+}
+setInterval(updateTime, 1000);
+updateTime();
+</script>
+""", height=50)
+
+# ========== Pending Tickets Section ==========
+st.markdown('<div class="header-style">📌 Pending Tickets Analysis</div>', unsafe_allow_html=True)
+
+with st.expander("🧮 Filter Unprocessed Tickets by Ticket_Id", expanded=True):
+    col1, col2 = st.columns(2)
+    with col1:
+        all_file = st.file_uploader("🔄 Upload ALL Tickets File", type=["xlsx"])
+    with col2:
+        done_file = st.file_uploader("✅ Upload DONE Tickets File", type=["xlsx"])
+
+    if all_file and done_file:
+        try:
+            # Read files
+            all_df = pd.read_excel(all_file)
+            done_df = pd.read_excel(done_file)
+
+            # Analyze duplicates
+            all_duplicates, all_dup_counts, all_dup_details = analyze_duplicates(all_df, 'Ticket_Id')
+            done_duplicates, done_dup_counts, done_dup_details = analyze_duplicates(done_df, 'Ticket_Id')
+
+            # Clean data (keep first occurrence)
+            all_df_clean = all_df.drop_duplicates(subset=['Ticket_Id'], keep='first')
+            done_df_clean = done_df.drop_duplicates(subset=['Ticket_Id'], keep='first')
+            
+            # Find pending tickets
+            pending_df = all_df_clean[~all_df_clean['Ticket_Id'].isin(done_df_clean['Ticket_Id'])]
+            
+            # Calculate statistics
+            stats = {
+                'total_all': len(all_df),
+                'total_completed': len(done_df),
+                'total_pending': len(pending_df),
+                'all_duplicates': len(all_duplicates),
+                'completed_duplicates': len(done_duplicates),
+                'unique_all': len(all_df_clean),
+                'unique_completed': len(done_df_clean),
+                'duplicate_percentage': (len(all_duplicates)/len(all_df))*100 if len(all_df) > 0 else 0
+            }
+
+            # Display results
+            st.success("✅ Data analyzed successfully")
+            st.markdown("---")
+            
+            # Key Metrics
+            st.markdown('<div class="header-style">📈 Key Metrics</div>', unsafe_allow_html=True)
+            cols = st.columns(4)
+            
+            with cols[0]:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <h3>Total Tickets</h3>
+                    <h2>{stats['total_all']:,}</h2>
+                    <div style="margin-top: 10px;">
+                        <span class="unique-badge">{stats['unique_all']:,} unique</span>
+                        <span class="duplicate-badge">{stats['all_duplicates']:,} duplicates</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with cols[1]:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <h3>Completed Tickets</h3>
+                    <h2>{stats['total_completed']:,}</h2>
+                    <div style="margin-top: 10px;">
+                        <span class="unique-badge">{stats['unique_completed']:,} unique</span>
+                        <span class="duplicate-badge">{stats['completed_duplicates']:,} duplicates</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with cols[2]:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <h3>Pending Tickets</h3>
+                    <h2>{stats['total_pending']:,}</h2>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with cols[3]:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <h3>Duplicate Rate</h3>
+                    <h2>{stats['duplicate_percentage']:.1f}%</h2>
+                </div>
+                """, unsafe_allow_html=True)
+
+            # Duplicate Analysis
+            st.markdown("---")
+            st.markdown('<div class="header-style">🔍 Duplicate Analysis</div>', unsafe_allow_html=True)
+            
+            if stats['all_duplicates'] > 0 or stats['completed_duplicates'] > 0:
+                tab1, tab2 = st.tabs(["All Tickets Duplicates", "Completed Tickets Duplicates"])
+                
+                with tab1:
+                    if stats['all_duplicates'] > 0:
+                        st.subheader(f"All Tickets Duplicates ({stats['all_duplicates']} records)")
+                        st.dataframe(all_duplicates.sort_values('Ticket_Id'), height=300)
+                        
+                        # Show duplicate details for selected ticket
+                        selected_ticket = st.selectbox(
+                            "Select a Ticket_Id to view duplicate details:",
+                            list(all_dup_details.keys()),
+                            key="all_dup_select"
+                        )
+                        
+                        dup_df = pd.DataFrame(all_dup_details[selected_ticket])
+                        st.dataframe(dup_df)
+                    else:
+                        st.info("No duplicates found in All Tickets")
+                
+                with tab2:
+                    if stats['completed_duplicates'] > 0:
+                        st.subheader(f"Completed Tickets Duplicates ({stats['completed_duplicates']} records)")
+                        st.dataframe(done_duplicates.sort_values('Ticket_Id'), height=300)
+                        
+                        # Show duplicate details for selected ticket
+                        selected_ticket = st.selectbox(
+                            "Select a Ticket_Id to view duplicate details:",
+                            list(done_dup_details.keys()),
+                            key="done_dup_select"
+                        )
+                        
+                        dup_df = pd.DataFrame(done_dup_details[selected_ticket])
+                        st.dataframe(dup_df)
+                    else:
+                        st.info("No duplicates found in Completed Tickets")
             else:
-                # Calculate shift details
-                shift = MORNING_SHIFT if shift_type == MORNING_SHIFT['name'] else EVENING_SHIFT
-                
-                # Calculate duration
-                duration = (datetime.combine(datetime.today(), actual_end) - 
-                          datetime.combine(datetime.today(), actual_start)).total_seconds() / 3600
-                
-                # Calculate late arrival
-                late_minutes = max(0, (datetime.combine(datetime.today(), actual_start) - 
-                                     datetime.combine(datetime.today(), shift['start'])).total_seconds() / 60
-                
-                # Calculate early departure
-                early_minutes = max(0, (datetime.combine(datetime.today(), shift['end']) - 
-                                      datetime.combine(datetime.today(), actual_end)).total_seconds() / 60
-                
-                st.session_state.timesheet.append({
-                    "Employee": employee,
-                    "Date": date,
-                    "Shift": shift_type,
-                    "Scheduled Start": shift['start'].strftime("%H:%M"),
-                    "Scheduled End": shift['end'].strftime("%H:%M"),
-                    "Actual Start": actual_start.strftime("%H:%M"),
-                    "Actual End": actual_end.strftime("%H:%M"),
-                    "Duration (hrs)": round(duration, 2),
-                    "Late (min)": round(late_minutes, 0),
-                    "Early Departure (min)": round(early_minutes, 0),
-                    "Status": status,
-                    "Project": project,
-                    "Work Description": task_description
-                })
-                
-                st.success("Attendance record successfully added!")
-                st.balloons()
+                st.success("🎉 No duplicates found in any files")
 
-# --- Dashboard ---
-if st.session_state.timesheet:
-    df = pd.DataFrame(st.session_state.timesheet)
-    
-    # Apply filters
-    if selected_employee != "All Employees":
-        df = df[df["Employee"] == selected_employee]
-    if selected_shift != "All Shifts":
-        df = df[df["Shift"] == selected_shift]
-    if selected_date:
-        df = df[df["Date"] == pd.to_datetime(selected_date)]
-    
-    if not df.empty:
-        # Summary cards
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.markdown(f"""
-                <div class="status-card">
-                    <div>Total Hours Worked</div>
-                    <div class="status-value">{df["Duration (hrs)"].sum():.1f} hrs</div>
+            # Pending Tickets
+            st.markdown("---")
+            st.markdown('<div class="header-style">📋 Pending Tickets (Ready to Work)</div>', unsafe_allow_html=True)
+            
+            # Filters
+            st.markdown("### 🔍 Filter Options")
+            filter_cols = st.columns(3)
+            
+            if 'Date' in pending_df.columns:
+                with filter_cols[0]:
+                    date_options = ["All", "Last Week", "Last Month"]
+                    date_sel = st.selectbox("Time Period", date_options)
+                    if date_sel == "Last Week":
+                        pending_df = pending_df[pending_df['Date'] >= (datetime.now() - timedelta(days=7))]
+                    elif date_sel == "Last Month":
+                        pending_df = pending_df[pending_df['Date'] >= (datetime.now() - timedelta(days=30))]
+            
+            if 'Technician_Name' in pending_df.columns:
+                with filter_cols[1]:
+                    techs = st.multiselect("Technician", pending_df['Technician_Name'].unique())
+                    if techs:
+                        pending_df = pending_df[pending_df['Technician_Name'].isin(techs)]
+            
+            if 'Ticket_Type' in pending_df.columns:
+                with filter_cols[2]:
+                    types = st.multiselect("Ticket Type", pending_df['Ticket_Type'].unique())
+                    if types:
+                        pending_df = pending_df[pending_df['Ticket_Type'].isin(types)]
+            
+            st.dataframe(pending_df, height=400)
+
+            # Export Results
+            st.markdown("---")
+            st.markdown('<div class="header-style">💾 Export Results</div>', unsafe_allow_html=True)
+            
+            # Create Excel file in memory
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                pending_df.to_excel(writer, index=False, sheet_name="Pending_Tickets")
+                all_df_clean.to_excel(writer, index=False, sheet_name="Cleaned_All_Tickets")
+                done_df_clean.to_excel(writer, index=False, sheet_name="Cleaned_Completed")
+                
+                if not all_duplicates.empty:
+                    all_duplicates.to_excel(writer, index=False, sheet_name="All_Tickets_Duplicates")
+                if not done_duplicates.empty:
+                    done_duplicates.to_excel(writer, index=False, sheet_name="Completed_Duplicates")
+                
+                # Save statistics
+                stats_df = pd.DataFrame.from_dict(stats, orient='index', columns=['Count'])
+                stats_df.to_excel(writer, sheet_name="Statistics")
+            
+            # Download button
+            st.download_button(
+                label="📥 Download Full Report (Excel)",
+                data=output.getvalue(),
+                file_name=f"ticket_analysis_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                help="Includes all cleaned data, duplicates, and statistics"
+            )
+
+        except Exception as e:
+            st.error(f"❌ Error processing files: {str(e)}")
+
+# ========== Main Analysis Dashboard ==========
+st.markdown('<div class="header-style">📊 Comprehensive Analysis Dashboard</div>', unsafe_allow_html=True)
+
+uploaded_file = st.file_uploader("📁 Upload Data File for Full Analysis", type=["xlsx"])
+required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
+
+if uploaded_file:
+    try:
+        df = pd.read_excel(uploaded_file)
+        
+        if not all(col in df.columns for col in required_cols):
+            st.error(f"❌ Required columns missing. Available columns: {list(df.columns)}")
+        else:
+            # Analyze duplicates
+            duplicates, dup_counts, dup_details = analyze_duplicates(df, 'Ticket_Id')
+            
+            # Clean data (keep first occurrence)
+            df_clean = df.drop_duplicates(subset=['Ticket_Id'], keep='first')
+            
+            # Classify data
+            df_clean['Note_Type'] = df_clean['NOTE'].apply(classify_note)
+            df_clean['Problem_Severity'] = df_clean['Note_Type'].apply(problem_severity)
+            df_clean['Suggested_Solution'] = df_clean['Note_Type'].apply(suggest_solutions)
+            
+            # Calculate statistics
+            stats = {
+                'total_tickets': len(df),
+                'duplicate_tickets': len(duplicates),
+                'unique_tickets': len(df_clean),
+                'duplicate_percentage': (len(duplicates)/len(df))*100 if len(df) > 0 else 0,
+                'done_tickets': len(df_clean[df_clean['Note_Type'] == 'DONE']),
+                'critical_issues': len(df_clean[df_clean['Problem_Severity'] == 'Critical'])
+            }
+            
+            # Severity colors
+            severity_colors = {
+                "Critical": "#FF0000",  # Red
+                "High": "#FFA500",      # Orange
+                "Medium": "#FFFF00",    # Yellow
+                "Low": "#00FF00",       # Green
+                "Unclassified": "#808080" # Gray
+            }
+            
+            # Display results
+            st.success("✅ Data analyzed successfully")
+            st.markdown("---")
+            
+            # Key Metrics
+            st.markdown('<div class="header-style">📈 Key Metrics</div>', unsafe_allow_html=True)
+            cols = st.columns(4)
+            
+            with cols[0]:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <h3>Total Tickets</h3>
+                    <h2>{stats['total_tickets']:,}</h2>
+                    <div style="margin-top: 10px;">
+                        <span class="unique-badge">{stats['unique_tickets']:,} unique</span>
+                        <span class="duplicate-badge">{stats['duplicate_tickets']:,} duplicates</span>
+                    </div>
                 </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            st.markdown(f"""
-                <div class="status-card">
-                    <div>Average Late Arrival</div>
-                    <div class="status-value">{df["Late (min)"].mean():.1f} min</div>
+                """, unsafe_allow_html=True)
+            
+            with cols[1]:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <h3>Completed Tickets</h3>
+                    <h2>{stats['done_tickets']:,}</h2>
                 </div>
-            """, unsafe_allow_html=True)
-        
-        with col3:
-            st.markdown(f"""
-                <div class="status-card">
-                    <div>Early Departures</div>
-                    <div class="status-value">{len(df[df["Early Departure (min)"] > 0])}</div>
+                """, unsafe_allow_html=True)
+            
+            with cols[2]:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <h3>Critical Issues</h3>
+                    <h2>{stats['critical_issues']:,}</h2>
                 </div>
-            """, unsafe_allow_html=True)
-        
-        # Main dataframe
-        st.markdown("""
-            <h2 style='margin-top: 2rem;'>Attendance Records</h2>
-        """, unsafe_allow_html=True)
-        
-        display_cols = [
-            "Employee", "Date", "Shift", 
-            "Scheduled Start", "Scheduled End",
-            "Actual Start", "Actual End",
-            "Duration (hrs)", "Late (min)", 
-            "Early Departure (min)", "Status", "Project"
-        ]
-        
-        st.dataframe(
-            df[display_cols].sort_values("Date", ascending=False),
-            column_config={
-                "Duration (hrs)": st.column_config.NumberColumn(format="%.2f"),
-                "Late (min)": st.column_config.NumberColumn(format="%.0f"),
-                "Early Departure (min)": st.column_config.NumberColumn(format="%.0f"),
-                "Date": st.column_config.DateColumn(format="YYYY-MM-DD")
-            },
-            use_container_width=True,
-            height=600
-        )
-        
-        # --- Analytics Section ---
-        st.markdown("""
-            <div style='border-top: 1px solid #e1e4e8; margin: 2rem 0;'></div>
-            <h2>Attendance Analytics</h2>
-        """, unsafe_allow_html=True)
-        
-        tab1, tab2, tab3 = st.tabs(["Shift Analysis", "Employee Performance", "Data Export"])
-        
-        with tab1:
-            col1, col2 = st.columns(2)
-            with col1:
-                fig1 = px.pie(df, names="Shift", values="Duration (hrs)",
-                             title="Hours by Shift Type",
-                             hole=0.3)
+                """, unsafe_allow_html=True)
+            
+            with cols[3]:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <h3>Duplicate Rate</h3>
+                    <h2>{stats['duplicate_percentage']:.1f}%</h2>
+                </div>
+                """, unsafe_allow_html=True)
+
+            # Duplicate Analysis
+            if stats['duplicate_tickets'] > 0:
+                st.markdown("---")
+                st.markdown('<div class="header-style">🔍 Duplicate Tickets Analysis</div>', unsafe_allow_html=True)
+                
+                st.dataframe(duplicates.sort_values('Ticket_Id'), height=300)
+                
+                # Show duplicate details for selected ticket
+                selected_ticket = st.selectbox(
+                    "Select a Ticket_Id to view duplicate details:",
+                    list(dup_details.keys()),
+                    key="main_dup_select"
+                )
+                
+                dup_df = pd.DataFrame(dup_details[selected_ticket])
+                st.dataframe(dup_df)
+            else:
+                st.markdown("---")
+                st.success("🎉 No duplicate tickets found in the data")
+
+            # Data Visualizations
+            st.markdown("---")
+            st.markdown('<div class="header-style">📊 Data Visualizations</div>', unsafe_allow_html=True)
+            
+            viz_col1, viz_col2 = st.columns(2)
+            
+            with viz_col1:
+                # Note Type Distribution
+                note_counts = df_clean['Note_Type'].value_counts().reset_index()
+                note_counts.columns = ['Note_Type', 'Count']
+                fig1 = px.pie(
+                    note_counts,
+                    names='Note_Type',
+                    values='Count',
+                    title="Note Type Distribution",
+                    hole=0.3
+                )
                 st.plotly_chart(fig1, use_container_width=True)
             
-            with col2:
-                fig2 = px.box(df, x="Shift", y="Late (min)",
-                             title="Late Arrivals by Shift",
-                             color="Shift")
+            with viz_col2:
+                # Problem Severity Distribution
+                severity_counts = df_clean['Problem_Severity'].value_counts().reset_index()
+                severity_counts.columns = ['Severity', 'Count']
+                fig2 = px.bar(
+                    severity_counts,
+                    x='Severity',
+                    y='Count',
+                    color='Severity',
+                    color_discrete_map=severity_colors,
+                    title="Problems by Severity Level"
+                )
                 st.plotly_chart(fig2, use_container_width=True)
-        
-        with tab2:
-            fig3 = px.bar(df.groupby("Employee")["Duration (hrs)"].sum().reset_index().sort_values("Duration (hrs)", ascending=False),
-                         x="Employee", y="Duration (hrs)",
-                         title="Total Hours by Employee",
-                         color="Employee")
-            st.plotly_chart(fig3, use_container_width=True)
+
+            # Technician Performance
+            st.markdown("---")
+            st.markdown('<div class="header-style">👨‍🔧 Technician Performance Analysis</div>', unsafe_allow_html=True)
             
-            fig4 = px.bar(df.groupby("Employee")["Late (min)"].mean().reset_index().sort_values("Late (min)", ascending=False),
-                         x="Employee", y="Late (min)",
-                         title="Average Late Arrival by Employee",
-                         color="Employee")
-            st.plotly_chart(fig4, use_container_width=True)
-        
-        with tab3:
-            st.markdown("""
-                <h4>Export Attendance Data</h4>
-                <p>Download records for payroll processing or HR reporting.</p>
-            """, unsafe_allow_html=True)
+            tech_df = df_clean.groupby('Technician_Name').agg({
+                'Ticket_Type': 'count',
+                'Problem_Severity': lambda x: (x == 'Critical').sum()
+            }).rename(columns={
+                'Ticket_Type': 'Total_Tickets',
+                'Problem_Severity': 'Critical_Issues'
+            }).sort_values('Total_Tickets', ascending=False)
             
-            def convert_to_excel(df):
-                output = BytesIO()
-                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                    df.to_excel(writer, index=False, sheet_name='Attendance')
-                    workbook = writer.book
-                    worksheet = writer.sheets['Attendance']
-                    
-                    # Format headers
-                    header_format = workbook.add_format({
-                        'bold': True,
-                        'text_wrap': True,
-                        'valign': 'top',
-                        'fg_color': '#4a6fa5',
-                        'font_color': 'white',
-                        'border': 1
-                    })
-                    
-                    for col_num, value in enumerate(df.columns.values):
-                        worksheet.write(0, col_num, value, header_format)
-                    
-                    # Auto-adjust columns
-                    worksheet.autofit()
-                    
-                return output.getvalue()
+            st.dataframe(tech_df.style.background_gradient(
+                cmap='YlOrRd', 
+                subset=['Critical_Issues']
+            ), use_container_width=True)
+
+            # Export Results
+            st.markdown("---")
+            st.markdown('<div class="header-style">💾 Export Results</div>', unsafe_allow_html=True)
             
-            col1, col2 = st.columns(2)
-            with col1:
-                st.download_button(
-                    label="📊 Export to Excel",
-                    data=convert_to_excel(df),
-                    file_name=f"Attendance_Report_{datetime.today().strftime('%Y%m%d')}.xlsx",
-                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                )
-            with col2:
-                st.download_button(
-                    label="📄 Export to CSV",
-                    data=df.to_csv(index=False).encode('utf-8'),
-                    file_name=f"Attendance_Data_{datetime.today().strftime('%Y%m%d')}.csv",
-                    mime='text/csv'
-                )
-    else:
-        st.info("No records match your current filters")
-else:
-    st.info("""
-        ℹ️ No attendance records have been entered yet. 
-        Use the form above to add your first record.
+            # Create Excel file in memory
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                df_clean.to_excel(writer, index=False, sheet_name="Clean_Data")
+                tech_df.to_excel(writer, sheet_name="Technician_Performance")
+                
+                if not duplicates.empty:
+                    duplicates.to_excel(writer, index=False, sheet_name="Duplicate_Tickets")
+                
+                # Save statistics
+                stats_df = pd.DataFrame.from_dict(stats, orient='index', columns=['Count'])
+                stats_df.to_excel(writer, sheet_name="Statistics")
+            
+            # Download button
+            st.download_button(
+                label="📥 Download Full Analysis Report",
+                data=output.getvalue(),
+                file_name=f"full_analysis_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                help="Includes cleaned data, technician performance, and statistics"
+            )
+
+    except Exception as e:
+        st.error(f"❌ Error processing file: {str(e)}")
+
+# User Guide
+with st.expander("ℹ️ System User Guide"):
+    st.markdown("""
+    ## INTERSOFT Analyzer Pro - User Guide
+    
+    ### How to Use:
+    1. **Upload Files**:
+       - For Pending Tickets Analysis: Upload both All Tickets and Completed Tickets files
+       - For Comprehensive Analysis: Upload a single data file
+       - All files must contain a 'Ticket_Id' column
+    
+    2. **Automatic Processing**:
+       - System will identify and count all duplicate tickets
+       - Clean data by keeping only first occurrence of each ticket
+       - Generate comprehensive statistics and visualizations
+    
+    3. **Review Results**:
+       - View key metrics in the dashboard
+       - Examine duplicate tickets in detail
+       - Analyze pending tickets ready for work
+       - Explore data visualizations
+    
+    4. **Export Data**:
+       - Download complete reports in Excel format
+       - Includes all cleaned data, duplicates, and statistics
+    
+    ### Key Features:
+    - **Advanced Duplicate Detection**: Identifies exact duplicates based on Ticket_Id
+    - **Detailed Reporting**: Shows exactly which tickets are duplicated
+    - **Visual Analytics**: Interactive charts for data exploration
+    - **Data Cleaning**: Automatically removes duplicates while preserving originals
+    - **Comprehensive Export**: All results in organized Excel files
+    
+    ### Technical Notes:
+    - System handles large datasets efficiently
+    - Preserves all original columns from your files
+    - Timestamped reports for version control
     """)
 
 # Footer
 st.markdown("""
-    <div style='border-top: 1px solid #e1e4e8; margin-top: 2rem; padding-top: 1rem; color: #6c757d;'>
-    <p>Time Sheet InterSoft © 2023 | Professional Attendance Management System</p>
-    </div>
+<div style="text-align:center; margin-top:50px; padding:20px; background:#f0f2f6;">
+    <p>INTERSOFT Analyzer Pro - Version 2.0</p>
+    <p>© 2023 All Rights Reserved</p>
+</div>
 """, unsafe_allow_html=True)
