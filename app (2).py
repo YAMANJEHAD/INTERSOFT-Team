@@ -77,8 +77,8 @@ with st.expander("➕ Add New Time Entry", expanded=True):
             shift_type = st.selectbox("Shift Type *", list(SHIFTS.keys()))
 
         with col2:
-            start_time = st.time_input("Start Time *", value=time(8, 30), format="%I:%M %p")
-            end_time = st.time_input("End Time *", value=time(17, 30), format="%I:%M %p")
+            start_time = st.time_input("Start Time *", value=time(8, 30))
+            end_time = st.time_input("End Time *", value=time(17, 30))
 
         with col3:
             task_category = st.selectbox("Task Category", list(TASK_CATEGORIES.keys()))
@@ -88,7 +88,7 @@ with st.expander("➕ Add New Time Entry", expanded=True):
         if TASK_CATEGORIES[task_category].get("requires_devices"):
             device_count = st.number_input("Number of Devices (TOMS)", min_value=1, step=1)
         if TASK_CATEGORIES[task_category].get("requires_task_time"):
-            task_duration = st.time_input("Task Duration (optional)", value=time(0, 30), format="%I:%M %p")
+            task_duration = st.time_input("Task Duration (optional)", value=time(0, 30))
 
         work_description = st.text_area("Work Description (optional)", height=100)
         submitted = st.form_submit_button("Submit Entry")
