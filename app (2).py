@@ -6,7 +6,7 @@ from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
-# Page Configuration
+# Page Configura
 st.set_page_config(
     page_title="⏱ Time Sheet InterSoft Pro", 
     layout="wide",
