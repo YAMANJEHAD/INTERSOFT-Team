@@ -14,52 +14,87 @@ import numpy as np
 
 # --- Page Configuration ---
 st.set_page_config(
-    page_title="⏱ Time Tracker | INTERSOFT POS - FLM",
+    page_title="⏱ FLM Time Tracker | INTERSOFT POS",
     layout="wide",
-    page_icon="⏱️"
+    page_icon="⏱"
 )
 
-# --- Simplified Dark Theme Styling ---
+# --- Professional Styling with Inter Font ---
 st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
     :root {
-        --primary: #3949ab;
-        --background: #121212;
-        --surface: #1e1e1e;
-        --text: #f5f5f5;
+        --primary: #3b82f6;
+        --background: #0f172a;
+        --surface: #1e293b;
+        --text: #f1f5f9;
+        --accent: #22d3ee;
     }
+    
     html, body, [class*="css"] {
-        font-family: 'Roboto', sans-serif;
+        font-family: 'Inter', sans-serif !important;
         background-color: var(--background);
         color: var(--text);
     }
+    
     .header {
-        background: var(--primary);
-        color: white;
+        background: linear-gradient(135deg, var(--primary), #1e40af);
+        color: var(--text);
         padding: 2rem;
-        border-radius: 8px;
+        border-radius: 12px;
         text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        margin-bottom: 2rem;
     }
+    
     .card {
         background: var(--surface);
-        border-radius: 8px;
+        border-radius: 12px;
         padding: 1.5rem;
         margin-bottom: 1.5rem;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        border-left: 4px solid var(--accent);
     }
+    
     .stSelectbox, .stTextInput, .stTimeInput, .stTextArea {
-        background-color: #252535 !important;
-        border-radius: 6px !important;
-        border: 1px solid #3d3d4d !important;
+        background-color: #2d3748 !important;
+        border-radius: 8px !important;
+        border: 1px solid #4b5563 !important;
+        color: var(--text) !important;
     }
+    
     .stButton>button {
         background: var(--primary) !important;
-        color: white !important;
-        border-radius: 6px !important;
-        padding: 0.5rem 1rem !important;
-    }
-    .stDataFrame {
+        color: var(--text) !important;
         border-radius: 8px !important;
+        padding: 0.75rem 1.5rem !important;
+        font-weight: 500 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .stButton>button:hover {
+        background: #1e40af !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    
+    .stDataFrame {
+        border-radius: 12px !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    }
+    
+    .metric-card {
+        background: var(--surface);
+        border-radius: 12px;
+        padding: 1rem;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    h1, h2, h3 {
+        font-weight: 600 !important;
+        color: var(--text) !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -67,7 +102,8 @@ st.markdown("""
 # --- Header ---
 st.markdown("""
     <div class="header">
-        <h2>INTERSOFT POS - FLM Time Tracker</h2>
+        <h1>⏱ INTERSOFT POS</h1>
+        <h3>FLM Time Tracker Dashboard 🚀</h3>
     </div>
 """, unsafe_allow_html=True)
 
@@ -75,7 +111,7 @@ st.markdown("""
 if "timesheet" not in st.session_state:
     st.session_state.timesheet = []
 
-# --- Simplified Shift Options ---
+# --- Shift Options (12-hour format handled in form) ---
 SHIFTS = {
     "Morning Shift": {'start': time(8, 30), 'end': time(17, 30), 'break_duration': timedelta(minutes=60)},
     "Evening Shift": {'start': time(15, 0), 'end': time(23, 0), 'break_duration': timedelta(minutes=45)},
@@ -83,13 +119,13 @@ SHIFTS = {
     "Custom Shift": {'start': time(8, 0), 'end': time(17, 0), 'break_duration': timedelta(minutes=0)}
 }
 
-# --- Simplified Task Categories ---
+# --- Task Categories ---
 TASK_CATEGORIES = {
-    "TOMS Operations": {"icon": "💻", "requires_time": True, "billable": True},
-    "Paper Management": {"icon": "📄", "requires_time": False, "billable": False},
-    "Job Order Processing": {"icon": "🛠️", "requires_time": True, "billable": True},
-    "CRM Activities": {"icon": "👥", "requires_time": True, "billable": True},
-    "Meetings": {"icon": "📅", "requires_time": True, "billable": False}
+    "TOMS Operations": {"icon": "💻", "billable": True},
+    "Paper Management": {"icon": "📄", "billable": False},
+    "Job Order Processing": {"icon": "🛠", "billable": True},
+    "CRM Activities": {"icon": "👥", "billable": True},
+    "Meetings": {"icon": "📅", "billable": False}
 }
 
 # --- Priority Levels ---
@@ -101,43 +137,50 @@ PRIORITY_LEVELS = {
 
 # --- Status Options ---
 STATUS_OPTIONS = {
-    "Not Started": {"color": "#9e9e9e", "icon": "⏸️"},
-    "In Progress": {"color": "#2196f3", "icon": "🔄"},
-    "Completed": {"color": "#4caf50", "icon": "✅"}
+    "Not Started": {"color": "#9e9e9e", "icon": "⏸"},
+    "In Progress": {"color": "#3b82f6", "icon": "🔄"},
+    "Completed": {"color": "#22c55e", "icon": "✅"}
 }
 
-# --- Time Entry Form ---
-with st.expander("⏱ Add Time Entry", expanded=True):
-    with st.form("time_entry_form", clear_on_submit=True):
-        st.markdown("### Employee")
-        employee = st.text_input("Full Name *", placeholder="John Smith")
-        department = st.selectbox("Department *", ["Field Operations", "Technical Support", "Customer Service"])
+# --- Dashboard Layout ---
+st.markdown("## 📊 FLM Dashboard")
+tab1, tab2 = st.tabs(["➕ Add Entry", "📈 Analytics"])
 
-        st.markdown("### Shift")
-        shift_type = st.selectbox("Shift Type *", list(SHIFTS.keys()))
+with tab1:
+    with st.form("time_entry_form", clear_on_submit=True):
+        st.markdown("### 👤 Employee")
         col1, col2 = st.columns(2)
         with col1:
-            start_time = st.time_input("Start Time *", value=SHIFTS[shift_type]['start'])
+            employee = st.text_input("Full Name *", placeholder="John Smith")
         with col2:
-            end_time = st.time_input("End Time *", value=SHIFTS[shift_type]['end'])
-        break_duration = st.time_input("Break Duration", value=time(SHIFTS[shift_type]['break_duration'].seconds // 3600, (SHIFTS[shift_type]['break_duration'].seconds // 60) % 60))
+            department = st.selectbox("Department *", ["FLM Team", "Field Operations", "Technical Support", "Customer Service"])
+
+        st.markdown("### ⏰ Shift")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            shift_type = st.selectbox("Shift Type *", list(SHIFTS.keys()))
+        with col2:
+            start_time = st.time_input("Start Time *", value=SHIFTS[shift_type]['start'], format="hh:mm A")
+        with col3:
+            end_time = st.time_input("End Time *", value=SHIFTS[shift_type]['end'], format="hh:mm A")
+        break_duration = st.time_input("Break Duration", value=time(SHIFTS[shift_type]['break_duration'].seconds // 3600, (SHIFTS[shift_type]['break_duration'].seconds // 60) % 60), format="hh:mm")
         date = st.date_input("Date *", value=datetime.today())
 
-        st.markdown("### Work")
+        st.markdown("### 📋 Work")
         col1, col2 = st.columns(2)
         with col1:
             task_category = st.selectbox("Task Category *", list(TASK_CATEGORIES.keys()), 
                                        format_func=lambda x: f"{TASK_CATEGORIES[x]['icon']} {x}")
-            priority = st.selectbox("Priority *", list(PRIORITY_LEVELS.keys()), 
-                                   format_func=lambda x: f"{PRIORITY_LEVELS[x]['emoji']} {x}")
         with col2:
             status = st.selectbox("Status *", list(STATUS_OPTIONS.keys()), 
                                  format_func=lambda x: f"{STATUS_OPTIONS[x]['icon']} {x}")
-            billable = st.checkbox("Billable", value=TASK_CATEGORIES[task_category]['billable'])
+        priority = st.selectbox("Priority *", list(PRIORITY_LEVELS.keys()), 
+                               format_func=lambda x: f"{PRIORITY_LEVELS[x]['emoji']} {x}")
+        billable = st.checkbox("Billable 💰", value=TASK_CATEGORIES[task_category]['billable'])
 
-        work_description = st.text_area("Description *", placeholder="Describe the work performed", height=100)
+        work_description = st.text_area("Description *", placeholder="Describe the work performed 📝", height=100)
 
-        submitted = st.form_submit_button("Submit", use_container_width=True)
+        submitted = st.form_submit_button("✅ Submit Entry", use_container_width=True)
 
         if submitted:
             if not (employee and department and shift_type and start_time and end_time and work_description):
@@ -158,6 +201,7 @@ with st.expander("⏱ Add Time Entry", expanded=True):
                     "Employee": employee,
                     "Department": department,
                     "Date": date.strftime("%Y-%m-%d"),
+                    "Day": calendar.day_name[date.weekday()],
                     "Shift Type": shift_type,
                     "Start Time": start_time.strftime("%I:%M %p"),
                     "End Time": end_time.strftime("%I:%M %p"),
@@ -173,152 +217,190 @@ with st.expander("⏱ Add Time Entry", expanded=True):
                 }
 
                 st.session_state.timesheet.append(entry)
-                st.success("Time entry added!")
+                st.success("🎉 Entry added successfully!")
                 st.balloons()
 
-# --- Timesheet Display ---
-if st.session_state.timesheet:
-    df = pd.DataFrame(st.session_state.timesheet)
+with tab2:
+    if st.session_state.timesheet:
+        df = pd.DataFrame(st.session_state.timesheet)
 
-    st.markdown("## 📋 Time Entries")
-    with st.expander("Filter"):
+        # --- Filters ---
+        st.markdown("### 🔍 Filter Entries")
         col1, col2 = st.columns(2)
         with col1:
-            filter_employee = st.multiselect("Employee", sorted(df['Employee'].unique()))
-            filter_department = st.multiselect("Department", sorted(df['Department'].unique()))
+            filter_employee = st.multiselect("Employee 👤", sorted(df['Employee'].unique()))
+            filter_department = st.multiselect("Department 🏢", sorted(df['Department'].unique()))
         with col2:
-            filter_category = st.multiselect("Task Category", sorted(df['Task Category'].unique()))
-            filter_status = st.multiselect("Status", sorted(df['Status'].unique()))
+            filter_category = st.multiselect("Task Category 📋", sorted(df['Task Category'].unique()))
+            filter_status = st.multiselect("Status 🔄", sorted(df['Status'].unique()))
 
-    filtered_df = df.copy()
-    if filter_employee:
-        filtered_df = filtered_df[filtered_df['Employee'].isin(filter_employee)]
-    if filter_department:
-        filtered_df = filtered_df[filtered_df['Department'].isin(filter_department)]
-    if filter_category:
-        filtered_df = filtered_df[filtered_df['Task Category'].isin(filter_category)]
-    if filter_status:
-        filtered_df = filtered_df[filtered_df['Status'].isin(filter_status)]
+        filtered_df = df.copy()
+        if filter_employee:
+            filtered_df = filtered_df[filtered_df['Employee'].isin(filter_employee)]
+        if filter_department:
+            filtered_df = filtered_df[filtered_df['Department'].isin(filter_department)]
+        if filter_category:
+            filtered_df = filtered_df[filtered_df['Task Category'].isin(filter_category)]
+        if filter_status:
+            filtered_df = filtered_df[filtered_df['Status'].isin(filter_status)]
 
-    def get_priority_color(priority_str):
-        try:
-            priority_key = priority_str.split(' ')[-1]
-            for key in PRIORITY_LEVELS:
-                if priority_key in key:
-                    emoji = PRIORITY_LEVELS[key]['emoji']
-                    if emoji == '🔴':
-                        return '#ff5252'
-                    elif emoji == '🟡':
-                        return '#ffd740'
-                    else:
-                        return '#69f0ae'
-            return '#69f0ae'
-        except:
-            return '#69f0ae'
+        # --- Styling DataFrame ---
+        def get_priority_color(priority_str):
+            try:
+                priority_key = priority_str.split(' ')[-1]
+                for key in PRIORITY_LEVELS:
+                    if priority_key in key:
+                        emoji = PRIORITY_LEVELS[key]['emoji']
+                        return '#ff5252' if emoji == '🔴' else '#ffd740' if emoji == '🟡' else '#22c55e'
+                return '#22c55e'
+            except:
+                return '#22c55e'
 
-    def get_status_color(status_str):
-        try:
-            status_key = status_str.split(' ')[0]
-            return STATUS_OPTIONS[status_key]['color']
-        except:
-            return '#f5f5f5'
+        def get_status_color(status_str):
+            try:
+                status_key = status_str.split(' ')[0]
+                return STATUS_OPTIONS[status_key]['color']
+            except:
+                return '#f1f5f9'
 
-    styled_df = filtered_df.sort_values("Date", ascending=False).style
-    styled_df = styled_df.applymap(lambda x: f"color: {get_status_color(x)}", subset=["Status"])
-    styled_df = styled_df.applymap(lambda x: f"color: {get_priority_color(x)}", subset=["Priority"])
-    styled_df = styled_df.set_properties(**{'background-color': '#1e1e1e', 'color': '#f5f5f5', 'border': '1px solid #333'})
-    st.dataframe(styled_df, use_container_width=True)
+        styled_df = filtered_df.sort_values("Date", ascending=False).style
+        styled_df = styled_df.applymap(lambda x: f"color: {get_status_color(x)}", subset=["Status"])
+        styled_df = styled_df.applymap(lambda x: f"color: {get_priority_color(x)}", subset=["Priority"])
+        styled_df = styled_df.set_properties(**{'background-color': '#1e293b', 'color': '#f1f5f9', 'border': '1px solid #4b5563', 'font-family': 'Inter'})
 
-    # --- Simple Analytics ---
-    st.markdown("## 📊 Analytics")
-    col1, col2 = st.columns(2)
-    with col1:
+        # --- Dashboard Metrics ---
+        st.markdown("### 📊 Key Metrics")
+        col1, col2, col3 = st.columns(3)
         total_hours = filtered_df['Net Duration (hrs)'].sum()
-        st.metric("Total Hours", f"{total_hours:.1f} hrs")
-    with col2:
         billable_hours = filtered_df[filtered_df['Billable']]['Net Duration (hrs)'].sum()
-        st.metric("Billable Hours", f"{billable_hours:.1f} hrs", 
-                 f"{billable_hours/total_hours*100:.1f}%" if total_hours > 0 else "N/A")
+        completed_tasks = len(filtered_df[filtered_df['Status'].str.contains('Completed')])
+        
+        with col1:
+            st.markdown('<div class="metric-card"><h4>🕒 Total Hours</h4></div>', unsafe_allow_html=True)
+            st.metric("", f"{total_hours:.1f} hrs")
+        with col2:
+            st.markdown('<div class="metric-card"><h4>💰 Billable Hours</h4></div>', unsafe_allow_html=True)
+            st.metric("", f"{billable_hours:.1f} hrs", f"{billable_hours/total_hours*100:.1f}%" if total_hours > 0 else "N/A")
+        with col3:
+            st.markdown('<div class="metric-card"><h4>✅ Completed Tasks</h4></div>', unsafe_allow_html=True)
+            st.metric("", f"{completed_tasks}")
 
-    fig = px.pie(
-        filtered_df, 
-        names="Task Category", 
-        values="Net Duration (hrs)", 
-        title="Time by Task Category",
-        hole=0.4
-    )
-    st.plotly_chart(fig, use_container_width=True)
+        # --- Visualizations ---
+        st.markdown("### 📈 Work Distribution")
+        col1, col2 = st.columns(2)
+        with col1:
+            fig1 = px.pie(
+                filtered_df, 
+                names="Task Category", 
+                values="Net Duration (hrs)", 
+                title="Time by Category 🎯",
+                hole=0.4,
+                color_discrete_sequence=px.colors.qualitative.Plotly
+            )
+            fig1.update_layout(paper_bgcolor="#1e293b", font_color="#f1f5f9")
+            st.plotly_chart(fig1, use_container_width=True)
 
-    # --- Simplified Report Generation ---
-    st.markdown("## 📤 Generate Report")
-    report_format = st.selectbox("Format", ["PDF", "Excel"])
-    if st.button("Generate Report"):
-        with st.spinner("Generating report..."):
-            if report_format == "Excel":
-                excel_buffer = BytesIO()
-                with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-                    filtered_df.to_excel(writer, index=False, sheet_name="Time Entries")
-                st.download_button(
-                    label="Download Excel",
-                    data=excel_buffer.getvalue(),
-                    file_name=f"Time_Report_{datetime.now().strftime('%Y%m%d')}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-            else:
-                pdf_buffer = BytesIO()
-                doc = SimpleDocTemplate(pdf_buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
-                styles = getSampleStyleSheet()
-                elements = []
+        with col2:
+            fig2 = px.bar(
+                filtered_df.groupby('Department')['Net Duration (hrs)'].sum().reset_index().sort_values('Net Duration (hrs)', ascending=False),
+                x='Department',
+                y='Net Duration (hrs)',
+                title="Hours by Department 🏢",
+                color='Department',
+                color_discrete_sequence=px.colors.qualitative.Plotly
+            )
+            fig2.update_layout(paper_bgcolor="#1e293b", font_color="#f1f5f9")
+            st.plotly_chart(fig2, use_container_width=True)
 
-                elements.append(Paragraph("<b>FLM Time Tracking Report</b>", styles['Title']))
-                elements.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d')}", styles['Normal']))
-                elements.append(Spacer(1, 12))
+        # --- Data Table ---
+        st.markdown("### 📋 All Entries")
+        st.dataframe(styled_df, use_container_width=True)
 
-                summary_data = [
-                    ["Metric", "Value"],
-                    ["Total Hours", f"{total_hours:.1f} hrs"],
-                    ["Billable Hours", f"{billable_hours:.1f} hrs"]
-                ]
-                summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
-                summary_table.setStyle(TableStyle([
-                    ('BACKGROUND', (0, 0), (-1, 0), '#1a237e'),
-                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                    ('GRID', (0, 0), (-1, -1), 1, colors.black)
-                ]))
-                elements.append(summary_table)
-                elements.append(Spacer(1, 12))
+        # --- Report Generation ---
+        st.markdown("### 📤 Generate Report")
+        report_format = st.selectbox("Format 📄", ["PDF", "Excel"])
+        if st.button("🖨 Generate Report", use_container_width=True):
+            with st.spinner("Generating report..."):
+                if report_format == "Excel":
+                    excel_buffer = BytesIO()
+                    with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+                        filtered_df.to_excel(writer, index=False, sheet_name="Time Entries")
+                        workbook = writer.book
+                        worksheet = writer.sheets["Time Entries"]
+                        header_format = workbook.add_format({
+                            'bold': True,
+                            'fg_color': '#3b82f6',
+                            'font_color': '#f1f5f9',
+                            'border': 1
+                        })
+                        for col_num, value in enumerate(filtered_df.columns.values):
+                            worksheet.write(0, col_num, value, header_format)
+                    st.download_button(
+                        label="📥 Download Excel",
+                        data=excel_buffer.getvalue(),
+                        file_name=f"FLM_Report_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+                else:
+                    pdf_buffer = BytesIO()
+                    doc = SimpleDocTemplate(pdf_buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+                    styles = getSampleStyleSheet()
+                    styles['Title'].fontName = 'Helvetica-Bold'
+                    styles['Normal'].fontName = 'Helvetica'
+                    elements = []
 
-                pdf_data = [list(filtered_df.columns)] + [list(row) for _, row in filtered_df.iterrows()]
-                pdf_table = Table(pdf_data)
-                pdf_table.setStyle(TableStyle([
-                    ('BACKGROUND', (0, 0), (-1, 0), '#1a237e'),
-                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                    ('FONTSIZE', (0, 0), (-1, -1), 8)
-                ]))
-                elements.append(pdf_table)
+                    elements.append(Paragraph("FLM Time Tracking Report 📊", styles['Title']))
+                    elements.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d')} 🕒", styles['Normal']))
+                    elements.append(Spacer(1, 12))
 
-                doc.build(elements)
-                st.download_button(
-                    label="Download PDF",
-                    data=pdf_buffer.getvalue(),
-                    file_name=f"Time_Report_{datetime.now().strftime('%Y%m%d')}.pdf",
-                    mime="application/pdf"
-                )
+                    summary_data = [
+                        ["Metric", "Value"],
+                        ["Total Hours 🕒", f"{total_hours:.1f} hrs"],
+                        ["Billable Hours 💰", f"{billable_hours:.1f} hrs"],
+                        ["Completed Tasks ✅", f"{completed_tasks}"]
+                    ]
+                    summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
+                    summary_table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, 0), '#3b82f6'),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica')
+                    ]))
+                    elements.append(summary_table)
+                    elements.append(Spacer(1, 12))
 
-else:
-    st.markdown("""
-        <div style="text-align:center; padding:3rem; border:2px dashed #444; border-radius:8px;">
-            <h3>No entries yet</h3>
-            <p>Add your first time entry above</p>
-        </div>
-    """, unsafe_allow_html=True)
+                    pdf_data = [list(filtered_df.columns)] + [list(row) for _, row in filtered_df.iterrows()]
+                    pdf_table = Table(pdf_data)
+                    pdf_table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, 0), '#3b82f6'),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                        ('FONTSIZE', (0, 0), (-1, -1), 8),
+                        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica')
+                    ]))
+                    elements.append(pdf_table)
+
+                    doc.build(elements)
+                    st.download_button(
+                        label="📄 Download PDF",
+                        data=pdf_buffer.getvalue(),
+                        file_name=f"FLM_Report_{datetime.now().strftime('%Y%m%d')}.pdf",
+                        mime="application/pdf"
+                    )
+
+    else:
+        st.markdown("""
+            <div style="text-align:center; padding:3rem; border:2px dashed #4b5563; border-radius:12px;">
+                <h3>📭 No Entries Yet</h3>
+                <p>Add your first time entry in the 'Add Entry' tab ➕</p>
+            </div>
+        """, unsafe_allow_html=True)
 
 # --- Footer ---
 st.markdown(f"""
     <center>
-        <small>INTERSOFT POS - FLM Time Tracker • {datetime.now().strftime('%Y-%m-%d')}</small>
+        <small>INTERSOFT POS - FLM Time Tracker • {datetime.now().strftime('%Y-%m-%d')} 🌟</small>
     </center>
 """, unsafe_allow_html=True)
