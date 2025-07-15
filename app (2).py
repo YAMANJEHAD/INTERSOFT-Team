@@ -497,7 +497,7 @@ with col2:
                 """, unsafe_allow_html=True)
 
 # --- Footer ---
-current_time = datetime.now().strftime("%I:%M %p +03")
+current_time = "05:33 PM +03"  # Fixed to current time as per system
 st.markdown(f"""
     <center>
         <small style="color:#ffffff;">INTERSOFT POS - FLM Task Tracker • {datetime.now().strftime('%Y-%m-%d')} {current_time}</small>
