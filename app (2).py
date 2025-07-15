@@ -13,7 +13,7 @@ from reportlab.lib import colors
 from reportlab.lib.units import inch
 import numpy as np
 
-# --- Page Configuration 
+# --- Page Configuration ---
 st.set_page_config(
     page_title="⏱ FLM Task Tracker | INTERSOFT POS",
     layout="wide",
@@ -227,7 +227,7 @@ if not st.session_state.logged_in:
 st.markdown(f"""
     <div class="header">
         <h1>⏱ Hi, {st.session_state.user_role}! Welcome to FLM Task Tracker</h1>
-        <h3>INTERSOFT POS Daily Dashboard 🌟</h3>
+        <h3>Manager-Assigned Task Dashboard 🌟</h3>
     </div>
 """, unsafe_allow_html=True)
 
@@ -266,6 +266,9 @@ STATUS_OPTIONS = {
     "Completed": {"color": "#22c55e", "icon": "\U00002705"}  # ✅
 }
 
+# --- Manager Options ---
+MANAGERS = ["Manager1", "Manager2", "Manager3", "None"]
+
 # --- Sidebar Filters and Quick Actions ---
 with st.sidebar:
     st.markdown(f"### 👋 Hi, {st.session_state.user_role}")
@@ -290,6 +293,9 @@ with st.sidebar:
         st.markdown("#### ⏰ Shift Type")
         filter_shift = st.multiselect("Select Shift Type", list(SHIFTS.keys()), placeholder="All Shifts")
         
+        st.markdown("#### 👤 Assigned By")
+        filter_manager = st.multiselect("Select Manager", MANAGERS, placeholder="All Managers")
+        
         st.markdown("#### 🔎 Search Description")
         search_term = st.text_input("Search Task Description", placeholder="Enter keywords...")
         st.markdown('</div>', unsafe_allow_html=True)
@@ -312,6 +318,7 @@ with st.sidebar:
         st.session_state.filter_category = []
         st.session_state.filter_status = []
         st.session_state.filter_shift = []
+        st.session_state.filter_manager = []
         st.session_state.search_term = ""
         st.session_state.start_date = datetime.today()
         st.session_state.end_date = datetime.today()
@@ -322,10 +329,11 @@ with st.sidebar:
     with st.form("quick_task_form", clear_on_submit=True):
         quick_category = st.selectbox("Task Category *", list(TASK_CATEGORIES.keys()), 
                                      format_func=lambda x: f"{TASK_CATEGORIES[x]['icon']} {x}", key="quick_category")
+        quick_manager = st.selectbox("Assigned By *", MANAGERS, index=MANAGERS.index("None"), key="quick_manager")
         quick_description = st.text_input("Task Description *", placeholder="Brief task description", key="quick_description")
         quick_date = st.date_input("Date *", value=datetime.today(), key="quick_date")
         if st.form_submit_button("🚀 Add Quick Task", use_container_width=True):
-            if not (quick_category and quick_description):
+            if not (quick_category and quick_description and quick_manager):
                 st.error("🚫 Please fill all required fields (*)")
             else:
                 entry = {
@@ -340,6 +348,7 @@ with st.sidebar:
                     "Task Category": f"{TASK_CATEGORIES[quick_category]['icon']} {quick_category}",
                     "Priority": f"{PRIORITY_LEVELS['Low']['emoji']} Low",
                     "Status": f"{STATUS_OPTIONS['Not Started']['icon']} Not Started",
+                    "Assigned By": quick_manager,
                     "Work Description": quick_description,
                     "Recorded At": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
@@ -348,16 +357,20 @@ with st.sidebar:
                 st.balloons()
 
 # --- Dashboard Layout ---
-st.markdown("## 📊 Daily Task Dashboard")
+st.markdown("## 📊 Manager-Assigned Task Dashboard")
 tab1, tab2 = st.tabs(["➕ Add Task", "📈 Analytics"])
 
 with tab1:
     with st.form("task_entry_form", clear_on_submit=True):
-        st.markdown(f"### 👤 Daily Task Entry for {st.session_state.user_role}")
+        st.markdown(f"### 👤 Manager-Assigned Task for {st.session_state.user_role}")
         with st.container():
             st.markdown('<div class="card">', unsafe_allow_html=True)
-            st.markdown("#### 🏢 Department")
-            department = st.selectbox("Department *", ["FLM Team", "Field Operations", "Technical Support", "Customer Service"])
+            st.markdown("#### 🏢 Task Assignment")
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                department = st.selectbox("Department *", ["FLM Team", "Field Operations", "Technical Support", "Customer Service"])
+            with col2:
+                assigned_by = st.selectbox("Assigned By *", MANAGERS)
 
             st.markdown("#### ⏰ Shift Details")
             col1, col2, col3 = st.columns([1, 1, 1])
@@ -380,13 +393,13 @@ with tab1:
             priority = st.selectbox("Priority *", list(PRIORITY_LEVELS.keys()), 
                                    format_func=lambda x: f"{PRIORITY_LEVELS[x]['emoji']} {x}")
 
-            work_description = st.text_area("Task Description *", placeholder="Describe the task performed 📝", height=100)
+            work_description = st.text_area("Task Description *", placeholder="Describe the task assigned by the manager 📝", height=100)
             st.markdown('</div>', unsafe_allow_html=True)
 
             submitted = st.form_submit_button("✅ Submit Task", use_container_width=True)
 
         if submitted:
-            if not (department and shift_type and task_duration and work_description):
+            if not (department and assigned_by and shift_type and task_duration and work_description):
                 st.error("🚫 Please fill all required fields (*)")
             elif task_duration <= 0:
                 st.error("🚫 Task duration must be greater than 0")
@@ -406,12 +419,13 @@ with tab1:
                     "Task Category": f"{TASK_CATEGORIES[task_category]['icon']} {task_category}",
                     "Priority": f"{PRIORITY_LEVELS[priority]['emoji']} {priority}",
                     "Status": f"{STATUS_OPTIONS[status]['icon']} {status}",
+                    "Assigned By": assigned_by,
                     "Work Description": work_description,
                     "Recorded At": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
 
                 st.session_state.timesheet.append(entry)
-                st.success(f"🎉 Task added by {st.session_state.user_role}!")
+                st.success(f"🎉 Task added by {st.session_state.user_role} for {assigned_by}!")
                 st.balloons()
 
 with tab2:
@@ -419,7 +433,7 @@ with tab2:
         df = pd.DataFrame(st.session_state.timesheet)
 
         # --- Filters ---
-        st.markdown("### 🔍 Filter Tasks")
+        st.markdown("### 🔍 Filter Manager-Assigned Tasks")
         filtered_df = df[df['Employee'] == st.session_state.user_role]
         if start_date and end_date:
             filtered_df = filtered_df[(filtered_df['Date'] >= start_date.strftime("%Y-%m-%d")) & (filtered_df['Date'] <= end_date.strftime("%Y-%m-%d"))]
@@ -431,6 +445,8 @@ with tab2:
             filtered_df = filtered_df[filtered_df['Status'].isin(filter_status)]
         if filter_shift:
             filtered_df = filtered_df[filtered_df['Shift Type'].isin(filter_shift)]
+        if filter_manager:
+            filtered_df = filtered_df[filtered_df['Assigned By'].isin(filter_manager)]
         if search_term:
             filtered_df = filtered_df[filtered_df['Work Description'].str.contains(search_term, case=False, na=False)]
 
@@ -460,7 +476,7 @@ with tab2:
             styled_df = styled_df.set_properties(**{'background-color': '#1e293b', 'color': '#f1f5f9', 'border': '1px solid #4b5563', 'font-family': 'Inter'})
 
             # --- Dashboard Metrics ---
-            st.markdown("### 📊 Daily Task Metrics")
+            st.markdown("### 📊 Manager-Assigned Task Metrics")
             col1, col2 = st.columns(2)
             total_hours = filtered_df['Net Duration (hrs)'].sum()
             completed_tasks = len(filtered_df[filtered_df['Status'].str.contains('Completed')])
@@ -500,7 +516,7 @@ with tab2:
                 st.plotly_chart(fig2, use_container_width=True)
 
             # --- Data Table ---
-            st.markdown("### 📋 All Tasks")
+            st.markdown("### 📋 All Manager-Assigned Tasks")
             st.dataframe(styled_df, use_container_width=True)
 
             # --- Report Generation ---
@@ -560,7 +576,7 @@ with tab2:
                             styles['Normal'].fontName = 'Helvetica'
                             elements = []
 
-                            elements.append(Paragraph(f"FLM Task Tracking Report 📊 - Generated by {st.session_state.user_role}", styles['Title']))
+                            elements.append(Paragraph(f"FLM Manager-Assigned Task Report 📊 - Generated by {st.session_state.user_role}", styles['Title']))
                             elements.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d')} 🕒", styles['Normal']))
                             elements.append(Spacer(1, 12))
 
@@ -701,7 +717,7 @@ with tab2:
         st.markdown("""
             <div style="text-align:center; padding:3rem; border:2px dashed var(--border); border-radius:20px; max-width:1200px; margin-left:auto; margin-right:auto;">
                 <h3>📭 No Tasks Yet</h3>
-                <p>Add your first task in the 'Add Task' tab or use the Quick Add Task form ➕</p>
+                <p>Add your first manager-assigned task in the 'Add Task' tab or use the Quick Add Task form ➕</p>
             </div>
         """, unsafe_allow_html=True)
 
