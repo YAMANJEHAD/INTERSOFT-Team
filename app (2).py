@@ -184,7 +184,8 @@ with st.expander("➕ Add New Time Entry", expanded=True):
             with task_col3:
                 task_status = st.selectbox("Status", STATUS_OPTIONS)
             
-            add_task = st.button("Add Task to This Entry")
+            # Add Task button - now inside the form
+            add_task = st.form_submit_button("Add Task to This Entry", use_container_width=True)
             
             if add_task and task_name:
                 task_data = {
@@ -194,6 +195,7 @@ with st.expander("➕ Add New Time Entry", expanded=True):
                 }
                 st.session_state.tasks.append(task_data)
                 st.success(f"Task '{task_name}' added!")
+                st.rerun()  # Refresh to show the new task
         
         # Display added tasks
         if st.session_state.tasks:
@@ -208,7 +210,8 @@ with st.expander("➕ Add New Time Entry", expanded=True):
                         </div>
                     """, unsafe_allow_html=True)
         
-        submitted = st.form_submit_button("Submit Time Entry")
+        # Main Submit Button
+        submitted = st.form_submit_button("Submit Time Entry", use_container_width=True)
         
         if submitted:
             if not employee or not shift_type or not start_time or not end_time or not work_description:
@@ -237,6 +240,7 @@ with st.expander("➕ Add New Time Entry", expanded=True):
                 st.session_state.timesheet.append(entry)
                 st.session_state.tasks = []  # Clear tasks for next entry
                 st.success("✅ Time entry added successfully!")
+                st.rerun()  # Refresh to show the new entry
 
 # Timesheet Display
 if st.session_state.timesheet:
