@@ -19,83 +19,95 @@ st.set_page_config(
     page_icon="⏱"
 )
 
-# --- Simplified Styling with Inter Font ---
+# --- Enhanced Styling with Inter Font ---
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
     :root {
-        --primary: #3b82f6;
-        --background: #0f172a;
+        --primary: #4f46e5;
+        --secondary: #a855f7;
+        --background: linear-gradient(135deg, #0f172a, #1e293b);
         --surface: #1e293b;
         --text: #f1f5f9;
         --accent: #22d3ee;
-        --border: #4b5563;
-        --gradient: linear-gradient(135deg, #3b82f6, #3b82f6);
+        --gradient: linear-gradient(135deg, #4f46e5, #a855f7);
     }
     
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif !important;
-        background-color: var(--background);
+        background: var(--background);
         color: var(--text);
     }
     
     .header {
         background: var(--gradient);
         color: var(--text);
-        padding: 1.5rem;
-        border-radius: 12px;
+        padding: 2rem;
+        border-radius: 16px;
         text-align: center;
         margin-bottom: 1.5rem;
-        border: 1px solid var(--accent);
-        max-width: 1000px;
+        max-width: 900px;
         margin-left: auto;
         margin-right: auto;
+        animation: fadeIn 1s ease-in-out;
     }
     
     .card {
         background: var(--surface);
-        border-radius: 12px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        border: 1px solid var(--border);
-        max-width: 1000px;
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        max-width: 900px;
         margin-left: auto;
         margin-right: auto;
+        animation: fadeIn 1s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+        0% { opacity: 0; transform: translateY(10px); }
+        100% { opacity: 1; transform: translateY(0); }
     }
     
     .stSelectbox, .stTextInput, .stTextArea, .stTextInput > div > div > input, .stDateInput > div > div > input {
         background-color: #2d3748 !important;
-        border-radius: 8px !important;
-        border: 1px solid var(--border) !important;
+        border-radius: 12px !important;
+        border: none !important;
         color: var(--text) !important;
-        padding: 0.5rem !important;
-        transition: border-color 0.2s ease;
+        padding: 0.75rem !important;
+        transition: box-shadow 0.3s ease;
     }
     
     .stSelectbox:hover, .stTextInput:hover, .stTextArea:hover, .stDateInput:hover {
-        border-color: var(--accent) !important;
+        box-shadow: 0 0 8px rgba(34, 211, 238, 0.3);
     }
     
     .stButton>button {
         background: var(--gradient) !important;
         color: var(--text) !important;
-        border-radius: 8px !important;
+        border-radius: 20px !important;
         padding: 0.75rem 1.5rem !important;
         font-weight: 500 !important;
-        border: 1px solid var(--accent) !important;
-        transition: all 0.2s ease !important;
+        border: none !important;
+        transition: all 0.3s ease !important;
+        animation: pulse 2s infinite ease-in-out;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.03); }
+        100% { transform: scale(1); }
     }
     
     .stButton>button:hover {
-        background: linear-gradient(135deg, #1e40af, #3b82f6) !important;
-        transform: scale(1.02);
+        background: linear-gradient(135deg, #3730a3, #7e22ce) !important;
+        transform: scale(1.05);
+        box-shadow: 0 0 12px rgba(79, 70, 229, 0.5);
     }
     
     .stDataFrame {
-        border-radius: 12px !important;
-        border: 1px solid var(--border);
-        max-width: 1000px;
+        border-radius: 16px !important;
+        max-width: 900px;
         margin-left: auto;
         margin-right: auto;
     }
@@ -103,52 +115,67 @@ st.markdown("""
     .metric-card {
         background: var(--surface);
         border-radius: 12px;
-        padding: 0.75rem;
+        padding: 1rem;
         text-align: center;
-        border: 1px solid var(--border);
+        animation: fadeIn 1s ease-in-out;
     }
     
     h1, h2, h3 {
-        font-weight: 600 !important;
+        font-weight: 700 !important;
         color: var(--text) !important;
     }
     
     .login-container {
         max-width: 400px;
-        margin: 1.5rem auto;
+        margin: 2rem auto;
         padding: 1.5rem;
         background: var(--surface);
-        border-radius: 12px;
-        border: 1px solid var(--accent);
+        border-radius: 16px;
+        animation: fadeIn 1s ease-in-out;
     }
     
     .sidebar .sidebar-content {
-        border-right: 1px solid var(--border);
+        background: linear-gradient(135deg, #1e293b, #2d3748);
         max-width: 250px;
         min-width: 200px;
-        padding: 0.75rem;
+        padding: 1rem;
+        border-radius: 12px;
+        animation: slideIn 0.5s ease-in-out;
+    }
+    
+    @keyframes slideIn {
+        0% { transform: translateX(-20px); opacity: 0; }
+        100% { transform: translateX(0); opacity: 1; }
     }
     
     .stTabs [data-baseweb="tab"] {
         border-radius: 8px;
-        border: 1px solid var(--border);
-        margin-right: 0.5rem;
         padding: 0.5rem 1rem;
+        margin-right: 0.5rem;
+        transition: all 0.3s ease;
+        background: var(--surface);
+        color: var(--text);
+    }
+    
+    .stTabs [data-baseweb="tab"][aria-selected="true"] {
+        background: var(--gradient);
+        color: var(--text);
+        border-bottom: 3px solid var(--accent);
     }
     
     .stTabs [data-baseweb="tab"]:hover {
-        border-color: var(--accent);
-        background: rgba(34, 211, 238, 0.1);
+        background: linear-gradient(135deg, #3730a3, #7e22ce);
+        color: var(--text);
     }
     
     /* Responsive design */
     @media (max-width: 768px) {
         .card, .metric-card, .login-container, .stDataFrame {
             margin: 0.5rem;
-            padding: 0.75rem;
+            padding: 1rem;
         }
         .header {
-            padding: 1rem;
+            padding: 1.5rem;
         }
         .stButton>button {
             padding: 0.5rem 1rem;
@@ -239,7 +266,7 @@ STATUS_OPTIONS = {
 # --- Sidebar Filters and Quick Actions ---
 with st.sidebar:
     st.markdown(f"### Hi, {st.session_state.user_role}")
-    st.markdown("### Filter Options")
+    st.markdown("### Filters")
     with st.container():
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown("#### Date Range")
@@ -288,7 +315,7 @@ with st.sidebar:
                                      format_func=lambda x: f"{TASK_CATEGORIES[x]['icon']} {x}", key="quick_category")
         quick_description = st.text_input("Task Description *", placeholder="Brief task description", key="quick_description")
         quick_date = st.date_input("Date *", value=datetime.today(), key="quick_date")
-        if st.form_submit_button("Add Quick Task", use_container_width=True):
+        if st.form_submit_button("Add Task", use_container_width=True):
             if not (quick_category and quick_description):
                 st.error("Please fill all required fields (*)")
             else:
@@ -400,39 +427,25 @@ with tab2:
             styled_df = filtered_df.sort_values("Date", ascending=False).style
             styled_df = styled_df.applymap(lambda x: f"color: {get_status_color(x)}", subset=["Status"])
             styled_df = styled_df.applymap(lambda x: f"color: {get_priority_color(x)}", subset=["Priority"])
-            styled_df = styled_df.set_properties(**{'background-color': '#1e293b', 'color': '#f1f5f9', 'border': '1px solid #4b5563', 'font-family': 'Inter'})
+            styled_df = styled_df.set_properties(**{'background-color': '#1e293b', 'color': '#f1f5f9', 'border': 'none', 'font-family': 'Inter'})
 
             # --- Dashboard Metrics ---
             st.markdown("### Task Metrics")
-            completed_tasks = len(filtered_df[filtered_df['Status'].str.contains('Completed')])
-            st.markdown('<div class="metric-card"><h4>Completed Tasks</h4></div>', unsafe_allow_html=True)
-            st.metric("", f"{completed_tasks}")
+            st.markdown('<div class="metric-card"><h4>Total Tasks</h4></div>', unsafe_allow_html=True)
+            st.metric("", f"{len(filtered_df)}")
 
-            # --- Visualizations ---
+            # --- Visualization ---
             st.markdown("### Task Distribution")
-            col1, col2 = st.columns([1, 1])
-            with col1:
-                fig1 = px.pie(
-                    filtered_df, 
-                    names="Task Category", 
-                    title="Tasks by Category",
-                    hole=0.4,
-                    color_discrete_sequence=px.colors.qualitative.Plotly
-                )
-                fig1.update_layout(paper_bgcolor="#1e293b", font_color="#f1f5f9")
-                st.plotly_chart(fig1, use_container_width=True)
-
-            with col2:
-                fig2 = px.bar(
-                    filtered_df.groupby('Date').size().reset_index(name='Task Count').sort_values('Date'),
-                    x='Date',
-                    y='Task Count',
-                    title="Tasks by Date",
-                    color='Date',
-                    color_discrete_sequence=px.colors.qualitative.Plotly
-                )
-                fig2.update_layout(paper_bgcolor="#1e293b", font_color="#f1f5f9")
-                st.plotly_chart(fig2, use_container_width=True)
+            fig = px.bar(
+                filtered_df.groupby('Date').size().reset_index(name='Task Count').sort_values('Date'),
+                x='Date',
+                y='Task Count',
+                title="Tasks by Date",
+                color='Date',
+                color_discrete_sequence=px.colors.qualitative.Plotly
+            )
+            fig.update_layout(paper_bgcolor="#1e293b", font_color="#f1f5f9")
+            st.plotly_chart(fig, use_container_width=True)
 
             # --- Data Table ---
             st.markdown("### All Tasks")
@@ -440,98 +453,101 @@ with tab2:
 
             # --- Report Generation ---
             st.markdown("### Generate Report")
-            report_format = st.selectbox("Format", ["PDF", "Excel"])
-            if st.button("Generate Report", use_container_width=True):
-                with st.spinner("Generating report..."):
-                    # Remove emojis for Excel export
-                    def remove_emojis(text):
-                        emoji_pattern = re.compile("["
-                            u"\U0001F600-\U0001F64F"  # emoticons
-                            u"\U0001F300-\U0001F5FF"  # symbols & pictographs
-                            u"\U0001F680-\U0001F6FF"  # transport & map symbols
-                            u"\U0001F1E0-\U0001F1FF"  # flags
-                            u"\U00002700-\U000027BF"  # dingbats
-                            u"\U0001F900-\U0001F9FF"  # supplemental symbols
-                            "]+", flags=re.UNICODE)
-                        return emoji_pattern.sub(r'', str(text))
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                report_format = st.selectbox("Format", ["PDF", "Excel"])
+            with col2:
+                if st.button("Generate Report", use_container_width=True):
+                    with st.spinner("Generating report..."):
+                        # Remove emojis for Excel export
+                        def remove_emojis(text):
+                            emoji_pattern = re.compile("["
+                                u"\U0001F600-\U0001F64F"  # emoticons
+                                u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+                                u"\U0001F680-\U0001F6FF"  # transport & map symbols
+                                u"\U0001F1E0-\U0001F1FF"  # flags
+                                u"\U00002700-\U000027BF"  # dingbats
+                                u"\U0001F900-\U0001F9FF"  # supplemental symbols
+                                "]+", flags=re.UNICODE)
+                            return emoji_pattern.sub(r'', str(text))
 
-                    export_df = filtered_df.copy()
-                    export_df['Task Category'] = export_df['Task Category'].apply(remove_emojis)
-                    export_df['Priority'] = export_df['Priority'].apply(remove_emojis)
-                    export_df['Status'] = export_df['Status'].apply(remove_emojis)
+                        export_df = filtered_df.copy()
+                        export_df['Task Category'] = export_df['Task Category'].apply(remove_emojis)
+                        export_df['Priority'] = export_df['Priority'].apply(remove_emojis)
+                        export_df['Status'] = export_df['Status'].apply(remove_emojis)
 
-                    if report_format == "Excel":
-                        excel_buffer = BytesIO()
-                        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-                            export_df.to_excel(writer, index=False, sheet_name="Task Entries")
-                            workbook = writer.book
-                            worksheet = writer.sheets["Task Entries"]
-                            header_format = workbook.add_format({
-                                'bold': True,
-                                'fg_color': '#3b82f6',
-                                'font_color': '#f1f5f9',
-                                'border': 1
-                            })
-                            for col_num, value in enumerate(export_df.columns.values):
-                                worksheet.write(0, col_num, value, header_format)
-                        st.download_button(
-                            label="Download Excel",
-                            data=excel_buffer.getvalue(),
-                            file_name=f"FLM_Task_Report_{datetime.now().strftime('%Y%m%d')}.xlsx",
-                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                        )
-                    else:
-                        pdf_buffer = BytesIO()
-                        doc = SimpleDocTemplate(pdf_buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
-                        styles = getSampleStyleSheet()
-                        styles['Title'].fontName = 'Helvetica-Bold'
-                        styles['Normal'].fontName = 'Helvetica'
-                        elements = []
+                        if report_format == "Excel":
+                            excel_buffer = BytesIO()
+                            with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+                                export_df.to_excel(writer, index=False, sheet_name="Task Entries")
+                                workbook = writer.book
+                                worksheet = writer.sheets["Task Entries"]
+                                header_format = workbook.add_format({
+                                    'bold': True,
+                                    'fg_color': '#4f46e5',
+                                    'font_color': '#f1f5f9',
+                                    'border': 1
+                                })
+                                for col_num, value in enumerate(export_df.columns.values):
+                                    worksheet.write(0, col_num, value, header_format)
+                            st.download_button(
+                                label="Download Excel",
+                                data=excel_buffer.getvalue(),
+                                file_name=f"FLM_Task_Report_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            )
+                        else:
+                            pdf_buffer = BytesIO()
+                            doc = SimpleDocTemplate(pdf_buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+                            styles = getSampleStyleSheet()
+                            styles['Title'].fontName = 'Helvetica-Bold'
+                            styles['Normal'].fontName = 'Helvetica'
+                            elements = []
 
-                        elements.append(Paragraph(f"FLM Task Report - Generated by {st.session_state.user_role}", styles['Title']))
-                        elements.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d')}", styles['Normal']))
-                        elements.append(Spacer(1, 12))
+                            elements.append(Paragraph(f"FLM Task Report - Generated by {st.session_state.user_role}", styles['Title']))
+                            elements.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d')}", styles['Normal']))
+                            elements.append(Spacer(1, 12))
 
-                        summary_data = [
-                            ["Metric", "Value"],
-                            ["Completed Tasks", f"{completed_tasks}"]
-                        ]
-                        summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
-                        summary_table.setStyle(TableStyle([
-                            ('BACKGROUND', (0, 0), (-1, 0), '#3b82f6'),
-                            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica')
-                        ]))
-                        elements.append(summary_table)
-                        elements.append(Spacer(1, 12))
+                            summary_data = [
+                                ["Metric", "Value"],
+                                ["Total Tasks", f"{len(filtered_df)}"]
+                            ]
+                            summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
+                            summary_table.setStyle(TableStyle([
+                                ('BACKGROUND', (0, 0), (-1, 0), '#4f46e5'),
+                                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica')
+                            ]))
+                            elements.append(summary_table)
+                            elements.append(Spacer(1, 12))
 
-                        pdf_data = [list(filtered_df.columns)] + [list(row) for _, row in filtered_df.iterrows()]
-                        pdf_table = Table(pdf_data)
-                        pdf_table.setStyle(TableStyle([
-                            ('BACKGROUND', (0, 0), (-1, 0), '#3b82f6'),
-                            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                            ('FONTSIZE', (0, 0), (-1, -1), 8),
-                            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica')
-                        ]))
-                        elements.append(pdf_table)
+                            pdf_data = [list(filtered_df.columns)] + [list(row) for _, row in filtered_df.iterrows()]
+                            pdf_table = Table(pdf_data)
+                            pdf_table.setStyle(TableStyle([
+                                ('BACKGROUND', (0, 0), (-1, 0), '#4f46e5'),
+                                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                                ('FONTSIZE', (0, 0), (-1, -1), 8),
+                                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica')
+                            ]))
+                            elements.append(pdf_table)
 
-                        doc.build(elements)
-                        st.download_button(
-                            label="Download PDF",
-                            data=pdf_buffer.getvalue(),
-                            file_name=f"FLM_Task_Report_{datetime.now().strftime('%Y%m%d')}.pdf",
-                            mime="application/pdf"
-                        )
+                            doc.build(elements)
+                            st.download_button(
+                                label="Download PDF",
+                                data=pdf_buffer.getvalue(),
+                                file_name=f"FLM_Task_Report_{datetime.now().strftime('%Y%m%d')}.pdf",
+                                mime="application/pdf"
+                            )
         else:
             st.info("No tasks match your filters")
 
     else:
         st.markdown("""
-            <div style="text-align:center; padding:2rem; border:2px dashed var(--border); border-radius:12px; max-width:1000px; margin-left:auto; margin-right:auto;">
+            <div style="text-align:center; padding:2rem; border-radius:16px; background:#1e293b; max-width:900px; margin-left:auto; margin-right:auto;">
                 <h3>No Tasks Yet</h3>
                 <p>Add your first task in the 'Add Task' tab or use the Quick Add Task form</p>
             </div>
@@ -540,6 +556,6 @@ with tab2:
 # --- Footer ---
 st.markdown(f"""
     <center>
-        <small>INTERSOFT POS - FLM Task Tracker • {datetime.now().strftime('%Y-%m-%d')}</small>
+        <small style="color:#a855f7;">INTERSOFT POS - FLM Task Tracker • {datetime.now().strftime('%Y-%m-%d')}</small>
     </center>
 """, unsafe_allow_html=True)
