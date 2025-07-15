@@ -12,7 +12,7 @@ from reportlab.lib import colors
 from reportlab.lib.units import inch
 import numpy as np
 
-# --- Page Configuration ---
+# --- Page Configuration-
 st.set_page_config(
     page_title="⏱ Professional Time Tracker | INTERSOFT POS - FLM",
     layout="wide",
