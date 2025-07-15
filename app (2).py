@@ -12,7 +12,7 @@ from reportlab.lib import colors
 from reportlab.lib.units import inch
 import numpy as np
 
-# --- Page Configuration-
+# --- Page Configuration ---
 st.set_page_config(
     page_title="⏱ Professional Time Tracker | INTERSOFT POS - FLM",
     layout="wide",
@@ -420,14 +420,46 @@ if st.session_state.timesheet:
     elif filter_billable == "Non-Billable":
         filtered_df = filtered_df[filtered_df['Billable'] == False]
     
-    # Display filtered data
+    # Display filtered data with robust styling
+    def get_priority_color(priority_str):
+        """Safely get color based on priority string"""
+        try:
+            # Handle cases where the string might be formatted differently
+            if '(' in priority_str and ')' in priority_str:
+                priority_key = priority_str.split('(')[1].split(')')[0].strip()
+            else:
+                priority_key = priority_str.split()[-1]  # Get last word as fallback
+                
+            # Match with our PRIORITY_LEVELS keys
+            for key in PRIORITY_LEVELS:
+                if priority_key in key:
+                    emoji = PRIORITY_LEVELS[key]['emoji']
+                    if emoji == '🔴':
+                        return '#ff5252'
+                    elif emoji == '🟡':
+                        return '#ffd740'
+                    else:
+                        return '#69f0ae'
+            return '#69f0ae'
+        except:
+            return '#69f0ae'
+    
+    def get_status_color(status_str):
+        """Safely get color based on status string"""
+        try:
+            status_key = status_str.split(' ')[0]  # Get first word
+            return STATUS_OPTIONS[status_key]['color']
+        except:
+            return '#f5f5f5'
+    
+    styled_df = filtered_df.sort_values("Date", ascending=False).style
+    styled_df = styled_df.background_gradient(subset=["Efficiency Ratio"], cmap="RdYlGn")
+    styled_df = styled_df.applymap(lambda x: f"color: {get_status_color(x)}", subset=["Status"])
+    styled_df = styled_df.applymap(lambda x: f"color: {get_priority_color(x)}", subset=["Priority"])
+    styled_df = styled_df.set_properties(**{'background-color': '#1e1e1e', 'color': '#f5f5f5', 'border': '1px solid #333'})
+    
     st.dataframe(
-        filtered_df.sort_values("Date", ascending=False).style
-        .background_gradient(subset=["Efficiency Ratio"], cmap="RdYlGn")
-        .applymap(lambda x: f"color: {STATUS_OPTIONS[x.split(' ')[1]]['color']}", subset=["Status"])
-        .applymap(lambda x: f"color: {'#ff5252' if PRIORITY_LEVELS[x.split(' ')[1]]['emoji'] == '🔴' else '#ffd740' if PRIORITY_LEVELS[x.split(' ')[1]]['emoji'] == '🟡' else '#69f0ae'}", 
-                 subset=["Priority"])
-        .set_properties(**{'background-color': '#1e1e1e', 'color': '#f5f5f5', 'border': '1px solid #333'}),
+        styled_df,
         use_container_width=True,
         height=600
     )
