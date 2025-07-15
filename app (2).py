@@ -319,7 +319,7 @@ with st.sidebar:
                                      format_func=lambda x: f"{TASK_CATEGORIES[x]['icon']} {x}", key="quick_category")
         quick_description = st.text_input("Task Description *", placeholder="Brief task description", key="quick_description")
         quick_date = st.date_input("Date *", value=datetime.today(), key="quick_date")
-        if st.button("Add Task", use_container_width=True):
+        if st.form_submit_button("Add Task", use_container_width=True):
             if not (quick_category and quick_description):
                 st.error("Please fill all required fields (*)")
             else:
@@ -367,7 +367,7 @@ with tab1:
             work_description = st.text_area("Task Description *", placeholder="Describe the task", height=100)
             st.markdown('</div>', unsafe_allow_html=True)
 
-            submitted = st.button("Submit Task", use_container_width=True)
+            submitted = st.form_submit_button("Submit Task", use_container_width=True)
 
         if submitted:
             if not (department and shift_type and task_category and work_description):
@@ -415,7 +415,7 @@ with tab2:
             status_summary = filtered_df['Status'].value_counts().to_dict()
             st.markdown("<p>Status: </p>", unsafe_allow_html=True)
             for status, count in status_summary.items():
-                st.markdown(f"<p>&nbsp;&nbsp;{status}: <strong>{count}</strong></p>", unsafe_allow_html=True)
+                st.markdown(f"<p>  {status}: <strong>{count}</strong></p>", unsafe_allow_html=True)
 
             # --- Report Generation ---
             st.markdown("### Generate Report")
