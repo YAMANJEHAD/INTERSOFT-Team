@@ -4,6 +4,7 @@ import plotly.express as px
 from datetime import datetime, time, timedelta
 from io import BytesIO
 import calendar
+import re
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.styles import getSampleStyleSheet
@@ -43,7 +44,7 @@ st.markdown("""
     .header {
         background: var(--gradient);
         color: var(--text);
-        padding: 2rem;
+        padding: 2.5rem;
         border-radius: 20px;
         text-align: center;
         box-shadow: 0 8px 24px rgba(0,0,0,0.4);
@@ -72,7 +73,7 @@ st.markdown("""
         box-shadow: 0 10px 28px rgba(0,0,0,0.4);
     }
     
-    .stSelectbox, .stTextInput, .stTimeInput, .stTextArea, .stTextInput > div > div > input {
+    .stSelectbox, .stTextInput, .stTimeInput, .stTextArea, .stTextInput > div > div > input, .stDateInput > div > div > input {
         background-color: #2d3748 !important;
         border-radius: 12px !important;
         border: 1px solid var(--border) !important;
@@ -81,7 +82,7 @@ st.markdown("""
         transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
     
-    .stSelectbox:hover, .stTextInput:hover, .stTimeInput:hover, .stTextArea:hover {
+    .stSelectbox:hover, .stTextInput:hover, .stTimeInput:hover, .stTextArea:hover, .stDateInput:hover {
         border-color: var(--accent) !important;
         box-shadow: 0 0 8px rgba(34, 211, 238, 0.3);
     }
@@ -90,17 +91,20 @@ st.markdown("""
         background: var(--gradient) !important;
         color: var(--text) !important;
         border-radius: 12px !important;
-        padding: 0.75rem 1.5rem !important;
+        padding: 1rem 2rem !important;
         font-weight: 500 !important;
-        border: 1px solid var(--accent) !important;
+        border: 1px solid transparent !important;
+        background-image: linear-gradient(var(--surface), var(--surface)), var(--gradient) !important;
+        background-origin: border-box !important;
+        background-clip: padding-box, border-box !important;
         transition: all 0.3s ease !important;
     }
     
     .stButton>button:hover {
         background: linear-gradient(135deg, #1e40af, #3b82f6) !important;
         transform: scale(1.05);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-        border-color: var(--accent) !important;
+        box-shadow: 0 8px 20px rgba(34, 211, 238, 0.4);
+        border: 1px solid var(--accent) !important;
     }
     
     .stDataFrame {
@@ -171,7 +175,7 @@ st.markdown("""
             padding: 1.5rem;
         }
         .stButton>button {
-            padding: 0.5rem 1rem;
+            padding: 0.75rem 1.5rem;
         }
         .sidebar .sidebar-content {
             max-width: 100%;
@@ -240,11 +244,11 @@ SHIFTS = {
 
 # --- Task Categories ---
 TASK_CATEGORIES = {
-    "TOMS Operations": {"icon": "💻", "billable": True},
-    "Paper Management": {"icon": "📄", "billable": False},
-    "Job Order Processing": {"icon": "🛠", "billable": True},
-    "CRM Activities": {"icon": "👥", "billable": True},
-    "Meetings": {"icon": "📅", "billable": False}
+    "TOMS Operations": {"icon": "💻"},
+    "Paper Management": {"icon": "📄"},
+    "Job Order Processing": {"icon": "🛠"},
+    "CRM Activities": {"icon": "👥"},
+    "Meetings": {"icon": "📅"}
 }
 
 # --- Priority Levels (Using Unicode escape sequences for safety) ---
@@ -264,10 +268,30 @@ STATUS_OPTIONS = {
 # --- Sidebar Filters ---
 with st.sidebar:
     st.markdown(f"### 👋 Hi, {st.session_state.user_role}")
-    st.header("🔍 Filter Options")
-    employee_list = list(set([r.get("Employee", "") for r in st.session_state.timesheet]))
-    selected_employee = st.selectbox("Employee 👤", ["All Employees"] + sorted(employee_list))
-    selected_date = st.date_input("Date 📅", value=None)
+    st.markdown("### 🔍 Advanced Filter Options")
+    with st.container():
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("#### 📅 Date Range")
+        date_range = st.date_input("Select Date Range", value=(datetime.today(), datetime.today()), format="YYYY-MM-DD")
+        start_date, end_date = date_range if isinstance(date_range, tuple) else (date_range, date_range)
+        
+        st.markdown("#### 🏢 Department")
+        filter_department = st.multiselect("Select Department", ["FLM Team", "Field Operations", "Technical Support", "Customer Service"], placeholder="All Departments")
+        
+        st.markdown("#### 📋 Task Category")
+        filter_category = st.multiselect("Select Task Category", list(TASK_CATEGORIES.keys()), 
+                                       format_func=lambda x: f"{TASK_CATEGORIES[x]['icon']} {x}", placeholder="All Categories")
+        
+        st.markdown("#### 🔄 Status")
+        filter_status = st.multiselect("Select Status", list(STATUS_OPTIONS.keys()), 
+                                     format_func=lambda x: f"{STATUS_OPTIONS[x]['icon']} {x}", placeholder="All Statuses")
+        
+        st.markdown("#### ⏰ Shift Type")
+        filter_shift = st.multiselect("Select Shift Type", list(SHIFTS.keys()), placeholder="All Shifts")
+        
+        st.markdown("#### 🔎 Search Description")
+        search_term = st.text_input("Search Work Description", placeholder="Enter keywords...")
+        st.markdown('</div>', unsafe_allow_html=True)
     
     # Quick Stats
     total_hours = sum(r.get("Net Duration (hrs)", 0) for r in st.session_state.timesheet)
@@ -280,24 +304,26 @@ with st.sidebar:
     """, unsafe_allow_html=True)
     
     st.markdown("### ⚡ Quick Actions")
-    if st.sidebar.button("🔄 Refresh Data"):
+    if st.button("🔄 Refresh Data", use_container_width=True):
         st.rerun()
-    if st.sidebar.button("🧹 Clear Filters"):
-        selected_employee = "All Employees"
-        selected_date = None
+    if st.button("🧹 Clear Filters", use_container_width=True):
+        st.session_state.filter_department = []
+        st.session_state.filter_category = []
+        st.session_state.filter_status = []
+        st.session_state.filter_shift = []
+        st.session_state.search_term = ""
+        st.session_state.start_date = datetime.today()
+        st.session_state.end_date = datetime.today()
+        st.rerun()
 
 # --- Dashboard Layout ---
-st.markdown("## 📊 FLM Dashboard")
-tab1, tab2 = st.tabs(["➕ Add Entry", "📈 Analytics"])
+st.markdown("## 📊 FLM Task Dashboard")
+tab1, tab2 = st.tabs(["➕ Add Task", "📈 Analytics"])
 
 with tab1:
-    with st.form("time_entry_form", clear_on_submit=True):
-        st.markdown("### 👤 Employee")
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            employee = st.text_input("Full Name *", placeholder="John Smith", value=st.session_state.user_role)
-        with col2:
-            department = st.selectbox("Department *", ["FLM Team", "Field Operations", "Technical Support", "Customer Service"])
+    with st.form("task_entry_form", clear_on_submit=True):
+        st.markdown(f"### 👤 Task Entry for {st.session_state.user_role}")
+        department = st.selectbox("Department *", ["FLM Team", "Field Operations", "Technical Support", "Customer Service"])
 
         st.markdown("### ⏰ Shift")
         col1, col2, col3 = st.columns([1, 1, 1])
@@ -310,7 +336,7 @@ with tab1:
         break_duration = st.time_input("Break Duration", value=time(SHIFTS[shift_type]['break_duration'].seconds // 3600, (SHIFTS[shift_type]['break_duration'].seconds // 60) % 60))
         date = st.date_input("Date *", value=datetime.today())
 
-        st.markdown("### 📋 Work")
+        st.markdown("### 📋 Task Details")
         col1, col2 = st.columns([1, 1])
         with col1:
             task_category = st.selectbox("Task Category *", list(TASK_CATEGORIES.keys()), 
@@ -320,14 +346,13 @@ with tab1:
                                  format_func=lambda x: f"{STATUS_OPTIONS[x]['icon']} {x}")
         priority = st.selectbox("Priority *", list(PRIORITY_LEVELS.keys()), 
                                format_func=lambda x: f"{PRIORITY_LEVELS[x]['emoji']} {x}")
-        billable = st.checkbox("Billable 💰", value=TASK_CATEGORIES[task_category]['billable'])
 
-        work_description = st.text_area("Description *", placeholder="Describe the work performed 📝", height=100)
+        work_description = st.text_area("Task Description *", placeholder="Describe the task performed 📝", height=100)
 
-        submitted = st.form_submit_button("✅ Submit Entry", use_container_width=True)
+        submitted = st.form_submit_button("✅ Submit Task", use_container_width=True)
 
         if submitted:
-            if not (employee and department and shift_type and start_time and end_time and work_description):
+            if not (department and shift_type and start_time and end_time and work_description):
                 st.error("🚫 Please fill all required fields (*)")
             elif end_time <= start_time and shift_type != "Night Shift":
                 st.error("🚫 End time must be after start time")
@@ -342,7 +367,7 @@ with tab1:
                 net_duration = total_duration - break_duration_hrs
 
                 entry = {
-                    "Employee": employee,
+                    "Employee": st.session_state.user_role,
                     "Department": department,
                     "Date": date.strftime("%Y-%m-%d"),
                     "Day": calendar.day_name[date.weekday()],
@@ -355,13 +380,12 @@ with tab1:
                     "Task Category": f"{TASK_CATEGORIES[task_category]['icon']} {task_category}",
                     "Priority": f"{PRIORITY_LEVELS[priority]['emoji']} {priority}",
                     "Status": f"{STATUS_OPTIONS[status]['icon']} {status}",
-                    "Billable": billable,
                     "Work Description": work_description,
                     "Recorded At": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
 
                 st.session_state.timesheet.append(entry)
-                st.success(f"🎉 Entry added by {employee}!")
+                st.success(f"🎉 Task added by {st.session_state.user_role}!")
                 st.balloons()
 
 with tab2:
@@ -369,26 +393,20 @@ with tab2:
         df = pd.DataFrame(st.session_state.timesheet)
 
         # --- Filters ---
-        st.markdown("### 🔍 Filter Entries")
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            filter_employee = st.multiselect("Employee 👤", sorted(df['Employee'].unique()))
-            filter_department = st.multiselect("Department 🏢", sorted(df['Department'].unique()))
-        with col2:
-            filter_category = st.multiselect("Task Category 📋", sorted(df['Task Category'].unique()))
-            filter_status = st.multiselect("Status 🔄", sorted(df['Status'].unique()))
-
-        filtered_df = df.copy()
-        if filter_employee:
-            filtered_df = filtered_df[filtered_df['Employee'].isin(filter_employee)]
+        st.markdown("### 🔍 Filter Tasks")
+        filtered_df = df[df['Employee'] == st.session_state.user_role]
+        if start_date and end_date:
+            filtered_df = filtered_df[(filtered_df['Date'] >= start_date.strftime("%Y-%m-%d")) & (filtered_df['Date'] <= end_date.strftime("%Y-%m-%d"))]
         if filter_department:
             filtered_df = filtered_df[filtered_df['Department'].isin(filter_department)]
         if filter_category:
             filtered_df = filtered_df[filtered_df['Task Category'].isin(filter_category)]
         if filter_status:
             filtered_df = filtered_df[filtered_df['Status'].isin(filter_status)]
-        if selected_date:
-            filtered_df = filtered_df[filtered_df['Date'] == selected_date.strftime("%Y-%m-%d")]
+        if filter_shift:
+            filtered_df = filtered_df[filtered_df['Shift Type'].isin(filter_shift)]
+        if search_term:
+            filtered_df = filtered_df[filtered_df['Work Description'].str.contains(search_term, case=False, na=False)]
 
         if not filtered_df.empty:
             # --- Styling DataFrame ---
@@ -416,24 +434,20 @@ with tab2:
             styled_df = styled_df.set_properties(**{'background-color': '#1e293b', 'color': '#f1f5f9', 'border': '1px solid #4b5563', 'font-family': 'Inter'})
 
             # --- Dashboard Metrics ---
-            st.markdown("### 📊 Key Metrics")
-            col1, col2, col3 = st.columns(3)
+            st.markdown("### 📊 Task Metrics")
+            col1, col2 = st.columns(2)
             total_hours = filtered_df['Net Duration (hrs)'].sum()
-            billable_hours = filtered_df[filtered_df['Billable']]['Net Duration (hrs)'].sum()
             completed_tasks = len(filtered_df[filtered_df['Status'].str.contains('Completed')])
             
             with col1:
                 st.markdown('<div class="metric-card"><h4>🕒 Total Hours</h4></div>', unsafe_allow_html=True)
                 st.metric("", f"{total_hours:.1f} hrs")
             with col2:
-                st.markdown('<div class="metric-card"><h4>💰 Billable Hours</h4></div>', unsafe_allow_html=True)
-                st.metric("", f"{billable_hours:.1f} hrs", f"{billable_hours/total_hours*100:.1f}%" if total_hours > 0 else "N/A")
-            with col3:
                 st.markdown('<div class="metric-card"><h4>✅ Completed Tasks</h4></div>', unsafe_allow_html=True)
                 st.metric("", f"{completed_tasks}")
 
             # --- Visualizations ---
-            st.markdown("### 📈 Work Distribution")
+            st.markdown("### 📈 Task Distribution")
             col1, col2 = st.columns([1, 1])
             with col1:
                 fig1 = px.pie(
@@ -460,7 +474,7 @@ with tab2:
                 st.plotly_chart(fig2, use_container_width=True)
 
             # --- Data Table ---
-            st.markdown("### 📋 All Entries")
+            st.markdown("### 📋 All Tasks")
             st.dataframe(styled_df, use_container_width=True)
 
             # --- Report Generation ---
@@ -468,24 +482,41 @@ with tab2:
             report_format = st.selectbox("Format 📄", ["PDF", "Excel"])
             if st.button("🖨 Generate Report", use_container_width=True):
                 with st.spinner("Generating report..."):
+                    # Remove emojis for Excel export
+                    def remove_emojis(text):
+                        emoji_pattern = re.compile("["
+                            u"\U0001F600-\U0001F64F"  # emoticons
+                            u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+                            u"\U0001F680-\U0001F6FF"  # transport & map symbols
+                            u"\U0001F1E0-\U0001F1FF"  # flags
+                            u"\U00002700-\U000027BF"  # dingbats
+                            u"\U0001F900-\U0001F9FF"  # supplemental symbols
+                            "]+", flags=re.UNICODE)
+                        return emoji_pattern.sub(r'', str(text))
+
+                    export_df = filtered_df.copy()
+                    export_df['Task Category'] = export_df['Task Category'].apply(remove_emojis)
+                    export_df['Priority'] = export_df['Priority'].apply(remove_emojis)
+                    export_df['Status'] = export_df['Status'].apply(remove_emojis)
+
                     if report_format == "Excel":
                         excel_buffer = BytesIO()
                         with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-                            filtered_df.to_excel(writer, index=False, sheet_name="Time Entries")
+                            export_df.to_excel(writer, index=False, sheet_name="Task Entries")
                             workbook = writer.book
-                            worksheet = writer.sheets["Time Entries"]
+                            worksheet = writer.sheets["Task Entries"]
                             header_format = workbook.add_format({
                                 'bold': True,
                                 'fg_color': '#3b82f6',
                                 'font_color': '#f1f5f9',
                                 'border': 1
                             })
-                            for col_num, value in enumerate(filtered_df.columns.values):
+                            for col_num, value in enumerate(export_df.columns.values):
                                 worksheet.write(0, col_num, value, header_format)
                         st.download_button(
                             label="📥 Download Excel",
                             data=excel_buffer.getvalue(),
-                            file_name=f"FLM_Report_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                            file_name=f"FLM_Task_Report_{datetime.now().strftime('%Y%m%d')}.xlsx",
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         )
                     else:
@@ -496,14 +527,13 @@ with tab2:
                         styles['Normal'].fontName = 'Helvetica'
                         elements = []
 
-                        elements.append(Paragraph(f"FLM Time Tracking Report 📊 - Generated by {st.session_state.user_role}", styles['Title']))
+                        elements.append(Paragraph(f"FLM Task Tracking Report 📊 - Generated by {st.session_state.user_role}", styles['Title']))
                         elements.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d')} 🕒", styles['Normal']))
                         elements.append(Spacer(1, 12))
 
                         summary_data = [
                             ["Metric", "Value"],
                             ["Total Hours 🕒", f"{total_hours:.1f} hrs"],
-                            ["Billable Hours 💰", f"{billable_hours:.1f} hrs"],
                             ["Completed Tasks ✅", f"{completed_tasks}"]
                         ]
                         summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
@@ -533,23 +563,23 @@ with tab2:
                         st.download_button(
                             label="📄 Download PDF",
                             data=pdf_buffer.getvalue(),
-                            file_name=f"FLM_Report_{datetime.now().strftime('%Y%m%d')}.pdf",
+                            file_name=f"FLM_Task_Report_{datetime.now().strftime('%Y%m%d')}.pdf",
                             mime="application/pdf"
                         )
         else:
-            st.info("🚫 No records match your filters")
+            st.info("🚫 No tasks match your filters")
 
     else:
         st.markdown("""
             <div style="text-align:center; padding:3rem; border:2px dashed var(--border); border-radius:20px; max-width:1200px; margin-left:auto; margin-right:auto;">
-                <h3>📭 No Entries Yet</h3>
-                <p>Add your first time entry in the 'Add Entry' tab ➕</p>
+                <h3>📭 No Tasks Yet</h3>
+                <p>Add your first task in the 'Add Task' tab ➕</p>
             </div>
         """, unsafe_allow_html=True)
 
 # --- Footer ---
 st.markdown(f"""
     <center>
-        <small>INTERSOFT POS - FLM Time Tracker • {datetime.now().strftime('%Y-%m-%d')} 🌟</small>
+        <small>INTERSOFT POS - FLM Task Tracker • {datetime.now().strftime('%Y-%m-%d')} 🌟</small>
     </center>
 """, unsafe_allow_html=True)
