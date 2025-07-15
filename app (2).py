@@ -31,6 +31,7 @@ st.markdown("""
         --text: #f1f5f9;
         --accent: #22d3ee;
         --border: #4b5563;
+        --gradient: linear-gradient(135deg, #3b82f6, #1e40af);
     }
     
     html, body, [class*="css"] {
@@ -40,48 +41,55 @@ st.markdown("""
     }
     
     .header {
-        background: linear-gradient(135deg, var(--primary), #1e40af);
+        background: var(--gradient);
         color: var(--text);
         padding: 2rem;
-        border-radius: 16px;
+        border-radius: 20px;
         text-align: center;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
         margin-bottom: 2rem;
         border: 2px solid var(--accent);
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
     }
     
     .card {
         background: var(--surface);
-        border-radius: 16px;
+        border-radius: 20px;
         padding: 1.5rem;
         margin-bottom: 1.5rem;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.3);
         border: 1px solid var(--border);
         transition: transform 0.3s ease, box-shadow 0.3s ease;
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
     }
     
     .card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        transform: scale(1.02);
+        box-shadow: 0 10px 28px rgba(0,0,0,0.4);
     }
     
     .stSelectbox, .stTextInput, .stTimeInput, .stTextArea, .stTextInput > div > div > input {
         background-color: #2d3748 !important;
-        border-radius: 10px !important;
+        border-radius: 12px !important;
         border: 1px solid var(--border) !important;
         color: var(--text) !important;
         padding: 0.5rem !important;
-        transition: border-color 0.3s ease;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
     
     .stSelectbox:hover, .stTextInput:hover, .stTimeInput:hover, .stTextArea:hover {
         border-color: var(--accent) !important;
+        box-shadow: 0 0 8px rgba(34, 211, 238, 0.3);
     }
     
     .stButton>button {
-        background: var(--primary) !important;
+        background: var(--gradient) !important;
         color: var(--text) !important;
-        border-radius: 10px !important;
+        border-radius: 12px !important;
         padding: 0.75rem 1.5rem !important;
         font-weight: 500 !important;
         border: 1px solid var(--accent) !important;
@@ -89,30 +97,33 @@ st.markdown("""
     }
     
     .stButton>button:hover {
-        background: #1e40af !important;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        background: linear-gradient(135deg, #1e40af, #3b82f6) !important;
+        transform: scale(1.05);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.4);
         border-color: var(--accent) !important;
     }
     
     .stDataFrame {
-        border-radius: 16px !important;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        border-radius: 20px !important;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.3);
         border: 1px solid var(--border);
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
     }
     
     .metric-card {
         background: var(--surface);
-        border-radius: 12px;
+        border-radius: 16px;
         padding: 1rem;
         text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.3);
         border: 1px solid var(--border);
         transition: transform 0.3s ease;
     }
     
     .metric-card:hover {
-        transform: translateY(-4px);
+        transform: scale(1.03);
     }
     
     h1, h2, h3 {
@@ -122,32 +133,37 @@ st.markdown("""
     
     .login-container {
         max-width: 500px;
+        min-width: 300px;
         margin: 2rem auto;
         padding: 2rem;
         background: var(--surface);
-        border-radius: 16px;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        border-radius: 20px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
         border: 2px solid var(--accent);
     }
     
     .sidebar .sidebar-content {
         border-right: 1px solid var(--border);
+        max-width: 300px;
+        min-width: 200px;
     }
     
     .stTabs [data-baseweb="tab"] {
-        border-radius: 8px;
+        border-radius: 10px;
         border: 1px solid var(--border);
         margin-right: 0.5rem;
         padding: 0.5rem 1rem;
+        transition: border-color 0.3s ease;
     }
     
     .stTabs [data-baseweb="tab"]:hover {
         border-color: var(--accent);
+        background: rgba(34, 211, 238, 0.1);
     }
     
     /* Responsive design */
     @media (max-width: 768px) {
-        .card, .metric-card, .login-container {
+        .card, .metric-card, .login-container, .stDataFrame {
             margin: 0.5rem;
             padding: 1rem;
         }
@@ -156,6 +172,9 @@ st.markdown("""
         }
         .stButton>button {
             padding: 0.5rem 1rem;
+        }
+        .sidebar .sidebar-content {
+            max-width: 100%;
         }
     }
     </style>
@@ -228,18 +247,18 @@ TASK_CATEGORIES = {
     "Meetings": {"icon": "📅", "billable": False}
 }
 
-# --- Priority Levels ---
+# --- Priority Levels (Using Unicode escape sequences for safety) ---
 PRIORITY_LEVELS = {
-    "Low": {"emoji": "🟢"},
-    "Medium": {"emoji": "🟡"},
-    "High": {"emoji": "🔴"}
+    "Low": {"emoji": "\U0001F7E2"},  # 🟢
+    "Medium": {"emoji": "\U0001F7E1"},  # 🟡
+    "High": {"emoji": "\U0001F534"}  # 🔴
 }
 
 # --- Status Options ---
 STATUS_OPTIONS = {
-    "Not Started": {"color": "#9e9e9e", "icon": "⏸"},
-    "In Progress": {"color": "#3b82f6", "icon": "🔄"},
-    "Completed": {"color": "#22c55e", "icon": "✅"}
+    "Not Started": {"color": "#9e9e9e", "icon": "\U000023F8"},  # ⏸
+    "In Progress": {"color": "#3b82f6", "icon": "\U0001F504"},  # 🔄
+    "Completed": {"color": "#22c55e", "icon": "\U00002705"}  # ✅
 }
 
 # --- Sidebar Filters ---
@@ -253,13 +272,6 @@ with st.sidebar:
     # Quick Stats
     total_hours = sum(r.get("Net Duration (hrs)", 0) for r in st.session_state.timesheet)
     total_entries = len(st.session_state.timesheet)
-    st venitemperors = [
-        "Augustus": "AUGUSTUS1",
-        "Tiberius": "TIBERIUS2",
-        "Claudius": "CLAUDIUS3",
-        "Caligula": "CALIGULA4",
-        "Nero": "NERO5"
-    ]
     st.markdown(f"""
         <div class="card">
             <p>🕒 Total Hours: <strong>{total_hours:.1f}</strong></p>
@@ -318,7 +330,7 @@ with tab1:
             if not (employee and department and shift_type and start_time and end_time and work_description):
                 st.error("🚫 Please fill all required fields (*)")
             elif end_time <= start_time and shift_type != "Night Shift":
-                st.error("�作り End time must be after start time")
+                st.error("🚫 End time must be after start time")
             else:
                 start_dt = datetime.combine(date, start_time)
                 end_dt = datetime.combine(date, end_time)
@@ -386,7 +398,7 @@ with tab2:
                     for key in PRIORITY_LEVELS:
                         if priority_key in key:
                             emoji = PRIORITY_LEVELS[key]['emoji']
-                            return '#ff5252' if emoji == '🔴' else '#ffd740' if emoji == '🟡' else '#22c55e'
+                            return '#ff5252' if emoji == '\U0001F534' else '#ffd740' if emoji == '\U0001F7E1' else '#22c55e'
                     return '#22c55e'
                 except:
                     return '#22c55e'
@@ -529,7 +541,7 @@ with tab2:
 
     else:
         st.markdown("""
-            <div style="text-align:center; padding:3rem; border:2px dashed var(--border); border-radius:16px;">
+            <div style="text-align:center; padding:3rem; border:2px dashed var(--border); border-radius:20px; max-width:1200px; margin-left:auto; margin-right:auto;">
                 <h3>📭 No Entries Yet</h3>
                 <p>Add your first time entry in the 'Add Entry' tab ➕</p>
             </div>
