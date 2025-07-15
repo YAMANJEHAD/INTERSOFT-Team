@@ -15,7 +15,7 @@ import numpy as np
 
 # --- Page Configuration ---
 st.set_page_config(
-    page_title="⏱ FLM Time Tracker | INTERSOFT POS",
+    page_title="⏱ FLM Task Tracker | INTERSOFT POS",
     layout="wide",
     page_icon="⏱"
 )
@@ -73,7 +73,7 @@ st.markdown("""
         box-shadow: 0 10px 28px rgba(0,0,0,0.4);
     }
     
-    .stSelectbox, .stTextInput, .stTimeInput, .stTextArea, .stTextInput > div > div > input, .stDateInput > div > div > input {
+    .stSelectbox, .stTextInput, .stTimeInput, .stTextArea, .stTextInput > div > div > input, .stDateInput > div > div > input, .stNumberInput > div > div > input {
         background-color: #2d3748 !important;
         border-radius: 12px !important;
         border: 1px solid var(--border) !important;
@@ -82,7 +82,7 @@ st.markdown("""
         transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
     
-    .stSelectbox:hover, .stTextInput:hover, .stTimeInput:hover, .stTextArea:hover, .stDateInput:hover {
+    .stSelectbox:hover, .stTextInput:hover, .stTimeInput:hover, .stTextArea:hover, .stDateInput:hover, .stNumberInput:hover {
         border-color: var(--accent) !important;
         box-shadow: 0 0 8px rgba(34, 211, 238, 0.3);
     }
@@ -103,7 +103,7 @@ st.markdown("""
     .stButton>button:hover {
         background: linear-gradient(135deg, #1e40af, #3b82f6) !important;
         transform: scale(1.05);
-        box-shadow: 0 8px 20px rgba(34, 211, 238, 0.4);
+        box-shadow: 0 8px 20px rgba(34, 211, 238, 0.5);
         border: 1px solid var(--accent) !important;
     }
     
@@ -150,6 +150,7 @@ st.markdown("""
         border-right: 1px solid var(--border);
         max-width: 300px;
         min-width: 200px;
+        padding: 1rem;
     }
     
     .stTabs [data-baseweb="tab"] {
@@ -203,7 +204,7 @@ if not st.session_state.logged_in:
         st.markdown("""
             <div class="header">
                 <h1>⏱ INTERSOFT POS - FLM</h1>
-                <h3>Login to Time Tracker 🚀</h3>
+                <h3>Login to Task Tracker 🚀</h3>
             </div>
         """, unsafe_allow_html=True)
         with st.container():
@@ -225,8 +226,8 @@ if not st.session_state.logged_in:
 # --- Header with Personalized Greeting ---
 st.markdown(f"""
     <div class="header">
-        <h1>⏱ Hi, {st.session_state.user_role}! Welcome to FLM Time Tracker</h1>
-        <h3>INTERSOFT POS Dashboard 🌟</h3>
+        <h1>⏱ Hi, {st.session_state.user_role}! Welcome to FLM Task Tracker</h1>
+        <h3>INTERSOFT POS Daily Dashboard 🌟</h3>
     </div>
 """, unsafe_allow_html=True)
 
@@ -236,10 +237,10 @@ if "timesheet" not in st.session_state:
 
 # --- Shift Options ---
 SHIFTS = {
-    "Morning Shift": {'start': time(8, 30), 'end': time(17, 30), 'break_duration': timedelta(minutes=60)},
-    "Evening Shift": {'start': time(15, 0), 'end': time(23, 0), 'break_duration': timedelta(minutes=45)},
-    "Night Shift": {'start': time(22, 0), 'end': time(6, 0), 'break_duration': timedelta(minutes=60)},
-    "Custom Shift": {'start': time(8, 0), 'end': time(17, 0), 'break_duration': timedelta(minutes=0)}
+    "Morning Shift": {'break_duration': timedelta(minutes=60)},
+    "Evening Shift": {'break_duration': timedelta(minutes=45)},
+    "Night Shift": {'break_duration': timedelta(minutes=60)},
+    "Custom Shift": {'break_duration': timedelta(minutes=0)}
 }
 
 # --- Task Categories ---
@@ -265,7 +266,7 @@ STATUS_OPTIONS = {
     "Completed": {"color": "#22c55e", "icon": "\U00002705"}  # ✅
 }
 
-# --- Sidebar Filters ---
+# --- Sidebar Filters and Quick Actions ---
 with st.sidebar:
     st.markdown(f"### 👋 Hi, {st.session_state.user_role}")
     st.markdown("### 🔍 Advanced Filter Options")
@@ -290,16 +291,16 @@ with st.sidebar:
         filter_shift = st.multiselect("Select Shift Type", list(SHIFTS.keys()), placeholder="All Shifts")
         
         st.markdown("#### 🔎 Search Description")
-        search_term = st.text_input("Search Work Description", placeholder="Enter keywords...")
+        search_term = st.text_input("Search Task Description", placeholder="Enter keywords...")
         st.markdown('</div>', unsafe_allow_html=True)
     
     # Quick Stats
-    total_hours = sum(r.get("Net Duration (hrs)", 0) for r in st.session_state.timesheet)
-    total_entries = len(st.session_state.timesheet)
+    total_hours = sum(r.get("Net Duration (hrs)", 0) for r in st.session_state.timesheet if r.get("Employee") == st.session_state.user_role)
+    total_entries = len([r for r in st.session_state.timesheet if r.get("Employee") == st.session_state.user_role])
     st.markdown(f"""
         <div class="card">
             <p>🕒 Total Hours: <strong>{total_hours:.1f}</strong></p>
-            <p>📋 Total Entries: <strong>{total_entries}</strong></p>
+            <p>📋 Total Tasks: <strong>{total_entries}</strong></p>
         </div>
     """, unsafe_allow_html=True)
     
@@ -315,56 +316,83 @@ with st.sidebar:
         st.session_state.start_date = datetime.today()
         st.session_state.end_date = datetime.today()
         st.rerun()
+    
+    # Quick Add Task Form
+    st.markdown("### ➕ Quick Add Task")
+    with st.form("quick_task_form", clear_on_submit=True):
+        quick_category = st.selectbox("Task Category *", list(TASK_CATEGORIES.keys()), 
+                                     format_func=lambda x: f"{TASK_CATEGORIES[x]['icon']} {x}", key="quick_category")
+        quick_description = st.text_input("Task Description *", placeholder="Brief task description", key="quick_description")
+        quick_date = st.date_input("Date *", value=datetime.today(), key="quick_date")
+        if st.form_submit_button("🚀 Add Quick Task", use_container_width=True):
+            if not (quick_category and quick_description):
+                st.error("🚫 Please fill all required fields (*)")
+            else:
+                entry = {
+                    "Employee": st.session_state.user_role,
+                    "Department": "FLM Team",
+                    "Date": quick_date.strftime("%Y-%m-%d"),
+                    "Day": calendar.day_name[quick_date.weekday()],
+                    "Shift Type": "Custom Shift",
+                    "Task Duration (hrs)": 0.0,
+                    "Break Duration (hrs)": 0.0,
+                    "Net Duration (hrs)": 0.0,
+                    "Task Category": f"{TASK_CATEGORIES[quick_category]['icon']} {quick_category}",
+                    "Priority": f"{PRIORITY_LEVELS['Low']['emoji']} Low",
+                    "Status": f"{STATUS_OPTIONS['Not Started']['icon']} Not Started",
+                    "Work Description": quick_description,
+                    "Recorded At": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                st.session_state.timesheet.append(entry)
+                st.success(f"🎉 Quick task added by {st.session_state.user_role}!")
+                st.balloons()
 
 # --- Dashboard Layout ---
-st.markdown("## 📊 FLM Task Dashboard")
+st.markdown("## 📊 Daily Task Dashboard")
 tab1, tab2 = st.tabs(["➕ Add Task", "📈 Analytics"])
 
 with tab1:
     with st.form("task_entry_form", clear_on_submit=True):
-        st.markdown(f"### 👤 Task Entry for {st.session_state.user_role}")
-        department = st.selectbox("Department *", ["FLM Team", "Field Operations", "Technical Support", "Customer Service"])
+        st.markdown(f"### 👤 Daily Task Entry for {st.session_state.user_role}")
+        with st.container():
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("#### 🏢 Department")
+            department = st.selectbox("Department *", ["FLM Team", "Field Operations", "Technical Support", "Customer Service"])
 
-        st.markdown("### ⏰ Shift")
-        col1, col2, col3 = st.columns([1, 1, 1])
-        with col1:
-            shift_type = st.selectbox("Shift Type *", list(SHIFTS.keys()))
-        with col2:
-            start_time = st.time_input("Start Time *", value=SHIFTS[shift_type]['start'])
-        with col3:
-            end_time = st.time_input("End Time *", value=SHIFTS[shift_type]['end'])
-        break_duration = st.time_input("Break Duration", value=time(SHIFTS[shift_type]['break_duration'].seconds // 3600, (SHIFTS[shift_type]['break_duration'].seconds // 60) % 60))
-        date = st.date_input("Date *", value=datetime.today())
+            st.markdown("#### ⏰ Shift Details")
+            col1, col2, col3 = st.columns([1, 1, 1])
+            with col1:
+                shift_type = st.selectbox("Shift Type *", list(SHIFTS.keys()))
+            with col2:
+                task_duration = st.number_input("Task Duration (hrs) *", min_value=0.0, max_value=24.0, step=0.25, value=1.0)
+            with col3:
+                break_duration = st.time_input("Break Duration", value=time(SHIFTS[shift_type]['break_duration'].seconds // 3600, (SHIFTS[shift_type]['break_duration'].seconds // 60) % 60))
+            date = st.date_input("Date *", value=datetime.today())
 
-        st.markdown("### 📋 Task Details")
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            task_category = st.selectbox("Task Category *", list(TASK_CATEGORIES.keys()), 
-                                       format_func=lambda x: f"{TASK_CATEGORIES[x]['icon']} {x}")
-        with col2:
-            status = st.selectbox("Status *", list(STATUS_OPTIONS.keys()), 
-                                 format_func=lambda x: f"{STATUS_OPTIONS[x]['icon']} {x}")
-        priority = st.selectbox("Priority *", list(PRIORITY_LEVELS.keys()), 
-                               format_func=lambda x: f"{PRIORITY_LEVELS[x]['emoji']} {x}")
+            st.markdown("#### 📋 Task Details")
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                task_category = st.selectbox("Task Category *", list(TASK_CATEGORIES.keys()), 
+                                           format_func=lambda x: f"{TASK_CATEGORIES[x]['icon']} {x}")
+            with col2:
+                status = st.selectbox("Status *", list(STATUS_OPTIONS.keys()), 
+                                     format_func=lambda x: f"{STATUS_OPTIONS[x]['icon']} {x}")
+            priority = st.selectbox("Priority *", list(PRIORITY_LEVELS.keys()), 
+                                   format_func=lambda x: f"{PRIORITY_LEVELS[x]['emoji']} {x}")
 
-        work_description = st.text_area("Task Description *", placeholder="Describe the task performed 📝", height=100)
+            work_description = st.text_area("Task Description *", placeholder="Describe the task performed 📝", height=100)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        submitted = st.form_submit_button("✅ Submit Task", use_container_width=True)
+            submitted = st.form_submit_button("✅ Submit Task", use_container_width=True)
 
         if submitted:
-            if not (department and shift_type and start_time and end_time and work_description):
+            if not (department and shift_type and task_duration and work_description):
                 st.error("🚫 Please fill all required fields (*)")
-            elif end_time <= start_time and shift_type != "Night Shift":
-                st.error("🚫 End time must be after start time")
+            elif task_duration <= 0:
+                st.error("🚫 Task duration must be greater than 0")
             else:
-                start_dt = datetime.combine(date, start_time)
-                end_dt = datetime.combine(date, end_time)
-                if shift_type == "Night Shift" and end_time <= start_time:
-                    end_dt += timedelta(days=1)
-                
-                total_duration = (end_dt - start_dt).total_seconds() / 3600
                 break_duration_hrs = (break_duration.hour + break_duration.minute/60)
-                net_duration = total_duration - break_duration_hrs
+                net_duration = task_duration - break_duration_hrs if task_duration > break_duration_hrs else task_duration
 
                 entry = {
                     "Employee": st.session_state.user_role,
@@ -372,9 +400,7 @@ with tab1:
                     "Date": date.strftime("%Y-%m-%d"),
                     "Day": calendar.day_name[date.weekday()],
                     "Shift Type": shift_type,
-                    "Start Time": start_time.strftime("%I:%M %p"),
-                    "End Time": end_time.strftime("%I:%M %p"),
-                    "Total Duration (hrs)": round(total_duration, 2),
+                    "Task Duration (hrs)": round(task_duration, 2),
                     "Break Duration (hrs)": round(break_duration_hrs, 2),
                     "Net Duration (hrs)": round(net_duration, 2),
                     "Task Category": f"{TASK_CATEGORIES[task_category]['icon']} {task_category}",
@@ -434,7 +460,7 @@ with tab2:
             styled_df = styled_df.set_properties(**{'background-color': '#1e293b', 'color': '#f1f5f9', 'border': '1px solid #4b5563', 'font-family': 'Inter'})
 
             # --- Dashboard Metrics ---
-            st.markdown("### 📊 Task Metrics")
+            st.markdown("### 📊 Daily Task Metrics")
             col1, col2 = st.columns(2)
             total_hours = filtered_df['Net Duration (hrs)'].sum()
             completed_tasks = len(filtered_df[filtered_df['Status'].str.contains('Completed')])
@@ -463,11 +489,11 @@ with tab2:
 
             with col2:
                 fig2 = px.bar(
-                    filtered_df.groupby('Department')['Net Duration (hrs)'].sum().reset_index().sort_values('Net Duration (hrs)', ascending=False),
-                    x='Department',
+                    filtered_df.groupby('Date')['Net Duration (hrs)'].sum().reset_index().sort_values('Date'),
+                    x='Date',
                     y='Net Duration (hrs)',
-                    title="Hours by Department 🏢",
-                    color='Department',
+                    title="Hours by Date 📅",
+                    color='Date',
                     color_discrete_sequence=px.colors.qualitative.Plotly
                 )
                 fig2.update_layout(paper_bgcolor="#1e293b", font_color="#f1f5f9")
@@ -479,93 +505,195 @@ with tab2:
 
             # --- Report Generation ---
             st.markdown("### 📤 Generate Report")
-            report_format = st.selectbox("Format 📄", ["PDF", "Excel"])
-            if st.button("🖨 Generate Report", use_container_width=True):
-                with st.spinner("Generating report..."):
-                    # Remove emojis for Excel export
-                    def remove_emojis(text):
-                        emoji_pattern = re.compile("["
-                            u"\U0001F600-\U0001F64F"  # emoticons
-                            u"\U0001F300-\U0001F5FF"  # symbols & pictographs
-                            u"\U0001F680-\U0001F6FF"  # transport & map symbols
-                            u"\U0001F1E0-\U0001F1FF"  # flags
-                            u"\U00002700-\U000027BF"  # dingbats
-                            u"\U0001F900-\U0001F9FF"  # supplemental symbols
-                            "]+", flags=re.UNICODE)
-                        return emoji_pattern.sub(r'', str(text))
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                report_format = st.selectbox("Format 📄", ["PDF", "Excel"])
+            with col2:
+                daily_report_date = st.date_input("Daily Report Date", value=datetime.today(), key="daily_report_date")
+            
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                if st.button("🖨 Generate Full Report", use_container_width=True):
+                    with st.spinner("Generating report..."):
+                        # Remove emojis for Excel export
+                        def remove_emojis(text):
+                            emoji_pattern = re.compile("["
+                                u"\U0001F600-\U0001F64F"  # emoticons
+                                u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+                                u"\U0001F680-\U0001F6FF"  # transport & map symbols
+                                u"\U0001F1E0-\U0001F1FF"  # flags
+                                u"\U00002700-\U000027BF"  # dingbats
+                                u"\U0001F900-\U0001F9FF"  # supplemental symbols
+                                "]+", flags=re.UNICODE)
+                            return emoji_pattern.sub(r'', str(text))
 
-                    export_df = filtered_df.copy()
-                    export_df['Task Category'] = export_df['Task Category'].apply(remove_emojis)
-                    export_df['Priority'] = export_df['Priority'].apply(remove_emojis)
-                    export_df['Status'] = export_df['Status'].apply(remove_emojis)
+                        export_df = filtered_df.copy()
+                        export_df['Task Category'] = export_df['Task Category'].apply(remove_emojis)
+                        export_df['Priority'] = export_df['Priority'].apply(remove_emojis)
+                        export_df['Status'] = export_df['Status'].apply(remove_emojis)
 
-                    if report_format == "Excel":
-                        excel_buffer = BytesIO()
-                        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-                            export_df.to_excel(writer, index=False, sheet_name="Task Entries")
-                            workbook = writer.book
-                            worksheet = writer.sheets["Task Entries"]
-                            header_format = workbook.add_format({
-                                'bold': True,
-                                'fg_color': '#3b82f6',
-                                'font_color': '#f1f5f9',
-                                'border': 1
-                            })
-                            for col_num, value in enumerate(export_df.columns.values):
-                                worksheet.write(0, col_num, value, header_format)
-                        st.download_button(
-                            label="📥 Download Excel",
-                            data=excel_buffer.getvalue(),
-                            file_name=f"FLM_Task_Report_{datetime.now().strftime('%Y%m%d')}.xlsx",
-                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                        )
-                    else:
-                        pdf_buffer = BytesIO()
-                        doc = SimpleDocTemplate(pdf_buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
-                        styles = getSampleStyleSheet()
-                        styles['Title'].fontName = 'Helvetica-Bold'
-                        styles['Normal'].fontName = 'Helvetica'
-                        elements = []
+                        if report_format == "Excel":
+                            excel_buffer = BytesIO()
+                            with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+                                export_df.to_excel(writer, index=False, sheet_name="Task Entries")
+                                workbook = writer.book
+                                worksheet = writer.sheets["Task Entries"]
+                                header_format = workbook.add_format({
+                                    'bold': True,
+                                    'fg_color': '#3b82f6',
+                                    'font_color': '#f1f5f9',
+                                    'border': 1
+                                })
+                                for col_num, value in enumerate(export_df.columns.values):
+                                    worksheet.write(0, col_num, value, header_format)
+                            st.download_button(
+                                label="📥 Download Excel",
+                                data=excel_buffer.getvalue(),
+                                file_name=f"FLM_Task_Report_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            )
+                        else:
+                            pdf_buffer = BytesIO()
+                            doc = SimpleDocTemplate(pdf_buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+                            styles = getSampleStyleSheet()
+                            styles['Title'].fontName = 'Helvetica-Bold'
+                            styles['Normal'].fontName = 'Helvetica'
+                            elements = []
 
-                        elements.append(Paragraph(f"FLM Task Tracking Report 📊 - Generated by {st.session_state.user_role}", styles['Title']))
-                        elements.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d')} 🕒", styles['Normal']))
-                        elements.append(Spacer(1, 12))
+                            elements.append(Paragraph(f"FLM Task Tracking Report 📊 - Generated by {st.session_state.user_role}", styles['Title']))
+                            elements.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d')} 🕒", styles['Normal']))
+                            elements.append(Spacer(1, 12))
 
-                        summary_data = [
-                            ["Metric", "Value"],
-                            ["Total Hours 🕒", f"{total_hours:.1f} hrs"],
-                            ["Completed Tasks ✅", f"{completed_tasks}"]
-                        ]
-                        summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
-                        summary_table.setStyle(TableStyle([
-                            ('BACKGROUND', (0, 0), (-1, 0), '#3b82f6'),
-                            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica')
-                        ]))
-                        elements.append(summary_table)
-                        elements.append(Spacer(1, 12))
+                            summary_data = [
+                                ["Metric", "Value"],
+                                ["Total Hours 🕒", f"{total_hours:.1f} hrs"],
+                                ["Completed Tasks ✅", f"{completed_tasks}"]
+                            ]
+                            summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
+                            summary_table.setStyle(TableStyle([
+                                ('BACKGROUND', (0, 0), (-1, 0), '#3b82f6'),
+                                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica')
+                            ]))
+                            elements.append(summary_table)
+                            elements.append(Spacer(1, 12))
 
-                        pdf_data = [list(filtered_df.columns)] + [list(row) for _, row in filtered_df.iterrows()]
-                        pdf_table = Table(pdf_data)
-                        pdf_table.setStyle(TableStyle([
-                            ('BACKGROUND', (0, 0), (-1, 0), '#3b82f6'),
-                            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                            ('FONTSIZE', (0, 0), (-1, -1), 8),
-                            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica')
-                        ]))
-                        elements.append(pdf_table)
+                            pdf_data = [list(filtered_df.columns)] + [list(row) for _, row in filtered_df.iterrows()]
+                            pdf_table = Table(pdf_data)
+                            pdf_table.setStyle(TableStyle([
+                                ('BACKGROUND', (0, 0), (-1, 0), '#3b82f6'),
+                                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                                ('FONTSIZE', (0, 0), (-1, -1), 8),
+                                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica')
+                            ]))
+                            elements.append(pdf_table)
 
-                        doc.build(elements)
-                        st.download_button(
-                            label="📄 Download PDF",
-                            data=pdf_buffer.getvalue(),
-                            file_name=f"FLM_Task_Report_{datetime.now().strftime('%Y%m%d')}.pdf",
-                            mime="application/pdf"
-                        )
+                            doc.build(elements)
+                            st.download_button(
+                                label="📄 Download PDF",
+                                data=pdf_buffer.getvalue(),
+                                file_name=f"FLM_Task_Report_{datetime.now().strftime('%Y%m%d')}.pdf",
+                                mime="application/pdf"
+                            )
+            
+            with col2:
+                if st.button("📅 Generate Daily Summary", use_container_width=True):
+                    with st.spinner("Generating daily summary..."):
+                        daily_df = filtered_df[filtered_df['Date'] == daily_report_date.strftime("%Y-%m-%d")]
+                        if daily_df.empty:
+                            st.error("🚫 No tasks found for the selected date")
+                        else:
+                            daily_hours = daily_df['Net Duration (hrs)'].sum()
+                            daily_completed = len(daily_df[daily_df['Status'].str.contains('Completed')])
+                            
+                            # Remove emojis for Excel export
+                            def remove_emojis(text):
+                                emoji_pattern = re.compile("["
+                                    u"\U0001F600-\U0001F64F"  # emoticons
+                                    u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+                                    u"\U0001F680-\U0001F6FF"  # transport & map symbols
+                                    u"\U0001F1E0-\U0001F1FF"  # flags
+                                    u"\U00002700-\U000027BF"  # dingbats
+                                    u"\U0001F900-\U0001F9FF"  # supplemental symbols
+                                    "]+", flags=re.UNICODE)
+                                return emoji_pattern.sub(r'', str(text))
+
+                            export_df = daily_df.copy()
+                            export_df['Task Category'] = export_df['Task Category'].apply(remove_emojis)
+                            export_df['Priority'] = export_df['Priority'].apply(remove_emojis)
+                            export_df['Status'] = export_df['Status'].apply(remove_emojis)
+
+                            if report_format == "Excel":
+                                excel_buffer = BytesIO()
+                                with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+                                    export_df.to_excel(writer, index=False, sheet_name="Daily Tasks")
+                                    workbook = writer.book
+                                    worksheet = writer.sheets["Daily Tasks"]
+                                    header_format = workbook.add_format({
+                                        'bold': True,
+                                        'fg_color': '#3b82f6',
+                                        'font_color': '#f1f5f9',
+                                        'border': 1
+                                    })
+                                    for col_num, value in enumerate(export_df.columns.values):
+                                        worksheet.write(0, col_num, value, header_format)
+                                st.download_button(
+                                    label="📥 Download Daily Excel",
+                                    data=excel_buffer.getvalue(),
+                                    file_name=f"FLM_Daily_Task_Report_{daily_report_date.strftime('%Y%m%d')}.xlsx",
+                                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                                )
+                            else:
+                                pdf_buffer = BytesIO()
+                                doc = SimpleDocTemplate(pdf_buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+                                styles = getSampleStyleSheet()
+                                styles['Title'].fontName = 'Helvetica-Bold'
+                                styles['Normal'].fontName = 'Helvetica'
+                                elements = []
+
+                                elements.append(Paragraph(f"FLM Daily Task Summary 📊 - {daily_report_date.strftime('%Y-%m-%d')}", styles['Title']))
+                                elements.append(Paragraph(f"Generated by {st.session_state.user_role} on {datetime.now().strftime('%Y-%m-%d')} 🕒", styles['Normal']))
+                                elements.append(Spacer(1, 12))
+
+                                summary_data = [
+                                    ["Metric", "Value"],
+                                    ["Total Hours 🕒", f"{daily_hours:.1f} hrs"],
+                                    ["Completed Tasks ✅", f"{daily_completed}"]
+                                ]
+                                summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
+                                summary_table.setStyle(TableStyle([
+                                    ('BACKGROUND', (0, 0), (-1, 0), '#3b82f6'),
+                                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                                    ('FONTNAME', (0, 0), (-1, -1), 'Helvetica')
+                                ]))
+                                elements.append(summary_table)
+                                elements.append(Spacer(1, 12))
+
+                                pdf_data = [list(daily_df.columns)] + [list(row) for _, row in daily_df.iterrows()]
+                                pdf_table = Table(pdf_data)
+                                pdf_table.setStyle(TableStyle([
+                                    ('BACKGROUND', (0, 0), (-1, 0), '#3b82f6'),
+                                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                                    ('FONTSIZE', (0, 0), (-1, -1), 8),
+                                    ('FONTNAME', (0, 0), (-1, -1), 'Helvetica')
+                                ]))
+                                elements.append(pdf_table)
+
+                                doc.build(elements)
+                                st.download_button(
+                                    label="📄 Download Daily PDF",
+                                    data=pdf_buffer.getvalue(),
+                                    file_name=f"FLM_Daily_Task_Report_{daily_report_date.strftime('%Y%m%d')}.pdf",
+                                    mime="application/pdf"
+                                )
         else:
             st.info("🚫 No tasks match your filters")
 
@@ -573,7 +701,7 @@ with tab2:
         st.markdown("""
             <div style="text-align:center; padding:3rem; border:2px dashed var(--border); border-radius:20px; max-width:1200px; margin-left:auto; margin-right:auto;">
                 <h3>📭 No Tasks Yet</h3>
-                <p>Add your first task in the 'Add Task' tab ➕</p>
+                <p>Add your first task in the 'Add Task' tab or use the Quick Add Task form ➕</p>
             </div>
         """, unsafe_allow_html=True)
 
