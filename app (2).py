@@ -19,120 +19,109 @@ st.set_page_config(
     page_icon="⏱"
 )
 
-# --- Theme Toggle ---
-theme = st.sidebar.selectbox("Theme", ["Dark", "Light"], key="theme")
-if theme == "Light":
-    st.markdown("""
-        <style>
-        :root {
-            --primary: #4f46e5;
-            --secondary: #a855f7;
-            --background: #ffffff;
-            --surface: #f9f9f9;
-            --text: #333333;
-            --accent: #22d3ee;
-            --gradient: linear-gradient(135deg, #4f46e5, #a855f7);
-        }
-        </style>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-        <style>
-        :root {
-            --primary: #4f46e5;
-            --secondary: #a855f7;
-            --background: linear-gradient(135deg, #0f172a, #1e293b);
-            --surface: #1e293b;
-            --text: #f1f5f9;
-            --accent: #22d3ee;
-            --gradient: linear-gradient(135deg, #4f46e5, #a855f7);
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-# --- Enhanced Styling with Inter Font ---
+# --- Enhanced Styling with Inter Font (Dark Professional Theme) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    :root {
+        --primary: #4f46e5;
+        --secondary: #a855f7;
+        --background: #0f172a;
+        --surface: #1e293b;
+        --text: #e5e7eb;
+        --accent: #22d3ee;
+        --shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        --gradient: linear-gradient(135deg, #4f46e5, #6b21a8);
+    }
     
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif !important;
         background: var(--background);
         color: var(--text);
+        transition: all 0.3s ease;
     }
     
     .header {
         background: var(--gradient);
         color: var(--text);
-        padding: 1rem;
-        border-radius: 10px;
+        padding: 1.5rem;
+        border-radius: 12px;
         text-align: center;
-        margin-bottom: 1rem;
-        max-width: 800px;
+        margin-bottom: 1.5rem;
+        max-width: 900px;
         margin-left: auto;
         margin-right: auto;
-        animation: fadeIn 1s ease-in-out;
+        box-shadow: var(--shadow);
+        animation: fadeIn 0.8s ease-in-out;
     }
     
     .card {
         background: var(--surface);
-        border-radius: 10px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        max-width: 800px;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        max-width: 900px;
         margin-left: auto;
         margin-right: auto;
-        animation: fadeIn 1s ease-in-out;
+        box-shadow: var(--shadow);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        animation: fadeIn 0.8s ease-in-out;
     }
     
     @keyframes fadeIn {
-        0% { opacity: 0; transform: translateY(10px); }
+        0% { opacity: 0; transform: translateY(15px); }
         100% { opacity: 1; transform: translateY(0); }
     }
     
     .stSelectbox, .stTextInput, .stTextArea, .stTextInput > div > div > input, .stDateInput > div > div > input {
-        background-color: #e0e0e0 !important;
+        background-color: #2d3748 !important;
         border-radius: 8px !important;
-        border: none !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
         color: var(--text) !important;
-        padding: 0.5rem !important;
-        transition: box-shadow 0.3s ease;
+        padding: 0.75rem !important;
+        transition: box-shadow 0.3s ease, transform 0.2s ease;
     }
     
     .stSelectbox:hover, .stTextInput:hover, .stTextArea:hover, .stDateInput:hover {
-        box-shadow: 0 0 6px rgba(34, 211, 238, 0.3);
+        box-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+        transform: translateY(-2px);
     }
     
     .stButton>button {
         background: var(--gradient) !important;
         color: var(--text) !important;
-        border-radius: 12px !important;
-        padding: 0.5rem 1rem !important;
-        font-weight: 500 !important;
+        border-radius: 20px !important;
+        padding: 0.75rem 1.5rem !important;
+        font-weight: 600 !important;
         border: none !important;
         transition: all 0.3s ease !important;
+        box-shadow: var(--shadow);
     }
     
     .stButton>button:hover {
         background: linear-gradient(135deg, #3730a3, #7e22ce) !important;
-        transform: scale(1.05);
-        box-shadow: 0 0 10px rgba(79, 70, 229, 0.5);
+        transform: scale(1.05) translateY(-2px);
+        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.6);
     }
     
     .stDataFrame {
-        border-radius: 10px !important;
-        max-width: 800px;
+        border-radius: 12px !important;
+        max-width: 900px;
         margin-left: auto;
         margin-right: auto;
+        box-shadow: var(--shadow);
     }
     
     .login-container {
-        max-width: 350px;
+        max-width: 400px;
         margin: 2rem auto;
-        padding: 1rem;
+        padding: 1.5rem;
         background: var(--surface);
-        border-radius: 10px;
-        animation: fadeIn 1s ease-in-out;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        animation: fadeIn 0.8s ease-in-out;
     }
     
     .sidebar {
@@ -143,40 +132,66 @@ st.markdown("""
         height: 100%;
         background: var(--surface);
         padding: 1rem;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
         overflow-y: auto;
+        z-index: 1000;
+    }
+    
+    .logo {
+        position: absolute;
+        top: 1rem;
+        left: 15rem; /* بعيد عن الواجهة الجانبية */
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text);
+        text-align: left;
+        opacity: 0.9;
+        transition: opacity 0.3s ease;
+    }
+    
+    .logo:hover {
+        opacity: 1;
     }
     
     .stTabs [data-baseweb="tab"] {
-        border-radius: 6px;
-        padding: 0.25rem 0.75rem;
-        margin-right: 0.25rem;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        margin-right: 0.5rem;
         transition: all 0.3s ease;
         background: var(--surface);
         color: var(--text);
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
     
     .stTabs [data-baseweb="tab"][aria-selected="true"] {
         background: var(--gradient);
         color: var(--text);
-        border-bottom: 2px solid var(--accent);
+        border: none;
+        box-shadow: 0 2px 5px rgba(34, 211, 238, 0.3);
     }
     
     .stTabs [data-baseweb="tab"]:hover {
         background: linear-gradient(135deg, #3730a3, #7e22ce);
         color: var(--text);
+        border: none;
     }
     
     @media (max-width: 768px) {
         .card, .login-container, .stDataFrame {
-            margin: 0.25rem;
-            padding: 0.75rem;
+            margin: 0.5rem;
+            padding: 1rem;
         }
         .header {
-            padding: 0.75rem;
+            padding: 1rem;
         }
         .sidebar {
             width: 100%;
             position: relative;
+            left: 0;
+        }
+        .logo {
+            left: 1rem;
+            top: 0.5rem;
         }
     }
     </style>
@@ -197,6 +212,7 @@ if "logged_in" not in st.session_state:
     st.session_state.user_role = None
 
 if not st.session_state.logged_in:
+    st.markdown('<div class="logo">INTERSOFT<br>International Software Company</div>', unsafe_allow_html=True)
     with st.container():
         st.markdown("""
             <div class="header">
@@ -221,6 +237,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 # --- Header with Personalized Greeting ---
+st.markdown('<div class="logo">INTERSOFT<br>International Software Company</div>', unsafe_allow_html=True)
 st.markdown(f"""
     <div class="header">
         <h1>Hi, {st.session_state.user_role}! Welcome to FLM Task Tracker</h1>
@@ -260,8 +277,6 @@ STATUS_OPTIONS = {
 
 # --- Sidebar with Filters and Stats ---
 with st.sidebar:
-    st.markdown('<div style="position: absolute; top: 1rem; left: 1rem; color: var(--text);">INTERSOFT<br>International Software Company</div>', unsafe_allow_html=True)
-    st.markdown('<div style="margin-top: 3rem;">', unsafe_allow_html=True)
     st.markdown("### Filters")
     date_range = st.date_input("Date Range", value=(datetime(2025, 7, 15), datetime(2025, 7, 15)), format="YYYY-MM-DD", key="date_range")
     start_date, end_date = date_range if isinstance(date_range, tuple) else (date_range, date_range)
@@ -281,7 +296,6 @@ with st.sidebar:
         st.session_state.task_category = "Choose an option"
         st.session_state.status = "Choose an option"
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # --- Dashboard Layout ---
 st.markdown("## Daily Task Dashboard")
@@ -343,7 +357,7 @@ with tab2:
 
             def get_status_color(status_str):
                 status_key = status_str.split(' ')[-1]
-                return STATUS_OPTIONS.get(status_key, {}).get('color', '#f1f5f9')
+                return STATUS_OPTIONS.get(status_key, {}).get('color', '#e5e7eb')
 
             styled_df = filtered_df.sort_values("Date", ascending=False).style
             styled_df = styled_df.applymap(lambda x: f"color: {get_status_color(x)}", subset=["Status"])
@@ -351,20 +365,21 @@ with tab2:
             styled_df = styled_df.set_properties(**{
                 'background-color': 'var(--surface)',
                 'color': 'var(--text)',
-                'border': 'none',
+                'border': '1px solid rgba(255, 255, 255, 0.1)',
                 'font-family': 'Inter',
-                'text-align': 'center'
+                'text-align': 'center',
+                'padding': '0.5rem'
             })
 
             # --- Metrics ---
             st.markdown("### Task Overview")
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("Total Tasks", len(filtered_df))
+                st.metric("Total Tasks", len(filtered_df), delta=None, delta_color="off")
             with col2:
-                st.metric("Completed", filtered_df[filtered_df['Status'].str.contains("Completed")].shape[0])
+                st.metric("Completed", filtered_df[filtered_df['Status'].str.contains("Completed")].shape[0], delta=None, delta_color="off")
             with col3:
-                st.metric("In Progress", filtered_df[filtered_df['Status'].str.contains("In Progress")].shape[0])
+                st.metric("In Progress", filtered_df[filtered_df['Status'].str.contains("In Progress")].shape[0], delta=None, delta_color="off")
 
             # --- Visualization ---
             st.markdown("### Task Trends")
@@ -374,9 +389,15 @@ with tab2:
                 y='Count',
                 title="Tasks by Date",
                 color='Date',
-                color_discrete_sequence=px.colors.qualitative.Pastel
+                color_discrete_sequence=px.colors.qualitative.Dark24
             )
-            fig.update_layout(paper_bgcolor="var(--surface)", font_color="var(--text)", plot_bgcolor="var(--surface)")
+            fig.update_layout(
+                paper_bgcolor="var(--surface)",
+                plot_bgcolor="var(--surface)",
+                font_color="var(--text)",
+                title_font_size=16,
+                margin=dict(l=40, r=40, t=40, b=20)
+            )
             st.plotly_chart(fig, use_container_width=True)
 
             # --- Data Table ---
@@ -385,7 +406,7 @@ with tab2:
 
             # --- Report Generation with Shift Time ---
             st.markdown("### Export Report")
-            shift_time = st.selectbox("Select Shift Time", ["Morning Shift (8:30 - 5:30)", "Evening Shift (3:00 - 11:00)"], key="shift_time")
+            shift_time = st.selectbox("Shift Time", SHIFTS, key="shift_time")
             if st.button("Export Excel", key="export_excel"):
                 with st.spinner("Preparing report..."):
                     def remove_emojis(text):
@@ -400,32 +421,33 @@ with tab2:
                         return emoji_pattern.sub(r'', str(text))
 
                     export_df = filtered_df.copy()
-                    export_df['Task Category'] = export_df['Task Category'].apply(remove_emojis)
-                    export_df['Priority'] = export_df['Priority'].apply(remove_emojis)
-                    export_df['Status'] = export_df['Status'].apply(remove_emojis)
+                    for col in ['Task Category', 'Priority', 'Status']:
+                        export_df[col] = export_df[col].apply(remove_emojis)
                     export_df['Shift Time'] = shift_time
 
                     excel_buffer = BytesIO()
                     with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-                        export_df.to_excel(writer, index=False, sheet_name="Tasks")
+                        export_df.to_excel(writer, index=False, sheet_name="Tasks", freeze_panes=(1, 0))
                         workbook = writer.book
                         worksheet = writer.sheets["Tasks"]
                         header_format = workbook.add_format({
-                            'bold': True, 'fg_color': '#4f46e5', 'font_color': '#ffffff', 'border': 1
+                            'bold': True, 'fg_color': '#4f46e5', 'font_color': '#ffffff',
+                            'border': 1, 'text_wrap': True, 'align': 'center'
                         })
                         for col_num, value in enumerate(export_df.columns.values):
+                            worksheet.set_column(col_num, col_num, 20)
                             worksheet.write(0, col_num, value, header_format)
                     st.download_button(
                         label="Download Excel",
                         data=excel_buffer.getvalue(),
-                        file_name=f"FLM_Tasks_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                        file_name=f"FLM_Tasks_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
         else:
             st.info("No tasks available based on filters.")
     else:
         st.markdown("""
-            <div style="text-align:center; padding:1.5rem; border-radius:10px; background:var(--surface); max-width:800px; margin-left:auto; margin-right:auto;">
+            <div style="text-align:center; padding:1.5rem; border-radius:12px; background:var(--surface); max-width:900px; margin-left:auto; margin-right:auto; box-shadow: var(--shadow);">
                 <h3>No Tasks Yet</h3>
                 <p>Add your first task using the 'Add Task' tab.</p>
             </div>
@@ -434,6 +456,6 @@ with tab2:
 # --- Footer ---
 st.markdown(f"""
     <center>
-        <small style="color:#ffffff;">INTERSOFT POS - FLM Task Tracker • {datetime.now().strftime('%Y-%m-%d')} 06:02 PM +03</small>
+        <small style="color:#ffffff;">INTERSOFT POS - FLM Task Tracker • {datetime.now().strftime('%Y-%m-%d')} 06:20 PM +03</small>
     </center>
 """, unsafe_allow_html=True)
