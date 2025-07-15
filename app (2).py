@@ -1,19 +1,17 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from datetime import datetime
+from datetime import datetime, time
 from io import BytesIO
-import time
 
 # Configure page settings
 st.set_page_config(
-    page_title="⏰ Time Sheet InterSoft",
+    page_title="⏱ Time Sheet InterSoft", 
     layout="wide",
-    page_icon="⏱️",
-    initial_sidebar_state="expanded"
+    page_icon="⏱️"
 )
 
-# ---- Professional CSS Styling ----
+# Professional CSS styling
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
@@ -42,16 +40,18 @@ st.markdown("""
         opacity: 0.9;
     }
     
-    .clock-container {
-        background: #1E1E1E;
-        color: #00FFAA;
-        padding: 1rem;
+    .status-card {
+        background: white;
         border-radius: 10px;
-        font-family: 'Courier New', monospace;
-        font-size: 1.8rem;
-        text-align: center;
+        padding: 1.5rem;
         margin-bottom: 1.5rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    
+    .status-value {
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: #4a6fa5;
     }
     
     .stDataFrame {
@@ -73,281 +73,260 @@ st.markdown("""
         transform: translateY(-2px);
         box-shadow: 0 6px 12px rgba(107, 115, 255, 0.3);
     }
-    
-    .sidebar .sidebar-content {
-        background: #F9FAFF;
-        border-right: 1px solid #E6E9F0;
-    }
-    
-    .css-1aumxhk {
-        background-color: #FFFFFF;
-        border: 1px solid #E6E9F0;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-    }
-    
-    .tab-content {
-        padding: 1.5rem 0;
-    }
     </style>
 """, unsafe_allow_html=True)
 
-# ---- Real-Time Clock ----
-def digital_clock():
-    current_time = datetime.now().strftime("%H:%M:%S")
-    clock_html = f"""
-    <div class="clock-container">
-        <div style="font-size:0.9rem; margin-bottom:0.5rem; color:#A0A0A0;">INTERSOFT LIVE</div>
-        {current_time}
-    </div>
-    """
-    return clock_html
+# Shift configurations
+MORNING_SHIFT = {
+    'start': time(8, 30),
+    'end': time(17, 30),
+    'name': 'Morning Shift (8:30 AM - 5:30 PM)'
+}
 
-# ---- System Constants ----
-CATEGORIES = ["PAPER REQUEST", "TOMS", "CRM", "J.O", "Development", "Client Meeting", "Research", "Administrative", "Training", "Support"]
-DEPARTMENTS = ["IT", "Finance", "Operations", "HR", "Marketing"]
+EVENING_SHIFT = {
+    'start': time(15, 0),
+    'end': time(23, 0),
+    'name': 'Evening Shift (3:00 PM - 11:00 PM)'
+}
 
 # Initialize session state
 if "timesheet" not in st.session_state:
     st.session_state.timesheet = []
 
-# ---- Header Section ----
+# --- Header Section ---
 st.markdown(f"""
     <div class="header">
-        <div class="header-title">⏰ Time Sheet InterSoft</div>
-        <div class="header-subtitle">Professional Time Tracking System | Version 2.3</div>
+        <div class="header-title">⏱ Time Sheet InterSoft</div>
+        <div class="header-subtitle">Professional Attendance & Time Tracking System | v2.0</div>
     </div>
 """, unsafe_allow_html=True)
 
-# Display real-time clock
-clock_placeholder = st.empty()
+# Current time display
+current_time = datetime.now().strftime("%A, %B %d, %Y | %I:%M:%S %p")
+st.markdown(f"""
+    <div style="background:#f8f9fa; padding:1rem; border-radius:10px; margin-bottom:2rem; text-align:center;">
+        <strong>{current_time}</strong>
+    </div>
+""", unsafe_allow_html=True)
 
-# Update clock every second using a loop
-while True:
-    with clock_placeholder:
-        st.markdown(digital_clock(), unsafe_allow_html=True)
-    time.sleep(1)
-    # This will create an infinite loop - in a real app you would need a better approach
-    # For Streamlit, we'll use a different approach shown below
-
-# ---- Better approach for Streamlit ----
-# Create a placeholder for the clock
-clock_placeholder = st.empty()
-
-# Function to update the clock
-def update_clock():
-    with clock_placeholder:
-        st.markdown(digital_clock(), unsafe_allow_html=True)
-
-# Call the function once to display the clock
-update_clock()
-
-# ---- Sidebar Filters ----
+# --- Sidebar Filters ---
 with st.sidebar:
-    st.markdown("""
-        <div style="font-size:1.2rem; font-weight:600; margin-bottom:1rem; color:#4A4A4A;">
-        🔍 Filter Dashboard
-        </div>
-    """, unsafe_allow_html=True)
-    
-    # Employee name free text input instead of dropdown
-    selected_employee = st.text_input(
-        "Employee Name",
-        placeholder="Enter employee name",
-        value=""
-    )
-    
-    selected_category = st.selectbox(
-        "By Category", 
-        options=["All Categories"] + CATEGORIES,
+    st.header("🔍 Filter Options")
+    selected_employee = st.selectbox(
+        "Employee Filter", 
+        options=["All Employees"] + sorted(list(set([row.get("Employee", "") for row in st.session_state.timesheet]))),
         index=0
     )
-    
-    selected_department = st.selectbox(
-        "By Department", 
-        options=["All Departments"] + DEPARTMENTS,
+    selected_shift = st.selectbox(
+        "Shift Filter",
+        options=["All Shifts", MORNING_SHIFT['name'], EVENING_SHIFT['name']],
         index=0
     )
-    
     selected_date = st.date_input(
-        "By Date",
+        "Date Filter", 
         value=None,
         help="Filter entries by specific date"
     )
     
+    # Statistics
+    total_hours = sum([row.get("Duration (hrs)", 0) for row in st.session_state.timesheet])
+    late_entries = sum([1 for row in st.session_state.timesheet if row.get("Late (min)", 0) > 0])
+    
     st.markdown("""
-        <div style="margin-top:2rem; padding:1rem; background:#F3F5FF; border-radius:10px;">
-        <h4 style="color:#4A4A4A;">System Analytics</h4>
-        <p>📊 Total Entries: <strong>{}</strong></p>
-        <p>⏱️ Total Hours: <strong>{:.1f}</strong></p>
+        <div style='margin-top: 2rem; background:#f8f9fa; padding:1.5rem; border-radius:10px;'>
+        <h4>System Statistics</h4>
+        <p>Total Entries: <strong>{}</strong></p>
+        <p>Total Hours: <strong>{:.1f}</strong></p>
+        <p>Late Arrivals: <strong>{}</strong></p>
         </div>
     """.format(
         len(st.session_state.timesheet),
-        sum([row.get("Duration (hrs)", 0) for row in st.session_state.timesheet])
+        total_hours,
+        late_entries
     ), unsafe_allow_html=True)
 
-# ---- Time Entry Form ----
-with st.expander("➕ ADD NEW TIME ENTRY", expanded=True):
-    with st.form("time_entry_form", clear_on_submit=True):
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            employee = st.text_input("Employee Name*", placeholder="John Doe")
-            project = st.text_input("Project Name*", placeholder="Project Alpha")
-            department = st.selectbox("Department*", DEPARTMENTS)
-            
-        with col2:
+# --- Time Entry Form ---
+with st.expander("➕ Add New Attendance Entry", expanded=True):
+    with st.form("attendance_form", clear_on_submit=True):
+        cols = st.columns([1, 1, 1])
+        with cols[0]:
+            employee = st.text_input("Employee Name*", placeholder="John Smith")
             date = st.date_input("Date*", datetime.today())
-            start_time = st.time_input("Start Time*")
-            end_time = st.time_input("End Time*")
+            shift_type = st.selectbox("Shift Type*", [MORNING_SHIFT['name'], EVENING_SHIFT['name']])
             
-        with col3:
-            category = st.selectbox("Category*", CATEGORIES)
-            priority = st.select_slider("Priority", ["Low", "Medium", "High"])
-            attachments = st.file_uploader("Attachments", accept_multiple_files=True)
+        with cols[1]:
+            actual_start = st.time_input("Actual Start Time*")
+            project = st.text_input("Project Name*", placeholder="Project Alpha")
+            
+        with cols[2]:
+            actual_end = st.time_input("Actual End Time*")
+            status = st.selectbox("Status", ["Present", "Half Day", "Leave"])
         
-        task_description = st.text_area("Task Description*", 
-                                      placeholder="Detailed description of work performed...",
+        task_description = st.text_area("Work Description", 
+                                      placeholder="Describe work performed...",
                                       height=100)
         
-        deliverables = st.text_area("Key Deliverables", 
-                                 placeholder="Specific outcomes or achievements...",
-                                 height=80)
-        
-        submitted = st.form_submit_button("🚀 Submit Time Entry")
-        
+        submitted = st.form_submit_button("Submit Attendance", 
+                                        help="All fields marked with * are required")
+
         if submitted:
-            if not all([employee, project, task_description]):
+            if not all([employee, project, actual_start, actual_end]):
                 st.error("Please complete all required fields (*)")
-            elif end_time <= start_time:
+            elif actual_end <= actual_start:
                 st.error("End time must be after start time")
             else:
-                duration = (datetime.combine(datetime.today(), end_time) - 
-                          datetime.combine(datetime.today(), start_time)).total_seconds() / 3600
+                # Calculate shift details
+                shift = MORNING_SHIFT if shift_type == MORNING_SHIFT['name'] else EVENING_SHIFT
                 
-                new_entry = {
-                    "Timestamp": datetime.now(),
-                    "Employee": employee.strip(),
-                    "Department": department,
+                # Calculate duration
+                duration = (datetime.combine(datetime.today(), actual_end) - 
+                          datetime.combine(datetime.today(), actual_start)).total_seconds() / 3600
+                
+                # Calculate late arrival
+                late_minutes = max(0, (datetime.combine(datetime.today(), actual_start) - 
+                                     datetime.combine(datetime.today(), shift['start'])).total_seconds() / 60)
+                
+                # Calculate early departure
+                early_minutes = max(0, (datetime.combine(datetime.today(), shift['end']) - 
+                                      datetime.combine(datetime.today(), actual_end)).total_seconds() / 60)
+                
+                st.session_state.timesheet.append({
+                    "Employee": employee,
                     "Date": date,
-                    "Start Time": start_time.strftime("%H:%M"),
-                    "End Time": end_time.strftime("%H:%M"),
+                    "Shift": shift_type,
+                    "Scheduled Start": shift['start'].strftime("%H:%M"),
+                    "Scheduled End": shift['end'].strftime("%H:%M"),
+                    "Actual Start": actual_start.strftime("%H:%M"),
+                    "Actual End": actual_end.strftime("%H:%M"),
                     "Duration (hrs)": round(duration, 2),
+                    "Late (min)": round(late_minutes, 0),
+                    "Early Departure (min)": round(early_minutes, 0),
+                    "Status": status,
                     "Project": project,
-                    "Category": category,
-                    "Priority": priority,
-                    "Task Description": task_description,
-                    "Deliverables": deliverables,
-                    "Attachments": [file.name for file in attachments] if attachments else []
-                }
+                    "Work Description": task_description
+                })
                 
-                st.session_state.timesheet.append(new_entry)
-                st.success("✅ Time entry successfully recorded!")
+                st.success("Attendance record successfully added!")
                 st.balloons()
-                # Update the clock after submission
-                update_clock()
 
-# ---- Time Sheet Display ----
-st.markdown("""
-    <div style="font-size:1.5rem; font-weight:600; margin:2rem 0 1rem 0; color:#4A4A4A;">
-    📋 Time Entries Log
-    </div>
-""", unsafe_allow_html=True)
-
+# --- Dashboard ---
 if st.session_state.timesheet:
     df = pd.DataFrame(st.session_state.timesheet)
     
     # Apply filters
-    if selected_employee:
-        df = df[df["Employee"].str.contains(selected_employee, case=False, na=False)]
-    if selected_category != "All Categories":
-        df = df[df["Category"] == selected_category]
-    if selected_department != "All Departments":
-        df = df[df["Department"] == selected_department]
+    if selected_employee != "All Employees":
+        df = df[df["Employee"] == selected_employee]
+    if selected_shift != "All Shifts":
+        df = df[df["Shift"] == selected_shift]
     if selected_date:
         df = df[df["Date"] == pd.to_datetime(selected_date)]
     
-    # Safe column selection
-    display_cols = ["Employee", "Department", "Date", "Start Time", "End Time", 
-                   "Duration (hrs)", "Project", "Category", "Priority"]
-    
-    # Filter only existing columns
-    existing_cols = [col for col in display_cols if col in df.columns]
-    
     if not df.empty:
+        # Summary cards
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown(f"""
+                <div class="status-card">
+                    <div>Total Hours Worked</div>
+                    <div class="status-value">{df["Duration (hrs)"].sum():.1f} hrs</div>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown(f"""
+                <div class="status-card">
+                    <div>Average Late Arrival</div>
+                    <div class="status-value">{df["Late (min)"].mean():.1f} min</div>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown(f"""
+                <div class="status-card">
+                    <div>Early Departures</div>
+                    <div class="status-value">{len(df[df["Early Departure (min)"] > 0])}</div>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        # Main dataframe
+        st.markdown("""
+            <h2 style='margin-top: 2rem;'>Attendance Records</h2>
+        """, unsafe_allow_html=True)
+        
+        display_cols = [
+            "Employee", "Date", "Shift", 
+            "Scheduled Start", "Scheduled End",
+            "Actual Start", "Actual End",
+            "Duration (hrs)", "Late (min)", 
+            "Early Departure (min)", "Status", "Project"
+        ]
+        
         st.dataframe(
-            df[existing_cols].sort_values("Date", ascending=False),
+            df[display_cols].sort_values("Date", ascending=False),
             column_config={
                 "Duration (hrs)": st.column_config.NumberColumn(format="%.2f"),
+                "Late (min)": st.column_config.NumberColumn(format="%.0f"),
+                "Early Departure (min)": st.column_config.NumberColumn(format="%.0f"),
                 "Date": st.column_config.DateColumn(format="YYYY-MM-DD")
             },
             use_container_width=True,
             height=600
         )
         
-        # ---- Analytics Dashboard ----
+        # --- Analytics Section ---
         st.markdown("""
-            <div style="border-top:1px solid #E6E9F0; margin:2rem 0;"></div>
-            <div style="font-size:1.5rem; font-weight:600; margin-bottom:1rem; color:#4A4A4A;">
-            📊 Analytics Dashboard
-            </div>
+            <div style='border-top: 1px solid #e1e4e8; margin: 2rem 0;'></div>
+            <h2>Attendance Analytics</h2>
         """, unsafe_allow_html=True)
         
-        tab1, tab2, tab3 = st.tabs(["Time Distribution", "Productivity Metrics", "Data Export"])
+        tab1, tab2, tab3 = st.tabs(["Shift Analysis", "Employee Performance", "Data Export"])
         
         with tab1:
             col1, col2 = st.columns(2)
             with col1:
-                if not df.empty:
-                    fig1 = px.pie(df, names="Category", values="Duration (hrs)",
-                                 title="Time Allocation by Category",
-                                 hole=0.3, color_discrete_sequence=px.colors.qualitative.Pastel)
-                    st.plotly_chart(fig1, use_container_width=True)
+                fig1 = px.pie(df, names="Shift", values="Duration (hrs)",
+                             title="Hours by Shift Type",
+                             hole=0.3)
+                st.plotly_chart(fig1, use_container_width=True)
             
             with col2:
-                if not df.empty and "Employee" in df.columns:
-                    fig2 = px.bar(df.groupby("Employee")["Duration (hrs)"].sum().reset_index(),
-                                 x="Employee", y="Duration (hrs)",
-                                 title="Hours by Employee",
-                                 color="Employee")
-                    st.plotly_chart(fig2, use_container_width=True)
+                fig2 = px.box(df, x="Shift", y="Late (min)",
+                             title="Late Arrivals by Shift",
+                             color="Shift")
+                st.plotly_chart(fig2, use_container_width=True)
         
         with tab2:
-            if not df.empty:
-                fig3 = px.line(df.groupby("Date")["Duration (hrs)"].sum().reset_index(),
-                              x="Date", y="Duration (hrs)",
-                              title="Daily Productivity Trend",
-                              markers=True, line_shape="spline")
-                st.plotly_chart(fig3, use_container_width=True)
-                
-                if "Department" in df.columns:
-                    fig4 = px.sunburst(df, path=["Department", "Employee", "Category"],
-                                      values="Duration (hrs)",
-                                      title="Departmental Time Distribution")
-                    st.plotly_chart(fig4, use_container_width=True)
+            fig3 = px.bar(df.groupby("Employee")["Duration (hrs)"].sum().reset_index().sort_values("Duration (hrs)", ascending=False),
+                         x="Employee", y="Duration (hrs)",
+                         title="Total Hours by Employee",
+                         color="Employee")
+            st.plotly_chart(fig3, use_container_width=True)
+            
+            fig4 = px.bar(df.groupby("Employee")["Late (min)"].mean().reset_index().sort_values("Late (min)", ascending=False),
+                         x="Employee", y="Late (min)",
+                         title="Average Late Arrival by Employee",
+                         color="Employee")
+            st.plotly_chart(fig4, use_container_width=True)
         
         with tab3:
             st.markdown("""
-                <div style="background:#F9FAFF; padding:1.5rem; border-radius:12px;">
-                <h4 style="color:#4A4A4A;">Export Options</h4>
-                <p style="color:#6C757D;">Generate reports for payroll, client billing, or performance analysis</p>
-                </div>
+                <h4>Export Attendance Data</h4>
+                <p>Download records for payroll processing or HR reporting.</p>
             """, unsafe_allow_html=True)
             
-            def generate_excel(df):
+            def convert_to_excel(df):
                 output = BytesIO()
                 with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                    df.to_excel(writer, index=False, sheet_name='TimeEntries')
+                    df.to_excel(writer, index=False, sheet_name='Attendance')
                     workbook = writer.book
-                    worksheet = writer.sheets['TimeEntries']
+                    worksheet = writer.sheets['Attendance']
                     
-                    # Add formatting
+                    # Format headers
                     header_format = workbook.add_format({
                         'bold': True,
                         'text_wrap': True,
                         'valign': 'top',
-                        'fg_color': '#6B73FF',
+                        'fg_color': '#4a6fa5',
                         'font_color': 'white',
                         'border': 1
                     })
@@ -358,40 +337,34 @@ if st.session_state.timesheet:
                     # Auto-adjust columns
                     worksheet.autofit()
                     
-                    # Add InterSoft branding
-                    worksheet.header_footer = {
-                        'first_header': '&C&"Poppins,Bold"&14Time Sheet InterSoft Report',
-                        'first_footer': '&C&"Poppins"&12Generated on &D at &T'
-                    }
-                
                 return output.getvalue()
             
-            col1, col2, col3 = st.columns(3)
+            col1, col2 = st.columns(2)
             with col1:
                 st.download_button(
-                    label="💾 Excel Report",
-                    data=generate_excel(df),
-                    file_name=f"InterSoft_Time_Report_{datetime.now().strftime('%Y%m%d')}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    label="📊 Export to Excel",
+                    data=convert_to_excel(df),
+                    file_name=f"Attendance_Report_{datetime.today().strftime('%Y%m%d')}.xlsx",
+                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
             with col2:
                 st.download_button(
-                    label="📄 CSV Export",
+                    label="📄 Export to CSV",
                     data=df.to_csv(index=False).encode('utf-8'),
-                    file_name=f"Time_Data_{datetime.now().strftime('%Y%m%d')}.csv",
-                    mime="text/csv"
+                    file_name=f"Attendance_Data_{datetime.today().strftime('%Y%m%d')}.csv",
+                    mime='text/csv'
                 )
-            with col3:
-                if st.button("🔄 Refresh Live View"):
-                    update_clock()
-                    st.rerun()
     else:
-        st.warning("No entries match your current filters")
+        st.info("No records match your current filters")
 else:
     st.info("""
-        ℹ️ No time entries found. 
-        Start by adding your first time entry using the form above.
+        ℹ️ No attendance records have been entered yet. 
+        Use the form above to add your first record.
     """)
 
-# Update the clock when the page refreshes
-update_clock()
+# Footer
+st.markdown("""
+    <div style='border-top: 1px solid #e1e4e8; margin-top: 2rem; padding-top: 1rem; color: #6c757d;'>
+    <p>Time Sheet InterSoft © 2023 | Professional Attendance Management System</p>
+    </div>
+""", unsafe_allow_html=True)
