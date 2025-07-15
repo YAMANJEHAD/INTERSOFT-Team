@@ -19,7 +19,7 @@ st.set_page_config(
     page_icon="⏱"
 )
 
-# --- Professional Styling with Inter Font ---
+# --- Enhanced Styling with Inter Font ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -30,6 +30,7 @@ st.markdown("""
         --surface: #1e293b;
         --text: #f1f5f9;
         --accent: #22d3ee;
+        --border: #4b5563;
     }
     
     html, body, [class*="css"] {
@@ -42,46 +43,62 @@ st.markdown("""
         background: linear-gradient(135deg, var(--primary), #1e40af);
         color: var(--text);
         padding: 2rem;
-        border-radius: 12px;
+        border-radius: 16px;
         text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         margin-bottom: 2rem;
+        border: 2px solid var(--accent);
     }
     
     .card {
         background: var(--surface);
-        border-radius: 12px;
+        border-radius: 16px;
         padding: 1.5rem;
         margin-bottom: 1.5rem;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-        border-left: 4px solid var(--accent);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        border: 1px solid var(--border);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.3);
     }
     
     .stSelectbox, .stTextInput, .stTimeInput, .stTextArea, .stTextInput > div > div > input {
         background-color: #2d3748 !important;
-        border-radius: 8px !important;
-        border: 1px solid #4b5563 !important;
+        border-radius: 10px !important;
+        border: 1px solid var(--border) !important;
         color: var(--text) !important;
+        padding: 0.5rem !important;
+        transition: border-color 0.3s ease;
+    }
+    
+    .stSelectbox:hover, .stTextInput:hover, .stTimeInput:hover, .stTextArea:hover {
+        border-color: var(--accent) !important;
     }
     
     .stButton>button {
         background: var(--primary) !important;
         color: var(--text) !important;
-        border-radius: 8px !important;
+        border-radius: 10px !important;
         padding: 0.75rem 1.5rem !important;
         font-weight: 500 !important;
+        border: 1px solid var(--accent) !important;
         transition: all 0.3s ease !important;
     }
     
     .stButton>button:hover {
         background: #1e40af !important;
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        border-color: var(--accent) !important;
     }
     
     .stDataFrame {
-        border-radius: 12px !important;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        border-radius: 16px !important;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        border: 1px solid var(--border);
     }
     
     .metric-card {
@@ -90,6 +107,12 @@ st.markdown("""
         padding: 1rem;
         text-align: center;
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        border: 1px solid var(--border);
+        transition: transform 0.3s ease;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-4px);
     }
     
     h1, h2, h3 {
@@ -98,12 +121,42 @@ st.markdown("""
     }
     
     .login-container {
-        max-width: 400px;
-        margin: 0 auto;
+        max-width: 500px;
+        margin: 2rem auto;
         padding: 2rem;
         background: var(--surface);
-        border-radius: 12px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        border-radius: 16px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        border: 2px solid var(--accent);
+    }
+    
+    .sidebar .sidebar-content {
+        border-right: 1px solid var(--border);
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        margin-right: 0.5rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        border-color: var(--accent);
+    }
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .card, .metric-card, .login-container {
+            margin: 0.5rem;
+            padding: 1rem;
+        }
+        .header {
+            padding: 1.5rem;
+        }
+        .stButton>button {
+            padding: 0.5rem 1rem;
+        }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -150,7 +203,7 @@ if not st.session_state.logged_in:
 st.markdown(f"""
     <div class="header">
         <h1>⏱ Hi, {st.session_state.user_role}! Welcome to FLM Time Tracker</h1>
-        <h3>INTERSOFT POS Dashboard 🚀</h3>
+        <h3>INTERSOFT POS Dashboard 🌟</h3>
     </div>
 """, unsafe_allow_html=True)
 
@@ -158,7 +211,7 @@ st.markdown(f"""
 if "timesheet" not in st.session_state:
     st.session_state.timesheet = []
 
-# --- Shift Options (12-hour format handled in form) ---
+# --- Shift Options ---
 SHIFTS = {
     "Morning Shift": {'start': time(8, 30), 'end': time(17, 30), 'break_duration': timedelta(minutes=60)},
     "Evening Shift": {'start': time(15, 0), 'end': time(23, 0), 'break_duration': timedelta(minutes=45)},
@@ -200,6 +253,13 @@ with st.sidebar:
     # Quick Stats
     total_hours = sum(r.get("Net Duration (hrs)", 0) for r in st.session_state.timesheet)
     total_entries = len(st.session_state.timesheet)
+    st venitemperors = [
+        "Augustus": "AUGUSTUS1",
+        "Tiberius": "TIBERIUS2",
+        "Claudius": "CLAUDIUS3",
+        "Caligula": "CALIGULA4",
+        "Nero": "NERO5"
+    ]
     st.markdown(f"""
         <div class="card">
             <p>🕒 Total Hours: <strong>{total_hours:.1f}</strong></p>
@@ -221,25 +281,25 @@ tab1, tab2 = st.tabs(["➕ Add Entry", "📈 Analytics"])
 with tab1:
     with st.form("time_entry_form", clear_on_submit=True):
         st.markdown("### 👤 Employee")
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns([1, 1])
         with col1:
             employee = st.text_input("Full Name *", placeholder="John Smith", value=st.session_state.user_role)
         with col2:
             department = st.selectbox("Department *", ["FLM Team", "Field Operations", "Technical Support", "Customer Service"])
 
         st.markdown("### ⏰ Shift")
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
             shift_type = st.selectbox("Shift Type *", list(SHIFTS.keys()))
         with col2:
-            start_time = st.time_input("Start Time *", value=SHIFTS[shift_type]['start'], format="hh:mm A")
+            start_time = st.time_input("Start Time *", value=SHIFTS[shift_type]['start'])
         with col3:
-            end_time = st.time_input("End Time *", value=SHIFTS[shift_type]['end'], format="hh:mm A")
-        break_duration = st.time_input("Break Duration", value=time(SHIFTS[shift_type]['break_duration'].seconds // 3600, (SHIFTS[shift_type]['break_duration'].seconds // 60) % 60), format="hh:mm")
+            end_time = st.time_input("End Time *", value=SHIFTS[shift_type]['end'])
+        break_duration = st.time_input("Break Duration", value=time(SHIFTS[shift_type]['break_duration'].seconds // 3600, (SHIFTS[shift_type]['break_duration'].seconds // 60) % 60))
         date = st.date_input("Date *", value=datetime.today())
 
         st.markdown("### 📋 Work")
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns([1, 1])
         with col1:
             task_category = st.selectbox("Task Category *", list(TASK_CATEGORIES.keys()), 
                                        format_func=lambda x: f"{TASK_CATEGORIES[x]['icon']} {x}")
@@ -258,7 +318,7 @@ with tab1:
             if not (employee and department and shift_type and start_time and end_time and work_description):
                 st.error("🚫 Please fill all required fields (*)")
             elif end_time <= start_time and shift_type != "Night Shift":
-                st.error("🚫 End time must be after start time")
+                st.error("�作り End time must be after start time")
             else:
                 start_dt = datetime.combine(date, start_time)
                 end_dt = datetime.combine(date, end_time)
@@ -298,7 +358,7 @@ with tab2:
 
         # --- Filters ---
         st.markdown("### 🔍 Filter Entries")
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns([1, 1])
         with col1:
             filter_employee = st.multiselect("Employee 👤", sorted(df['Employee'].unique()))
             filter_department = st.multiselect("Department 🏢", sorted(df['Department'].unique()))
@@ -362,7 +422,7 @@ with tab2:
 
             # --- Visualizations ---
             st.markdown("### 📈 Work Distribution")
-            col1, col2 = st.columns(2)
+            col1, col2 = st.columns([1, 1])
             with col1:
                 fig1 = px.pie(
                     filtered_df, 
@@ -469,7 +529,7 @@ with tab2:
 
     else:
         st.markdown("""
-            <div style="text-align:center; padding:3rem; border:2px dashed #4b5563; border-radius:12px;">
+            <div style="text-align:center; padding:3rem; border:2px dashed var(--border); border-radius:16px;">
                 <h3>📭 No Entries Yet</h3>
                 <p>Add your first time entry in the 'Add Entry' tab ➕</p>
             </div>
