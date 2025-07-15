@@ -40,48 +40,25 @@ st.markdown("""
         color: var(--text);
     }
     
-    .logo {
-        position: absolute;
-        top: 1rem;
-        left: 1rem;
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: var(--text);
-        opacity: 0.8;
-        animation: fadeIn 1s ease-in-out;
-    }
-    
     .header {
         background: var(--gradient);
-        color: #ffffff;
+        color: var(--text);
         padding: 1.5rem;
-        border-radius: 16px;
+        border-radius: 12px;
         text-align: center;
-        margin-bottom: 1.5rem;
-        max-width: 900px;
+        margin-bottom: 1rem;
+        max-width: 800px;
         margin-left: auto;
         margin-right: auto;
         animation: fadeIn 1s ease-in-out;
     }
     
-    .dashboard {
-        position: fixed;
-        top: 6rem;
-        left: 1rem;
-        width: 250px;
-        background: linear-gradient(135deg, #1e293b, #2d3748);
-        border-radius: 12px;
-        padding: 1rem;
-        animation: slideIn 0.5s ease-in-out;
-        z-index: 10; /* Ensure it stays above other content */
-    }
-    
     .card {
         background: var(--surface);
-        border-radius: 16px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        max-width: 900px;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        max-width: 800px;
         margin-left: auto;
         margin-right: auto;
         animation: fadeIn 1s ease-in-out;
@@ -92,29 +69,24 @@ st.markdown("""
         100% { opacity: 1; transform: translateY(0); }
     }
     
-    @keyframes slideIn {
-        0% { transform: translateX(-20px); opacity: 0; }
-        100% { transform: translateX(0); opacity: 1; }
-    }
-    
     .stSelectbox, .stTextInput, .stTextArea, .stTextInput > div > div > input, .stDateInput > div > div > input {
         background-color: #2d3748 !important;
-        border-radius: 12px !important;
+        border-radius: 8px !important;
         border: none !important;
         color: var(--text) !important;
-        padding: 0.75rem !important;
+        padding: 0.5rem !important;
         transition: box-shadow 0.3s ease;
     }
     
     .stSelectbox:hover, .stTextInput:hover, .stTextArea:hover, .stDateInput:hover {
-        box-shadow: 0 0 8px rgba(34, 211, 238, 0.3);
+        box-shadow: 0 0 6px rgba(34, 211, 238, 0.3);
     }
     
     .stButton>button {
         background: var(--gradient) !important;
         color: var(--text) !important;
-        border-radius: 24px !important;
-        padding: 0.75rem 1.5rem !important;
+        border-radius: 16px !important;
+        padding: 0.5rem 1rem !important;
         font-weight: 500 !important;
         border: none !important;
         transition: all 0.3s ease !important;
@@ -122,13 +94,13 @@ st.markdown("""
     
     .stButton>button:hover {
         background: linear-gradient(135deg, #3730a3, #7e22ce) !important;
-        transform: scale(1.05) translateY(-2px);
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.5);
+        transform: scale(1.05);
+        box-shadow: 0 0 10px rgba(79, 70, 229, 0.5);
     }
     
     .stDataFrame {
-        border-radius: 16px !important;
-        max-width: 900px;
+        border-radius: 12px !important;
+        max-width: 800px;
         margin-left: auto;
         margin-right: auto;
     }
@@ -136,17 +108,22 @@ st.markdown("""
     .login-container {
         max-width: 350px;
         margin: 2rem auto;
-        padding: 1.5rem;
+        padding: 1rem;
         background: var(--surface);
-        border-radius: 16px;
+        border-radius: 12px;
         animation: fadeIn 1s ease-in-out;
-        text-align: center;
+    }
+    
+    .sidebar .sidebar-content {
+        background: var(--surface);
+        padding: 0.5rem;
+        border-radius: 8px;
     }
     
     .stTabs [data-baseweb="tab"] {
-        border-radius: 8px;
-        padding: 0.5rem 1rem;
-        margin-right: 0.5rem;
+        border-radius: 6px;
+        padding: 0.25rem 0.75rem;
+        margin-right: 0.25rem;
         transition: all 0.3s ease;
         background: var(--surface);
         color: var(--text);
@@ -154,34 +131,29 @@ st.markdown("""
     
     .stTabs [data-baseweb="tab"][aria-selected="true"] {
         background: var(--gradient);
-        color: #ffffff;
-        border-bottom: 3px solid var(--accent);
+        color: var(--text);
+        border-bottom: 2px solid var(--accent);
     }
     
     .stTabs [data-baseweb="tab"]:hover {
         background: linear-gradient(135deg, #3730a3, #7e22ce);
-        color: #ffffff;
+        color: var(--text);
     }
     
     /* Responsive design */
     @media (max-width: 768px) {
         .card, .login-container, .stDataFrame {
-            margin: 0.5rem;
-            padding: 1rem;
+            margin: 0.25rem;
+            padding: 0.75rem;
         }
         .header {
             padding: 1rem;
         }
         .stButton>button {
-            padding: 0.5rem 1rem;
+            padding: 0.25rem 0.75rem;
         }
-        .dashboard {
-            position: relative;
+        .sidebar .sidebar-content {
             width: 100%;
-            top: 0;
-            left: 0;
-            margin-bottom: 1rem;
-            z-index: 10;
         }
     }
     </style>
@@ -202,15 +174,16 @@ if "logged_in" not in st.session_state:
     st.session_state.user_role = None
 
 if not st.session_state.logged_in:
-    st.markdown('<div class="logo">INTERSOFT<br>International Software Company</div>', unsafe_allow_html=True)
     with st.container():
         st.markdown("""
             <div class="header">
-                <h2>Login</h2>
+                <h1>⏱ INTERSOFT POS - FLM</h1>
+                <h3>Login to Task Tracker</h3>
             </div>
         """, unsafe_allow_html=True)
         with st.container():
             st.markdown('<div class="login-container">', unsafe_allow_html=True)
+            st.markdown("### Login")
             username = st.text_input("Username", placeholder="Enter your username")
             password = st.text_input("Password", type="password", placeholder="Enter your password")
             
@@ -225,10 +198,10 @@ if not st.session_state.logged_in:
     st.stop()
 
 # --- Header with Personalized Greeting ---
-st.markdown('<div class="logo">INTERSOFT<br>International Software Company</div>', unsafe_allow_html=True)
 st.markdown(f"""
     <div class="header">
-        <h2>Hi, {st.session_state.user_role}! Welcome to FLM Task Tracker Daily Task Dashboard</h2>
+        <h1>Hi, {st.session_state.user_role}! Welcome to FLM Task Tracker</h1>
+        <h3>Daily Task Dashboard</h3>
     </div>
 """, unsafe_allow_html=True)
 
@@ -248,7 +221,7 @@ TASK_CATEGORIES = {
     "Meetings": {"icon": "📅"}
 }
 
-# --- Priority Levels (Using Unicode escape sequences for safety) ---
+# --- Priority Levels ---
 PRIORITY_LEVELS = {
     "Low": {"emoji": "\U0001F7E2"},  # 🟢
     "Medium": {"emoji": "\U0001F7E1"},  # 🟡
@@ -262,246 +235,260 @@ STATUS_OPTIONS = {
     "Completed": {"color": "#22c55e", "icon": "\U00002705"}  # ✅
 }
 
-# --- Dashboard on the Left ---
-with st.container():
-    st.markdown('<div class="dashboard">', unsafe_allow_html=True)
-    st.markdown(f"### Hi, {st.session_state.user_role}")
+# --- Simplified Sidebar ---
+with st.sidebar:
+    st.markdown(f"<h3>Hi, {st.session_state.user_role}</h3>", unsafe_allow_html=True)
+    st.markdown("### Filters")
+    date_range = st.date_input("Date Range", value=(datetime.today(), datetime.today()), format="YYYY-MM-DD", key="sidebar_date")
+    start_date, end_date = date_range if isinstance(date_range, tuple) else (date_range, date_range)
+    filter_category = st.multiselect("Task Category", list(TASK_CATEGORIES.keys()), 
+                                   format_func=lambda x: f"{TASK_CATEGORIES[x]['icon']} {x}", key="sidebar_cat")
+    filter_status = st.multiselect("Status", list(STATUS_OPTIONS.keys()), 
+                                 format_func=lambda x: f"{STATUS_OPTIONS[x]['icon']} {x}", key="sidebar_status")
+    st.markdown("### Quick Stats")
     total_entries = len([r for r in st.session_state.timesheet if r.get("Employee") == st.session_state.user_role])
     st.markdown(f"<p>Total Tasks: <strong>{total_entries}</strong></p>", unsafe_allow_html=True)
-    if total_entries > 0:
-        df = pd.DataFrame(st.session_state.timesheet)
-        filtered_df = df[df['Employee'] == st.session_state.user_role]
-        status_summary = filtered_df['Status'].value_counts().to_dict()
-        for status, count in status_summary.items():
-            st.markdown(f"<p>{status}: <strong>{count}</strong></p>", unsafe_allow_html=True)
-    
-    st.markdown("### Quick Actions")
-    if st.button("Refresh Data", use_container_width=True):
+    st.markdown("### Actions")
+    if st.button("Refresh", key="sidebar_refresh"):
         st.rerun()
-    if st.button("Clear Filters", use_container_width=True):
-        st.session_state.filter_department = []
-        st.session_state.filter_category = []
-        st.session_state.filter_status = []
-        st.session_state.search_term = ""
+    if st.button("Clear Filters", key="sidebar_clear"):
         st.session_state.start_date = datetime.today()
         st.session_state.end_date = datetime.today()
+        st.session_state.filter_category = []
+        st.session_state.filter_status = []
         st.rerun()
+
+# --- Quick Add Task Form (Moved to Main Content) ---
+with st.container():
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown("### Quick Add Task")
+    with st.form("quick_task_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            quick_category = st.selectbox("Category *", list(TASK_CATEGORIES.keys()), 
+                                        format_func=lambda x: f"{TASK_CATEGORIES[x]['icon']} {x}", key="quick_cat")
+        with col2:
+            quick_date = st.date_input("Date *", value=datetime.today(), key="quick_date")
+        quick_description = st.text_input("Description *", placeholder="Brief task description", key="quick_desc")
+        if st.form_submit_button("Add Task", use_container_width=True):
+            if not (quick_category and quick_description):
+                st.error("Please fill all required fields (*)")
+            else:
+                entry = {
+                    "Employee": st.session_state.user_role,
+                    "Department": "FLM Team",
+                    "Date": quick_date.strftime("%Y-%m-%d"),
+                    "Day": calendar.day_name[quick_date.weekday()],
+                    "Shift Type": "Custom Shift",
+                    "Task Category": f"{TASK_CATEGORIES[quick_category]['icon']} {quick_category}",
+                    "Priority": f"{PRIORITY_LEVELS['Low']['emoji']} Low",
+                    "Status": f"{STATUS_OPTIONS['Not Started']['icon']} Not Started",
+                    "Work Description": quick_description,
+                    "Recorded At": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                st.session_state.timesheet.append(entry)
+                st.success(f"Task added by {st.session_state.user_role}!")
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- Main Content Layout ---
-col1, col2 = st.columns([1, 3])
-with col1:
-    st.write("")  # Placeholder to balance layout with dashboard
-with col2:
-    st.markdown("## Daily Task Dashboard")
-    tab1, tab2 = st.tabs(["Add Task", "Analytics"])
+# --- Dashboard Layout ---
+st.markdown("## Daily Task Dashboard")
+tab1, tab2 = st.tabs(["Add Task", "Analytics"])
 
-    with tab1:
-        with st.form("task_entry_form", clear_on_submit=True):
-            st.markdown(f"### Daily Task Entry for {st.session_state.user_role}")
-            with st.container():
-                st.markdown('<div class="card">', unsafe_allow_html=True)
-                st.markdown("#### Task Assignment")
-                department = st.selectbox("Department *", ["FLM Team", "Field Operations", "Technical Support", "Customer Service"])
-                shift_type = st.selectbox("Shift Type *", SHIFTS)
-                date = st.date_input("Date *", value=datetime.today())
-
-                st.markdown("#### Task Details")
-                col_a, col_b = st.columns([1, 1])
-                with col_a:
-                    task_category = st.selectbox("Task Category *", list(TASK_CATEGORIES.keys()), 
-                                               format_func=lambda x: f"{TASK_CATEGORIES[x]['icon']} {x}")
-                with col_b:
-                    status = st.selectbox("Status *", list(STATUS_OPTIONS.keys()), 
-                                         format_func=lambda x: f"{STATUS_OPTIONS[x]['icon']} {x}")
-                priority = st.selectbox("Priority *", list(PRIORITY_LEVELS.keys()), 
-                                       format_func=lambda x: f"{PRIORITY_LEVELS[x]['emoji']} {x}")
-
-                work_description = st.text_area("Task Description *", placeholder="Describe the task", height=100)
-                st.markdown('</div>', unsafe_allow_html=True)
-
-                submitted = st.form_submit_button("Submit Task", use_container_width=True)
-
-            if submitted:
-                if not (department and shift_type and task_category and work_description):
-                    st.error("Please fill all required fields (*)")
-                else:
-                    entry = {
-                        "Employee": st.session_state.user_role,
-                        "Department": department,
-                        "Date": date.strftime("%Y-%m-%d"),
-                        "Day": calendar.day_name[date.weekday()],
-                        "Shift Type": shift_type,
-                        "Task Category": f"{TASK_CATEGORIES[task_category]['icon']} {task_category}",
-                        "Priority": f"{PRIORITY_LEVELS[priority]['emoji']} {priority}",
-                        "Status": f"{STATUS_OPTIONS[status]['icon']} {status}",
-                        "Work Description": work_description,
-                        "Recorded At": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    }
-                    st.session_state.timesheet.append(entry)
-                    st.success(f"Task added by {st.session_state.user_role}!")
-                    st.balloons()
-
-    with tab2:
-        if st.session_state.timesheet:
-            df = pd.DataFrame(st.session_state.timesheet)
-
-            # --- Filters ---
-            st.markdown("### Filter Tasks")
-            filtered_df = df[df['Employee'] == st.session_state.user_role]
-            date_range = st.date_input("Select Date Range", value=(datetime.today(), datetime.today()), format="YYYY-MM-DD", key="analytics_date")
-            start_date, end_date = date_range if isinstance(date_range, tuple) else (date_range, date_range)
-            filter_department = st.multiselect("Select Department", ["FLM Team", "Field Operations", "Technical Support", "Customer Service"], placeholder="All Departments", key="analytics_dept")
-            filter_category = st.multiselect("Select Task Category", list(TASK_CATEGORIES.keys()), 
-                                           format_func=lambda x: f"{TASK_CATEGORIES[x]['icon']} {x}", placeholder="All Categories", key="analytics_cat")
-            filter_status = st.multiselect("Select Status", list(STATUS_OPTIONS.keys()), 
-                                         format_func=lambda x: f"{STATUS_OPTIONS[x]['icon']} {x}", placeholder="All Statuses", key="analytics_status")
-            search_term = st.text_input("Search Task Description", placeholder="Enter keywords...", key="analytics_search")
-
-            if start_date and end_date:
-                filtered_df = filtered_df[(filtered_df['Date'] >= start_date.strftime("%Y-%m-%d")) & (filtered_df['Date'] <= end_date.strftime("%Y-%m-%d"))]
-            if filter_department:
-                filtered_df = filtered_df[filtered_df['Department'].isin(filter_department)]
-            if filter_category:
-                filtered_df = filtered_df[filtered_df['Task Category'].isin(filter_category)]
-            if filter_status:
-                filtered_df = filtered_df[filtered_df['Status'].isin(filter_status)]
-            if search_term:
-                filtered_df = filtered_df[filtered_df['Work Description'].str.contains(search_term, case=False, na=False)]
-
-            if not filtered_df.empty:
-                # --- Detailed Analyses and Graphs ---
-                st.markdown("### Task Analysis")
-
-                # Tasks by Date (Bar Chart)
-                fig1 = px.bar(
-                    filtered_df.groupby('Date').size().reset_index(name='Task Count').sort_values('Date'),
-                    x='Date',
-                    y='Task Count',
-                    title="Tasks by Date",
-                    color='Date',
-                    color_discrete_sequence=px.colors.qualitative.Plotly
-                )
-                fig1.update_layout(paper_bgcolor="#1e293b", font_color="#f1f5f9", plot_bgcolor="#1e293b")
-                st.plotly_chart(fig1, use_container_width=True)
-
-                # Tasks by Category (Pie Chart)
-                fig2 = px.pie(
-                    filtered_df.groupby('Task Category').size().reset_index(name='Count'),
-                    names='Task Category',
-                    values='Count',
-                    title="Tasks by Category",
-                    color_discrete_sequence=px.colors.qualitative.Pastel
-                )
-                fig2.update_layout(paper_bgcolor="#1e293b", font_color="#f1f5f9", plot_bgcolor="#1e293b")
-                st.plotly_chart(fig2, use_container_width=True)
-
-                # Placeholder for Picture (Replace with actual image path)
-                st.markdown("### Visual Insight")
-                st.markdown("<p>📊 Task Distribution Snapshot</p>", unsafe_allow_html=True)
-
-                # Report Generation
-                st.markdown("### Generate Report")
-                col1, col2 = st.columns([1, 1])
-                with col1:
-                    report_format = st.selectbox("Format", ["PDF", "Excel"], key="analytics_report_format")
-                with col2:
-                    if st.button("Generate Report", use_container_width=True, key="analytics_report_button"):
-                        with st.spinner("Generating report..."):
-                            def remove_emojis(text):
-                                emoji_pattern = re.compile("["
-                                    u"\U0001F600-\U0001F64F"  # emoticons
-                                    u"\U0001F300-\U0001F5FF"  # symbols & pictographs
-                                    u"\U0001F680-\U0001F6FF"  # transport & map symbols
-                                    u"\U0001F1E0-\U0001F1FF"  # flags
-                                    u"\U00002700-\U000027BF"  # dingbats
-                                    u"\U0001F900-\U0001F9FF"  # supplemental symbols
-                                    "]+", flags=re.UNICODE)
-                                return emoji_pattern.sub(r'', str(text))
-
-                            export_df = filtered_df.copy()
-                            export_df['Task Category'] = export_df['Task Category'].apply(remove_emojis)
-                            export_df['Priority'] = export_df['Priority'].apply(remove_emojis)
-                            export_df['Status'] = export_df['Status'].apply(remove_emojis)
-
-                            if report_format == "Excel":
-                                excel_buffer = BytesIO()
-                                with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-                                    export_df.to_excel(writer, index=False, sheet_name="Task Entries")
-                                    workbook = writer.book
-                                    worksheet = writer.sheets["Task Entries"]
-                                    header_format = workbook.add_format({
-                                        'bold': True,
-                                        'fg_color': '#4f46e5',
-                                        'font_color': '#f1f5f9',
-                                        'border': 1
-                                    })
-                                    for col_num, value in enumerate(export_df.columns.values):
-                                        worksheet.write(0, col_num, value, header_format)
-                                st.download_button(
-                                    label="Download Excel",
-                                    data=excel_buffer.getvalue(),
-                                    file_name=f"FLM_Task_Report_{datetime.now().strftime('%Y%m%d')}.xlsx",
-                                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                                )
-                            else:
-                                pdf_buffer = BytesIO()
-                                doc = SimpleDocTemplate(pdf_buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
-                                styles = getSampleStyleSheet()
-                                styles['Title'].fontName = 'Helvetica-Bold'
-                                styles['Normal'].fontName = 'Helvetica'
-                                elements = []
-
-                                elements.append(Paragraph(f"FLM Task Report - Generated by {st.session_state.user_role}", styles['Title']))
-                                elements.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d')}", styles['Normal']))
-                                elements.append(Spacer(1, 12))
-
-                                summary_data = [
-                                    ["Metric", "Value"],
-                                    ["Total Tasks", f"{len(filtered_df)}"]
-                                ]
-                                summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
-                                summary_table.setStyle(TableStyle([
-                                    ('BACKGROUND', (0, 0), (-1, 0), '#4f46e5'),
-                                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                                    ('FONTNAME', (0, 0), (-1, -1), 'Helvetica')
-                                ]))
-                                elements.append(summary_table)
-                                elements.append(Spacer(1, 12))
-
-                                pdf_data = [list(filtered_df.columns)] + [list(row) for _, row in filtered_df.iterrows()]
-                                pdf_table = Table(pdf_data)
-                                pdf_table.setStyle(TableStyle([
-                                    ('BACKGROUND', (0, 0), (-1, 0), '#4f46e5'),
-                                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                                    ('FONTSIZE', (0, 0), (-1, -1), 8),
-                                    ('FONTNAME', (0, 0), (-1, -1), 'Helvetica')
-                                ]))
-                                elements.append(pdf_table)
-
-                                doc.build(elements)
-                                st.download_button(
-                                    label="Download PDF",
-                                    data=pdf_buffer.getvalue(),
-                                    file_name=f"FLM_Task_Report_{datetime.now().strftime('%Y%m%d')}.pdf",
-                                    mime="application/pdf"
-                                )
+with tab1:
+    with st.form("task_entry_form", clear_on_submit=True):
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown(f"### Task Entry for {st.session_state.user_role}")
+        col1, col2 = st.columns(2)
+        with col1:
+            department = st.selectbox("Department *", ["FLM Team", "Field Operations", "Technical Support", "Customer Service"])
+            shift_type = st.selectbox("Shift *", SHIFTS)
+            date = st.date_input("Date *", value=datetime.today())
+        with col2:
+            task_category = st.selectbox("Category *", list(TASK_CATEGORIES.keys()), 
+                                       format_func=lambda x: f"{TASK_CATEGORIES[x]['icon']} {x}")
+            status = st.selectbox("Status *", list(STATUS_OPTIONS.keys()), 
+                                format_func=lambda x: f"{STATUS_OPTIONS[x]['icon']} {x}")
+            priority = st.selectbox("Priority *", list(PRIORITY_LEVELS.keys()), 
+                                  format_func=lambda x: f"{PRIORITY_LEVELS[x]['emoji']} {x}")
+        work_description = st.text_area("Description *", placeholder="Describe the task", height=80)
+        if st.form_submit_button("Submit", use_container_width=True):
+            if not (department and shift_type and task_category and work_description):
+                st.error("Please fill all required fields (*)")
             else:
-                st.markdown("""
-                    <div style="text-align:center; padding:2rem; border-radius:16px; background:#1e293b; max-width:900px; margin-left:auto; margin-right:auto;">
-                        <h3>No Tasks Yet</h3>
-                        <p>Add your first task in the 'Add Task' tab or use the Quick Add Task form</p>
-                    </div>
-                """, unsafe_allow_html=True)
+                entry = {
+                    "Employee": st.session_state.user_role,
+                    "Department": department,
+                    "Date": date.strftime("%Y-%m-%d"),
+                    "Day": calendar.day_name[date.weekday()],
+                    "Shift Type": shift_type,
+                    "Task Category": f"{TASK_CATEGORIES[task_category]['icon']} {task_category}",
+                    "Priority": f"{PRIORITY_LEVELS[priority]['emoji']} {priority}",
+                    "Status": f"{STATUS_OPTIONS[status]['icon']} {status}",
+                    "Work Description": work_description,
+                    "Recorded At": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                st.session_state.timesheet.append(entry)
+                st.success(f"Task added by {st.session_state.user_role}!")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+with tab2:
+    if st.session_state.timesheet:
+        df = pd.DataFrame(st.session_state.timesheet)
+        filtered_df = df[df['Employee'] == st.session_state.user_role]
+        if start_date and end_date:
+            filtered_df = filtered_df[(filtered_df['Date'] >= start_date.strftime("%Y-%m-%d")) & (filtered_df['Date'] <= end_date.strftime("%Y-%m-%d"))]
+        if filter_category:
+            filtered_df = filtered_df[filtered_df['Task Category'].isin(filter_category)]
+        if filter_status:
+            filtered_df = filtered_df[filtered_df['Status'].isin(filter_status)]
+
+        if not filtered_df.empty:
+            # --- Styling DataFrame ---
+            def get_priority_color(priority_str):
+                priority_key = priority_str.split(' ')[-1]
+                for key in PRIORITY_LEVELS:
+                    if priority_key in key:
+                        return '#ff5252' if PRIORITY_LEVELS[key]['emoji'] == '\U0001F534' else '#ffd740' if PRIORITY_LEVELS[key]['emoji'] == '\U0001F7E1' else '#22c55e'
+                return '#22c55e'
+
+            def get_status_color(status_str):
+                status_key = status_str.split(' ')[0]
+                return STATUS_OPTIONS.get(status_key, {}).get('color', '#f1f5f9')
+
+            styled_df = filtered_df.sort_values("Date", ascending=False).style
+            styled_df = styled_df.applymap(lambda x: f"color: {get_status_color(x)}", subset=["Status"])
+            styled_df = styled_df.applymap(lambda x: f"color: {get_priority_color(x)}", subset=["Priority"])
+            styled_df = styled_df.set_properties(**{
+                'background-color': '#1e293b',
+                'color': '#f1f5f9',
+                'border': 'none',
+                'font-family': 'Inter',
+                'text-align': 'center'
+            })
+
+            # --- Metrics ---
+            st.markdown("### Task Overview")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total Tasks", len(filtered_df))
+            with col2:
+                st.metric("Completed", filtered_df[filtered_df['Status'].str.contains("Completed")].shape[0])
+            with col3:
+                st.metric("In Progress", filtered_df[filtered_df['Status'].str.contains("In Progress")].shape[0])
+
+            # --- Visualization ---
+            st.markdown("### Task Trends")
+            fig = px.bar(
+                filtered_df.groupby('Date').size().reset_index(name='Count'),
+                x='Date',
+                y='Count',
+                title="Tasks by Date",
+                color='Date',
+                color_discrete_sequence=px.colors.qualitative.Plotly
+            )
+            fig.update_layout(paper_bgcolor="#1e293b", font_color="#f1f5f9", plot_bgcolor="#1e293b")
+            st.plotly_chart(fig, use_container_width=True)
+
+            # --- Data Table ---
+            st.markdown("### Task List")
+            st.dataframe(styled_df, use_container_width=True, hide_index=True)
+
+            # --- Report Generation ---
+            st.markdown("### Export Report")
+            col1, col2 = st.columns(2)
+            with col1:
+                report_format = st.selectbox("Format", ["PDF", "Excel"], key="report_format")
+            with col2:
+                if st.button("Export", key="report_button"):
+                    with st.spinner("Generating report..."):
+                        def remove_emojis(text):
+                            emoji_pattern = re.compile("["
+                                u"\U0001F600-\U0001F64F"
+                                u"\U0001F300-\U0001F5FF"
+                                u"\U0001F680-\U0001F6FF"
+                                u"\U0001F1E0-\U0001F1FF"
+                                u"\U00002700-\U000027BF"
+                                u"\U0001F900-\U0001F9FF"
+                                "]+", flags=re.UNICODE)
+                            return emoji_pattern.sub(r'', str(text))
+
+                        export_df = filtered_df.copy()
+                        export_df['Task Category'] = export_df['Task Category'].apply(remove_emojis)
+                        export_df['Priority'] = export_df['Priority'].apply(remove_emojis)
+                        export_df['Status'] = export_df['Status'].apply(remove_emojis)
+
+                        if report_format == "Excel":
+                            excel_buffer = BytesIO()
+                            with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+                                export_df.to_excel(writer, index=False, sheet_name="Tasks")
+                                workbook = writer.book
+                                worksheet = writer.sheets["Tasks"]
+                                header_format = workbook.add_format({
+                                    'bold': True, 'fg_color': '#4f46e5', 'font_color': '#f1f5f9', 'border': 1
+                                })
+                                for col_num, value in enumerate(export_df.columns.values):
+                                    worksheet.write(0, col_num, value, header_format)
+                            st.download_button(
+                                label="Download Excel",
+                                data=excel_buffer.getvalue(),
+                                file_name=f"FLM_Tasks_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            )
+                        else:
+                            pdf_buffer = BytesIO()
+                            doc = SimpleDocTemplate(pdf_buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+                            styles = getSampleStyleSheet()
+                            styles['Title'].fontName = 'Helvetica-Bold'
+                            styles['Normal'].fontName = 'Helvetica'
+                            elements = []
+
+                            elements.append(Paragraph(f"FLM Task Report - {st.session_state.user_role}", styles['Title']))
+                            elements.append(Paragraph(f"Date: {datetime.now().strftime('%Y-%m-%d')}", styles['Normal']))
+                            elements.append(Spacer(1, 12))
+
+                            data = [["Metric", "Value"], ["Total Tasks", str(len(export_df))]]
+                            table = Table(data, colWidths=[2.5*inch, 1.5*inch])
+                            table.setStyle(TableStyle([
+                                ('BACKGROUND', (0, 0), (-1, 0), '#4f46e5'),
+                                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+                            ]))
+                            elements.append(table)
+                            elements.append(Spacer(1, 12))
+
+                            pdf_data = [list(export_df.columns)] + [list(row) for row in export_df.itertuples(index=False)]
+                            pdf_table = Table(pdf_data)
+                            pdf_table.setStyle(TableStyle([
+                                ('BACKGROUND', (0, 0), (-1, 0), '#4f46e5'),
+                                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                                ('FONTSIZE', (0, 0), (-1, -1), 8)
+                            ]))
+                            elements.append(pdf_table)
+
+                            doc.build(elements)
+                            st.download_button(
+                                label="Download PDF",
+                                data=pdf_buffer.getvalue(),
+                                file_name=f"FLM_Tasks_{datetime.now().strftime('%Y%m%d')}.pdf",
+                                mime="application/pdf"
+                            )
+        else:
+            st.info("No tasks available based on filters.")
+    else:
+        st.markdown("""
+            <div style="text-align:center; padding:1.5rem; border-radius:12px; background:#1e293b; max-width:800px; margin-left:auto; margin-right:auto;">
+                <h3>No Tasks Yet</h3>
+                <p>Add your first task using the 'Add Task' tab or Quick Add form.</p>
+            </div>
+        """, unsafe_allow_html=True)
 
 # --- Footer ---
-current_time = "05:53 PM +03"  # Updated to current time
+current_time = "06:02 PM +03"
 st.markdown(f"""
     <center>
-        <small style="color:#ffffff;">INTERSOFT POS - FLM Task Tracker • {datetime.now().strftime('%Y-%m-%d')} {current_time}</small>
+        <small style="color:#a855f7;">INTERSOFT POS - FLM Task Tracker • {datetime.now().strftime('%Y-%m-%d')} {current_time}</small>
     </center>
 """, unsafe_allow_html=True)
