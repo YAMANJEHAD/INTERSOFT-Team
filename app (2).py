@@ -249,7 +249,10 @@ with st.expander("⏱️ Add New Time Entry", expanded=True):
             else:
                 start_time = st.time_input("Start Time *", value=SHIFTS[shift_type]['start'])
                 end_time = st.time_input("End Time *", value=SHIFTS[shift_type]['end'])
-                break_duration = st.time_input("Break Duration", value=SHIFTS[shift_type]['break_duration'])
+                # Convert timedelta to time for the default value
+                break_delta = SHIFTS[shift_type]['break_duration']
+                break_time = time(break_delta.seconds // 3600, (break_delta.seconds // 60) % 60)
+                break_duration = st.time_input("Break Duration", value=break_time)
         
         with shift_col2:
             date = st.date_input("Date *", value=datetime.today())
@@ -304,7 +307,7 @@ with st.expander("⏱️ Add New Time Entry", expanded=True):
             location = st.text_input("Location", placeholder="Head Office / Field Site")
             equipment_used = st.text_input("Equipment Used", placeholder="Laptop, Multimeter, etc.")
         
-        # Submit Button
+        # Submit Button - Fixed position at the end of the form
         submitted = st.form_submit_button("📌 Submit Time Entry", use_container_width=True)
         
         if submitted:
