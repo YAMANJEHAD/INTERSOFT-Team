@@ -422,8 +422,7 @@ if st.session_state.timesheet:
         filtered_df.sort_values("Date", ascending=False).style
         .background_gradient(subset=["Efficiency Ratio"], cmap="RdYlGn")
         .applymap(lambda x: f"color: {STATUS_OPTIONS[x.split(' ')[1]]['color']}", subset=["Status"])
-        .applymap(lambda x: f"color: {PRIORITY_LEVELS[x.split(' ')[1]]['emoji'] == '🔴' and '#ff5252' or 
-                                  (PRIORITY_LEVELS[x.split(' ')[1]]['emoji'] == '🟡' and '#ffd740' or '#69f0ae')", 
+        .applymap(lambda x: f"color: {'#ff5252' if PRIORITY_LEVELS[x.split(' ')[1]]['emoji'] == '🔴' else '#ffd740' if PRIORITY_LEVELS[x.split(' ')[1]]['emoji'] == '🟡' else '#69f0ae'}", 
                  subset=["Priority"])
         .set_properties(**{'background-color': '#1e1e1e', 'color': '#f5f5f5', 'border': '1px solid #333'}),
         use_container_width=True,
