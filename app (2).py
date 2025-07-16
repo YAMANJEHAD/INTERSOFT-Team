@@ -1,13 +1,14 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from datetime import datetime
+from datetime import datetime, timedelta
 import calendar
 from io import BytesIO
+import re
 
 # --- Page Configuration ---
 st.set_page_config(
-    page_title="FLM Task Tracker | INTERSOFT",
+    page_title="📋 FLM Task Tracker | INTERSOFT",
     layout="wide",
     page_icon="📋"
 )
@@ -78,7 +79,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 # --- Header ---
-st.markdown(f"<div class='header'><h2>👋 Welcome Back {st.session_state.user_role}</h2><p>📊 FLM Task Tracker Dashboard</p></div>", unsafe_allow_html=True)
+st.markdown(f"<div class='header'><h2>👋 Welcome {st.session_state.user_role}</h2><p>📊 FLM Task Tracker Dashboard</p></div>", unsafe_allow_html=True)
 
 if "timesheet" not in st.session_state:
     st.session_state.timesheet = []
@@ -88,11 +89,26 @@ CATEGORIES = ["🛠 Operations", "📄 Paper Work", "🔧 Job Orders", "🤝 CRM
 PRIORITIES = ["🟢 Low", "🟡 Medium", "🔴 High"]
 STATUSES = ["⏳ Not Started", "🔄 In Progress", "✅ Completed"]
 
+# --- Sidebar Filters ---
 with st.sidebar:
     st.header("🔍 Filters")
-    start_date, end_date = st.date_input("📅 Select Date Range", [datetime.today(), datetime.today()])
+    start_date, end_date = st.date_input("📅 Date Range", [datetime.today(), datetime.today()])
     category = st.selectbox("📂 Category", ["All"] + CATEGORIES)
     status = st.selectbox("📌 Status", ["All"] + STATUSES)
+    keyword = st.text_input("🔍 Search in Description")
+
+# --- AI Classification Function ---
+def classify_task(desc):
+    desc = desc.lower()
+    if any(word in desc for word in ["install", "setup"]):
+        return "🔧 Job Orders"
+    elif "report" in desc:
+        return "📄 Paper Work"
+    elif "meeting" in desc:
+        return "📅 Meetings"
+    elif "support" in desc or "customer" in desc:
+        return "🤝 CRM"
+    return "🛠 Operations"
 
 # --- Tabs ---
 tab1, tab2 = st.tabs(["➕ Add Task", "📈 Analytics"])
@@ -106,10 +122,10 @@ with tab1:
             date = st.date_input("📅 Date", value=datetime.today())
             department = st.selectbox("🏢 Department", ["FLM", "Tech Support", "CRM"])
         with col2:
-            cat = st.selectbox("📂 Category", CATEGORIES)
             stat = st.selectbox("📌 Status", STATUSES)
             prio = st.selectbox("⚠️ Priority", PRIORITIES)
         desc = st.text_area("🗒 Task Description", height=100)
+        cat = classify_task(desc)
 
         if st.form_submit_button("Submit Task ✅"):
             st.session_state.timesheet.append({
@@ -135,7 +151,16 @@ with tab2:
             df = df[df['Category'] == category]
         if status != "All":
             df = df[df['Status'] == status]
+        if keyword:
+            df = df[df['Description'].str.contains(keyword, case=False, na=False)]
+
         df = df[(df['Date'] >= start_date.strftime('%Y-%m-%d')) & (df['Date'] <= end_date.strftime('%Y-%m-%d'))]
+
+        # Alert for overdue not started
+        today_str = datetime.today().strftime('%Y-%m-%d')
+        overdue = df[(df['Status'] == "⏳ Not Started") & (df['Date'] < today_str)]
+        if not overdue.empty:
+            st.warning(f"🔔 You have {len(overdue)} overdue task(s) that haven't been started!")
 
         st.subheader("📊 Task Summary")
         col1, col2, col3 = st.columns(3)
@@ -154,6 +179,11 @@ with tab2:
         st.subheader("📊 Tasks by Priority")
         fig3 = px.bar(df, x="Priority", color="Priority", title="Tasks by Priority")
         st.plotly_chart(fig3, use_container_width=True)
+
+        st.subheader("📆 Calendar View")
+        cal_df = df.groupby('Date').size().reset_index(name='Tasks')
+        cal_fig = px.bar(cal_df, x='Date', y='Tasks', title="Daily Task Calendar View", color='Tasks')
+        st.plotly_chart(cal_fig, use_container_width=True)
 
         st.subheader("📋 All Tasks")
         st.dataframe(df)
