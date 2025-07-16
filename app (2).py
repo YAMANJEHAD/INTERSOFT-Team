@@ -5,60 +5,101 @@ from datetime import datetime
 import calendar
 from io import BytesIO
 
-# --- Page Configuration 
+# --- Page Configuration ---
 st.set_page_config(
     page_title="📋 FLM Task Tracker | INTERSOFT",
     layout="wide",
-    page_icon=""
+    page_icon="⏱"
 )
 
 # --- Custom Styling ---
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-    html, body, [class*="css"]  {
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
+    html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
         background-color: #0f172a;
-        color: #e5e7eb;
+        color: #f1f5f9;
+        scroll-behavior: smooth;
     }
-    .header, .card {
-        background: #1e293b;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-        margin: 1.5rem auto;
-        max-width: 1000px;
-        animation: fadeIn 0.8s ease-in-out;
-    }
-    h2 {
-        font-size: 2rem;
-        color: #facc15;
-        margin-bottom: 0.5rem;
-    }
-    p {
-        color: #94a3b8;
-        font-size: 1rem;
-    }
-    .stButton>button {
+
+    .header {
         background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+        margin: 2rem auto;
+        max-width: 1000px;
+        text-align: center;
+        animation: fadeInSlide 1s ease;
+    }
+
+    h2 {
+        font-size: 2.3rem;
+        color: white;
+        margin-bottom: 0.3rem;
+    }
+
+    p {
+        color: #cbd5e1;
+        font-size: 1.1rem;
+    }
+
+    @keyframes fadeInSlide {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .stButton>button {
+        background: linear-gradient(135deg, #7c3aed, #4f46e5);
         color: white;
         border: none;
         padding: 0.75rem 1.5rem;
         border-radius: 10px;
-        font-weight: 600;
-        transition: 0.3s ease;
+        font-weight: bold;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
     }
+
     .stButton>button:hover {
-        transform: scale(1.03);
+        transform: scale(1.05);
+        background: linear-gradient(135deg, #8b5cf6, #6366f1);
     }
+
+    .metric-box {
+        background-color: #1e293b;
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        text-align: center;
+    }
+
+    .metric-box h3 {
+        margin: 0;
+        font-size: 1.3rem;
+        color: #fbbf24;
+    }
+
+    .metric-box span {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #38bdf8;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #f1f5f9;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background-color: #334155 !important;
+        border-radius: 8px 8px 0 0 !important;
+    }
+
     .stSelectbox>div>div>div {
         color: black !important;
-    }
-    .sidebar .sidebar-content {
-        background-color: #1e293b;
-    }
-    .metric-label {
-        color: #cbd5e1 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -78,7 +119,7 @@ if "logged_in" not in st.session_state:
 
 if not st.session_state.logged_in:
     with st.container():
-        st.markdown("<div class='header'><h2>🔐 INTERSOFT - Task Tracker</h2><p>Login to continue</p></div>", unsafe_allow_html=True)
+        st.markdown("<div class='header'><h2>🔐 INTERSOFT - Task Tracker</h2><p>Please log in to continue</p></div>", unsafe_allow_html=True)
         username = st.text_input("👤 Username")
         password = st.text_input("🔑 Password", type="password")
         if st.button("Login 🚀"):
@@ -90,8 +131,8 @@ if not st.session_state.logged_in:
                 st.error("❌ Invalid credentials")
     st.stop()
 
-# --- Header ---
-st.markdown(f"<div class='header'><h2>👋 Welcome Back {st.session_state.user_role}</h2><p>📊 FLM Task Tracker Dashboard</p></div>", unsafe_allow_html=True)
+# --- Header after login ---
+st.markdown(f"<div class='header'><h2>👋 Welcome {st.session_state.user_role}</h2><p>Let's manage your tasks efficiently!</p></div>", unsafe_allow_html=True)
 
 if "timesheet" not in st.session_state:
     st.session_state.timesheet = []
@@ -103,10 +144,10 @@ STATUSES = ["⏳ Not Started", "🔄 In Progress", "✅ Completed"]
 
 # --- Sidebar Filters ---
 with st.sidebar:
-    st.markdown("## INTERSOFT POS")
+    st.markdown("## 🧠 INTERSOFT POS")
     st.markdown("### International Software Company")
-    st.markdown("---")
-    st.markdown("🔍 **Filters**")
+    st.markdown("—" * 10)
+    st.markdown("🎯 **Filters**")
     start_date, end_date = st.date_input("📅 Select Date Range", [datetime.today(), datetime.today()])
     category = st.selectbox("📂 Category", ["All"] + CATEGORIES)
     status = st.selectbox("📌 Status", ["All"] + STATUSES)
@@ -128,7 +169,7 @@ with tab1:
             prio = st.selectbox("⚠️ Priority", PRIORITIES)
         desc = st.text_area("🗒 Task Description", height=100)
 
-        if st.form_submit_button("Submit Task ✅"):
+        if st.form_submit_button("✅ Submit Task"):
             st.session_state.timesheet.append({
                 "Employee": st.session_state.user_role,
                 "Date": date.strftime('%Y-%m-%d'),
@@ -141,7 +182,7 @@ with tab1:
                 "Description": desc,
                 "Submitted": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             })
-            st.success("✅ Task added successfully!")
+            st.success("🎉 Task added successfully!")
 
 with tab2:
     if st.session_state.timesheet:
@@ -156,27 +197,30 @@ with tab2:
 
         st.markdown("### 📊 Task Summary")
         col1, col2, col3 = st.columns(3)
-        col1.metric("📌 Total", len(df))
-        col2.metric("✅ Completed", df[df['Status'].str.contains("Completed")].shape[0])
-        col3.metric("🔄 In Progress", df[df['Status'].str.contains("In Progress")].shape[0])
+        with col1:
+            st.markdown(f"<div class='metric-box'><h3>Total</h3><span>{len(df)}</span></div>", unsafe_allow_html=True)
+        with col2:
+            st.markdown(f"<div class='metric-box'><h3>Completed</h3><span>{df[df['Status'].str.contains('Completed')].shape[0]}</span></div>", unsafe_allow_html=True)
+        with col3:
+            st.markdown(f"<div class='metric-box'><h3>In Progress</h3><span>{df[df['Status'].str.contains('In Progress')].shape[0]}</span></div>", unsafe_allow_html=True)
 
         st.markdown("### 📈 Tasks by Date")
         fig1 = px.histogram(df, x="Date", color="Status", barmode="group")
         st.plotly_chart(fig1, use_container_width=True)
 
-        st.markdown("### 📉 Tasks by Category")
-        fig2 = px.pie(df, names="Category", title="Task Distribution by Category")
+        st.markdown("### 📉 Task Distribution by Category")
+        fig2 = px.pie(df, names="Category", title="Category Breakdown")
         st.plotly_chart(fig2, use_container_width=True)
 
         st.markdown("### 📊 Tasks by Priority")
-        fig3 = px.bar(df, x="Priority", color="Priority", title="Tasks by Priority")
+        fig3 = px.bar(df, x="Priority", color="Priority", title="Priority Overview")
         st.plotly_chart(fig3, use_container_width=True)
 
         st.markdown("### 📋 All Tasks")
         st.dataframe(df)
 
         st.markdown("### 📤 Export to Excel")
-        if st.button("Download Excel 📥"):
+        if st.button("📥 Download Excel File"):
             output = BytesIO()
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                 df.to_excel(writer, index=False, sheet_name='Tasks')
