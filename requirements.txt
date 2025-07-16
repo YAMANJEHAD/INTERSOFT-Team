@@ -16,3 +16,5 @@ matplotlib
 plotly
 openpyxl
 reportlab
+❌ Please install streamlit-calendar using pip install streamlit-calendar
+pip install streamlit-calendar
