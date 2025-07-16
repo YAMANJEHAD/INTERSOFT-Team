@@ -14,166 +14,137 @@ from reportlab.lib.units import inch
 
 # --- Page Configuration ---
 st.set_page_config(
-    page_title="⏱ FLM Task Tracker | INTERSOFT POS",
+    page_title="Intersoft FLM Task Tracker",
     layout="wide",
-    page_icon="⏱"
+    page_icon="📊"
 )
 
-# --- Enhanced Styling with Inter Font (Dark Professional Theme) ---
+# --- Professional Styling with Inter Font ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
     :root {
-        --primary: #4f46e5;
-        --secondary: #a855f7;
-        --background: #0f172a;
-        --surface: #1e293b;
-        --text: #e5e7eb;
-        --accent: #22d3ee;
-        --shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        --gradient: linear-gradient(135deg, #4f46e5, #6b21a8);
+        --primary: #1e3a8a;
+        --secondary: #3b82f6;
+        --background: #f8fafc;
+        --surface: #ffffff;
+        --text: #1f2937;
+        --border: #e2e8f0;
+        --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        --gradient: linear-gradient(90deg, #1e3a8a, #2563eb);
     }
     
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif !important;
         background: var(--background);
         color: var(--text);
-        transition: all 0.3s ease;
     }
     
     .header {
         background: var(--gradient);
-        color: var(--text);
+        color: #ffffff;
         padding: 1.5rem;
-        border-radius: 12px;
+        border-radius: 8px;
         text-align: center;
         margin-bottom: 1.5rem;
-        max-width: 900px;
+        max-width: 1000px;
         margin-left: auto;
         margin-right: auto;
         box-shadow: var(--shadow);
-        animation: fadeIn 0.8s ease-in-out;
     }
     
     .card {
         background: var(--surface);
-        border-radius: 12px;
+        border-radius: 8px;
         padding: 1.5rem;
         margin-bottom: 1.5rem;
-        max-width: 900px;
+        max-width: 1000px;
         margin-left: auto;
         margin-right: auto;
+        border: 1px solid var(--border);
         box-shadow: var(--shadow);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        animation: fadeIn 0.8s ease-in-out;
     }
     
-    @keyframes fadeIn {
-        0% { opacity: 0; transform: translateY(15px); }
-        100% { opacity: 1; transform: translateY(0); }
-    }
-    
-    .stSelectbox, .stTextInput, .stTextArea, .stTextInput > div > div > input, .stDateInput > div > div > input {
-        background-color: #2d3748 !important;
-        border-radius: 8px !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    .stSelectbox, .stTextInput, .stTextArea, .stDateInput > div > div > input {
+        background-color: #f1f5f9 !important;
+        border-radius: 6px !important;
+        border: 1px solid var(--border) !important;
         color: var(--text) !important;
-        padding: 0.75rem !important;
-        transition: box-shadow 0.3s ease, transform 0.2s ease;
+        padding: 0.5rem !important;
     }
     
     .stSelectbox:hover, .stTextInput:hover, .stTextArea:hover, .stDateInput:hover {
-        box-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
-        transform: translateY(-2px);
+        border-color: var(--primary) !important;
+        box-shadow: 0 0 5px rgba(30, 58, 138, 0.2);
     }
     
     .stButton>button {
-        background: var(--gradient) !important;
-        color: var(--text) !important;
-        border-radius: 20px !important;
-        padding: 0.75rem 1.5rem !important;
-        font-weight: 600 !important;
+        background: var(--primary) !important;
+        color: #ffffff !important;
+        border-radius: 6px !important;
+        padding: 0.5rem 1rem !important;
+        font-weight: 500 !important;
         border: none !important;
-        transition: all 0.3s ease !important;
-        box-shadow: var(--shadow);
+        transition: background-color 0.2s ease;
     }
     
     .stButton>button:hover {
-        background: linear-gradient(135deg, #3730a3, #7e22ce) !important;
-        transform: scale(1.05) translateY(-2px);
-        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.6);
+        background: #1e40af !important;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     }
     
     .stDataFrame {
-        border-radius: 12px !important;
-        max-width: 900px;
+        border-radius: 8px;
+        max-width: 1000px;
         margin-left: auto;
         margin-right: auto;
+        border: 1px solid var(--border);
         box-shadow: var(--shadow);
     }
     
     .login-container {
         max-width: 400px;
-        margin: 2rem auto;
-        padding: 1.5rem;
+        margin: 3rem auto;
+        padding: 2rem;
         background: var(--surface);
-        border-radius: 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
         box-shadow: var(--shadow);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        animation: fadeIn 0.8s ease-in-out;
     }
     
     .sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 250px;
-        height: 100%;
         background: var(--surface);
         padding: 1rem;
-        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
-        overflow-y: auto;
-        z-index: 1000;
+        border-right: 1px solid var(--border);
     }
     
     .logo {
-        position: absolute;
-        top: 1rem;
-        left: 15rem; /* بعيد عن الواجهة الجانبية */
-        font-size: 1.2rem;
+        font-size: 1.5rem;
         font-weight: 700;
-        color: var(--text);
-        text-align: left;
-        opacity: 0.9;
-        transition: opacity 0.3s ease;
-    }
-    
-    .logo:hover {
-        opacity: 1;
+        color: var(--primary);
+        text-align: center;
+        margin-bottom: 1.5rem;
     }
     
     .stTabs [data-baseweb="tab"] {
-        border-radius: 8px;
+        border-radius: 6px;
         padding: 0.5rem 1rem;
         margin-right: 0.5rem;
-        transition: all 0.3s ease;
         background: var(--surface);
         color: var(--text);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--border);
     }
     
     .stTabs [data-baseweb="tab"][aria-selected="true"] {
-        background: var(--gradient);
-        color: var(--text);
+        background: var(--primary);
+        color: #ffffff;
         border: none;
-        box-shadow: 0 2px 5px rgba(34, 211, 238, 0.3);
     }
     
     .stTabs [data-baseweb="tab"]:hover {
-        background: linear-gradient(135deg, #3730a3, #7e22ce);
+        background: #e0e7ff;
         color: var(--text);
-        border: none;
     }
     
     @media (max-width: 768px) {
@@ -183,15 +154,6 @@ st.markdown("""
         }
         .header {
             padding: 1rem;
-        }
-        .sidebar {
-            width: 100%;
-            position: relative;
-            left: 0;
-        }
-        .logo {
-            left: 1rem;
-            top: 0.5rem;
         }
     }
     </style>
@@ -212,12 +174,12 @@ if "logged_in" not in st.session_state:
     st.session_state.user_role = None
 
 if not st.session_state.logged_in:
-    st.markdown('<div class="logo">INTERSOFT<br>International Software Company</div>', unsafe_allow_html=True)
+    st.markdown('<div class="logo">Intersoft</div>', unsafe_allow_html=True)
     with st.container():
         st.markdown("""
             <div class="header">
-                <h1>⏱ INTERSOFT POS - FLM</h1>
-                <h3>Login to Task Tracker</h3>
+                <h1>Intersoft FLM Task Tracker</h1>
+                <h3>Login</h3>
             </div>
         """, unsafe_allow_html=True)
         with st.container():
@@ -236,12 +198,12 @@ if not st.session_state.logged_in:
             st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
-# --- Header with Personalized Greeting ---
-st.markdown('<div class="logo">INTERSOFT<br>International Software Company</div>', unsafe_allow_html=True)
+# --- Header ---
+st.markdown('<div class="logo">Intersoft</div>', unsafe_allow_html=True)
 st.markdown(f"""
     <div class="header">
-        <h1>Hi, {st.session_state.user_role}! Welcome to FLM Task Tracker</h1>
-        <h3>Daily Task Dashboard</h3>
+        <h1>Welcome, {st.session_state.user_role}</h1>
+        <h3>FLM Task Tracker</h3>
     </div>
 """, unsafe_allow_html=True)
 
@@ -275,36 +237,36 @@ STATUS_OPTIONS = {
     "Completed": {"color": "#22c55e", "icon": "✅"}
 }
 
-# --- Sidebar with Filters and Stats ---
+# --- Sidebar ---
 with st.sidebar:
+    st.markdown('<div class="logo">Intersoft</div>', unsafe_allow_html=True)
     st.markdown("### Filters")
     date_range = st.date_input("Date Range", value=(datetime(2025, 7, 15), datetime(2025, 7, 15)), format="YYYY-MM-DD", key="date_range")
     start_date, end_date = date_range if isinstance(date_range, tuple) else (date_range, date_range)
-    task_category = st.selectbox("Task Category", ["Choose an option"] + list(TASK_CATEGORIES.keys()), 
-                               format_func=lambda x: x if x == "Choose an option" else f"{TASK_CATEGORIES[x]['icon']} {x}", key="task_cat")
-    status = st.selectbox("Status", ["Choose an option"] + list(STATUS_OPTIONS.keys()), 
-                         format_func=lambda x: x if x == "Choose an option" else f"{STATUS_OPTIONS[x]['icon']} {x}", key="status")
-    st.markdown("### Quick Stats")
+    task_category = st.selectbox("Task Category", ["All"] + list(TASK_CATEGORIES.keys()), 
+                               format_func=lambda x: x if x == "All" else f"{TASK_CATEGORIES[x]['icon']} {x}", key="task_cat")
+    status = st.selectbox("Status", ["All"] + list(STATUS_OPTIONS.keys()), 
+                         format_func=lambda x: x if x == "All" else f"{STATUS_OPTIONS[x]['icon']} {x}", key="status")
+    st.markdown("### Statistics")
     total_entries = len([r for r in st.session_state.timesheet if r.get("Employee") == st.session_state.user_role])
     st.markdown(f"<p>Total Tasks: <strong>{total_entries}</strong></p>", unsafe_allow_html=True)
     st.markdown("### Actions")
-    if st.button("Refresh", key="refresh"):
+    if st.button("Refresh"):
         st.rerun()
-    if st.button("Clear Filters", key="clear"):
-        st.session_state.start_date = datetime.today()
-        st.session_state.end_date = datetime.today()
-        st.session_state.task_category = "Choose an option"
-        st.session_state.status = "Choose an option"
+    if st.button("Clear Filters"):
+        st.session_state.date_range = (datetime.today(), datetime.today())
+        st.session_state.task_category = "All"
+        st.session_state.status = "All"
         st.rerun()
 
 # --- Dashboard Layout ---
-st.markdown("## Daily Task Dashboard")
+st.markdown("## Task Dashboard")
 tab1, tab2 = st.tabs(["Add Task", "Analytics"])
 
 with tab1:
     with st.form("task_entry_form", clear_on_submit=True):
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown(f"### Task Entry for {st.session_state.user_role}")
+        st.markdown("### Add Task")
         col1, col2 = st.columns(2)
         with col1:
             department = st.selectbox("Department", ["FLM Team", "Field Operations", "Technical Support", "Customer Service"])
@@ -317,7 +279,7 @@ with tab1:
                                 format_func=lambda x: f"{STATUS_OPTIONS[x]['icon']} {x}")
             priority = st.selectbox("Priority", list(PRIORITY_LEVELS.keys()), 
                                   format_func=lambda x: f"{PRIORITY_LEVELS[x]['emoji']} {x}")
-        work_description = st.text_area("Description", placeholder="Describe the task", height=80)
+        work_description = st.text_area("Description", placeholder="Enter task details", height=80)
         if st.form_submit_button("Submit", use_container_width=True):
             if not (department and shift_type and task_category and work_description):
                 st.error("Please fill all required fields")
@@ -335,7 +297,7 @@ with tab1:
                     "Recorded At": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
                 st.session_state.timesheet.append(entry)
-                st.success(f"Task added by {st.session_state.user_role}!")
+                st.success("Task added successfully!")
         st.markdown('</div>', unsafe_allow_html=True)
 
 with tab2:
@@ -344,20 +306,20 @@ with tab2:
         filtered_df = df[df['Employee'] == st.session_state.user_role]
         if start_date and end_date:
             filtered_df = filtered_df[(filtered_df['Date'] >= start_date.strftime("%Y-%m-%d")) & (filtered_df['Date'] <= end_date.strftime("%Y-%m-%d"))]
-        if task_category != "Choose an option":
+        if task_category != "All":
             filtered_df = filtered_df[filtered_df['Task Category'].str.contains(task_category.split(' ')[-1])]
-        if status != "Choose an option":
+        if status != "All":
             filtered_df = filtered_df[filtered_df['Status'].str.contains(status.split(' ')[-1])]
 
         if not filtered_df.empty:
             # --- Styling DataFrame ---
             def get_priority_color(priority_str):
                 priority_key = priority_str.split(' ')[-1]
-                return '#ff5252' if priority_key == 'High' else '#ffd740' if priority_key == 'Medium' else '#22c55e'
+                return '#dc2626' if priority_key == 'High' else '#facc15' if priority_key == 'Medium' else '#16a34a'
 
             def get_status_color(status_str):
                 status_key = status_str.split(' ')[-1]
-                return STATUS_OPTIONS.get(status_key, {}).get('color', '#e5e7eb')
+                return STATUS_OPTIONS.get(status_key, {}).get('color', '#6b7280')
 
             styled_df = filtered_df.sort_values("Date", ascending=False).style
             styled_df = styled_df.applymap(lambda x: f"color: {get_status_color(x)}", subset=["Status"])
@@ -365,9 +327,9 @@ with tab2:
             styled_df = styled_df.set_properties(**{
                 'background-color': 'var(--surface)',
                 'color': 'var(--text)',
-                'border': '1px solid rgba(255, 255, 255, 0.1)',
+                'border': '1px solid var(--border)',
                 'font-family': 'Inter',
-                'text-align': 'center',
+                'text-align': 'left',
                 'padding': '0.5rem'
             })
 
@@ -375,11 +337,11 @@ with tab2:
             st.markdown("### Task Overview")
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("Total Tasks", len(filtered_df), delta=None, delta_color="off")
+                st.metric("Total Tasks", len(filtered_df))
             with col2:
-                st.metric("Completed", filtered_df[filtered_df['Status'].str.contains("Completed")].shape[0], delta=None, delta_color="off")
+                st.metric("Completed", filtered_df[filtered_df['Status'].str.contains("Completed")].shape[0])
             with col3:
-                st.metric("In Progress", filtered_df[filtered_df['Status'].str.contains("In Progress")].shape[0], delta=None, delta_color="off")
+                st.metric("In Progress", filtered_df[filtered_df['Status'].str.contains("In Progress")].shape[0])
 
             # --- Visualization ---
             st.markdown("### Task Trends")
@@ -389,7 +351,7 @@ with tab2:
                 y='Count',
                 title="Tasks by Date",
                 color='Date',
-                color_discrete_sequence=px.colors.qualitative.Dark24
+                color_discreteSequence=px.colors.qualitative.Bold
             )
             fig.update_layout(
                 paper_bgcolor="var(--surface)",
@@ -404,10 +366,10 @@ with tab2:
             st.markdown("### Task List")
             st.dataframe(styled_df, use_container_width=True, hide_index=True)
 
-            # --- Report Generation with Shift Time ---
+            # --- Report Generation ---
             st.markdown("### Export Report")
             shift_time = st.selectbox("Shift Time", SHIFTS, key="shift_time")
-            if st.button("Export Excel", key="export_excel"):
+            if st.button("Export Excel"):
                 with st.spinner("Preparing report..."):
                     def remove_emojis(text):
                         emoji_pattern = re.compile("["
@@ -427,11 +389,11 @@ with tab2:
 
                     excel_buffer = BytesIO()
                     with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-                        export_df.to_excel(writer, index=False, sheet_name="Tasks", freeze_panes=(1, 0))
+                        export_df.to_excel(writer, index=False, sheet_name="Tasks")
                         workbook = writer.book
                         worksheet = writer.sheets["Tasks"]
                         header_format = workbook.add_format({
-                            'bold': True, 'fg_color': '#4f46e5', 'font_color': '#ffffff',
+                            'bold': True, 'bg_color': '#1e3a8a', 'font_color': '#ffffff',
                             'border': 1, 'text_wrap': True, 'align': 'center'
                         })
                         for col_num, value in enumerate(export_df.columns.values):
@@ -440,22 +402,22 @@ with tab2:
                     st.download_button(
                         label="Download Excel",
                         data=excel_buffer.getvalue(),
-                        file_name=f"FLM_Tasks_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                        file_name=f"Intersoft_FLM_Tasks_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
         else:
-            st.info("No tasks available based on filters.")
+            st.info("No tasks match the selected filters.")
     else:
         st.markdown("""
-            <div style="text-align:center; padding:1.5rem; border-radius:12px; background:var(--surface); max-width:900px; margin-left:auto; margin-right:auto; box-shadow: var(--shadow);">
-                <h3>No Tasks Yet</h3>
-                <p>Add your first task using the 'Add Task' tab.</p>
+            <div class="card">
+                <h3>No Tasks Available</h3>
+                <p>Add a task using the 'Add Task' tab.</p>
             </div>
         """, unsafe_allow_html=True)
 
 # --- Footer ---
 st.markdown(f"""
-    <center>
-        <small style="color:#ffffff;">INTERSOFT POS - FLM Task Tracker • {datetime.now().strftime('%Y-%m-%d')} 06:20 PM +03</small>
-    </center>
+    <div style="text-align: center; padding: 1rem; color: #6b7280;">
+        <small>Intersoft FLM Task Tracker • {datetime.now().strftime('%Y-%m-%d')}</small>
+    </div>
 """, unsafe_allow_html=True)
