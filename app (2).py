@@ -15,37 +15,50 @@ st.set_page_config(
 # --- Custom Styling ---
 st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     html, body, [class*="css"]  {
         font-family: 'Inter', sans-serif;
         background-color: #0f172a;
         color: #e5e7eb;
-        scroll-behavior: smooth;
     }
     .header, .card {
         background: #1e293b;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        margin: 1rem auto;
-        max-width: 900px;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        margin: 1.5rem auto;
+        max-width: 1000px;
         animation: fadeIn 0.8s ease-in-out;
     }
-    @keyframes fadeIn {
-        0% { opacity: 0; transform: translateY(20px); }
-        100% { opacity: 1; transform: translateY(0); }
+    h2 {
+        font-size: 2rem;
+        color: #facc15;
+        margin-bottom: 0.5rem;
+    }
+    p {
+        color: #94a3b8;
+        font-size: 1rem;
     }
     .stButton>button {
-        background: linear-gradient(135deg, #4f46e5, #6b21a8);
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
         color: white;
         border: none;
         padding: 0.75rem 1.5rem;
-        border-radius: 8px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: transform 0.3s ease;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: 0.3s ease;
     }
     .stButton>button:hover {
         transform: scale(1.03);
+    }
+    .stSelectbox>div>div>div {
+        color: black !important;
+    }
+    .sidebar .sidebar-content {
+        background-color: #1e293b;
+    }
+    .metric-label {
+        color: #cbd5e1 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -84,14 +97,16 @@ if "timesheet" not in st.session_state:
     st.session_state.timesheet = []
 
 SHIFTS = ["🌞 Morning (8:30 - 5:30)", "🌙 Evening (3:00 - 11:00)"]
-CATEGORIES = ["🛠 Operations", "📄 Paper Work", "🔧 Job Orders", "🤝 CRM", "📅 Meetings" , "💻TOMS"]
+CATEGORIES = ["🛠 Operations", "📄 Paper Work", "🔧 Job Orders", "🤝 CRM", "📅 Meetings", "💻TOMS"]
 PRIORITIES = ["🟢 Low", "🟡 Medium", "🔴 High"]
 STATUSES = ["⏳ Not Started", "🔄 In Progress", "✅ Completed"]
 
+# --- Sidebar Filters ---
 with st.sidebar:
-    st.header("INTERSOFT POS - International Software Company")
-    st.subheader("")
-    st.markdown("🔍 Filters")
+    st.markdown("## INTERSOFT POS")
+    st.markdown("### International Software Company")
+    st.markdown("---")
+    st.markdown("🔍 **Filters**")
     start_date, end_date = st.date_input("📅 Select Date Range", [datetime.today(), datetime.today()])
     category = st.selectbox("📂 Category", ["All"] + CATEGORIES)
     status = st.selectbox("📌 Status", ["All"] + STATUSES)
@@ -101,7 +116,7 @@ tab1, tab2 = st.tabs(["➕ Add Task", "📈 Analytics"])
 
 with tab1:
     with st.form("task_form", clear_on_submit=True):
-        st.subheader("📝 Add New Task")
+        st.markdown("### 📝 Add New Task")
         col1, col2 = st.columns(2)
         with col1:
             shift = st.selectbox("🕒 Shift", SHIFTS)
@@ -139,28 +154,28 @@ with tab2:
             df = df[df['Status'] == status]
         df = df[(df['Date'] >= start_date.strftime('%Y-%m-%d')) & (df['Date'] <= end_date.strftime('%Y-%m-%d'))]
 
-        st.subheader("📊 Task Summary")
+        st.markdown("### 📊 Task Summary")
         col1, col2, col3 = st.columns(3)
         col1.metric("📌 Total", len(df))
         col2.metric("✅ Completed", df[df['Status'].str.contains("Completed")].shape[0])
         col3.metric("🔄 In Progress", df[df['Status'].str.contains("In Progress")].shape[0])
 
-        st.subheader("📈 Tasks by Date")
+        st.markdown("### 📈 Tasks by Date")
         fig1 = px.histogram(df, x="Date", color="Status", barmode="group")
         st.plotly_chart(fig1, use_container_width=True)
 
-        st.subheader("📉 Tasks by Category")
+        st.markdown("### 📉 Tasks by Category")
         fig2 = px.pie(df, names="Category", title="Task Distribution by Category")
         st.plotly_chart(fig2, use_container_width=True)
 
-        st.subheader("📊 Tasks by Priority")
+        st.markdown("### 📊 Tasks by Priority")
         fig3 = px.bar(df, x="Priority", color="Priority", title="Tasks by Priority")
         st.plotly_chart(fig3, use_container_width=True)
 
-        st.subheader("📋 All Tasks")
+        st.markdown("### 📋 All Tasks")
         st.dataframe(df)
 
-        st.subheader("📤 Export to Excel")
+        st.markdown("### 📤 Export to Excel")
         if st.button("Download Excel 📥"):
             output = BytesIO()
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -187,4 +202,5 @@ with tab2:
     else:
         st.info("ℹ️ No tasks found.")
 
+# --- Footer ---
 st.markdown(f"<center><small style='color:#888;'>📅 INTERSOFT FLM Tracker • {datetime.now().strftime('%Y-%m-%d %I:%M %p')}</small></center>", unsafe_allow_html=True)
