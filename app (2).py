@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import calendar
 from io import BytesIO
 import re
+!pip install streamlit-calendar
 
 try:
     from streamlit_calendar import calendar
