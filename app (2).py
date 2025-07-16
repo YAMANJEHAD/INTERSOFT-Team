@@ -7,7 +7,7 @@ from io import BytesIO
 
 # --- Page Configuration ---
 st.set_page_config(
-    page_title="📋 FLM Task Tracker | INTERSOFT",
+    page_title="FLM Task Tracker | INTERSOFT",
     layout="wide",
     page_icon="📋"
 )
@@ -78,7 +78,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 # --- Header ---
-st.markdown(f"<div class='header'><h2>👋 Welcome {st.session_state.user_role}</h2><p>📊 FLM Task Tracker Dashboard</p></div>", unsafe_allow_html=True)
+st.markdown(f"<div class='header'><h2>👋 Welcome Back {st.session_state.user_role}</h2><p>📊 FLM Task Tracker Dashboard</p></div>", unsafe_allow_html=True)
 
 if "timesheet" not in st.session_state:
     st.session_state.timesheet = []
