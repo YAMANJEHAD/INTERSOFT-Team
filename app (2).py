@@ -14,9 +14,9 @@ from reportlab.lib.units import inch
 
 # --- Page Configuration ---
 st.set_page_config(
-    page_title="FLM Task Tracker | INTERSOFT",
+    page_title="📋 FLM Task Tracker | INTERSOFT",
     layout="wide",
-    page_icon="⏱"
+    page_icon="📋"
 )
 
 # --- Custom Styling ---
@@ -28,6 +28,7 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
         background-color: #0f172a;
         color: #e5e7eb;
+        scroll-behavior: smooth;
     }
 
     .header, .card, .login-container {
@@ -37,6 +38,12 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         margin: 1rem auto;
         max-width: 900px;
+        animation: fadeIn 0.8s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        0% { opacity: 0; transform: translateY(20px); }
+        100% { opacity: 1; transform: translateY(0); }
     }
 
     .stButton>button {
@@ -47,10 +54,12 @@ st.markdown("""
         border-radius: 8px;
         font-weight: bold;
         cursor: pointer;
+        transition: transform 0.3s ease;
     }
 
     .stButton>button:hover {
         background: linear-gradient(135deg, #3730a3, #7e22ce);
+        transform: scale(1.03);
     }
     </style>
 """, unsafe_allow_html=True)
@@ -72,29 +81,29 @@ if not st.session_state.logged_in:
     with st.container():
         st.markdown("""
             <div class="header">
-                <h2>INTERSOFT - Task Tracker</h2>
+                <h2>🔐 INTERSOFT - Task Tracker</h2>
                 <p>Please log in to continue</p>
             </div>
         """, unsafe_allow_html=True)
         with st.container():
             st.markdown('<div class="login-container">', unsafe_allow_html=True)
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-            if st.button("Login"):
+            username = st.text_input("👤 Username")
+            password = st.text_input("🔑 Password", type="password")
+            if st.button("Login 🚀"):
                 if check_login(username, password):
                     st.session_state.logged_in = True
                     st.session_state.user_role = username
                     st.rerun()
                 else:
-                    st.error("Invalid credentials")
+                    st.error("❌ Invalid credentials")
             st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
 # --- Header ---
 st.markdown(f"""
     <div class="header">
-        <h2>Welcome {st.session_state.user_role}</h2>
-        <p>FLM Task Tracker Dashboard</p>
+        <h2>👋 Welcome {st.session_state.user_role}</h2>
+        <p>📊 FLM Task Tracker Dashboard</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -102,36 +111,36 @@ st.markdown(f"""
 if "timesheet" not in st.session_state:
     st.session_state.timesheet = []
 
-SHIFTS = ["Morning (8:30 - 5:30)", "Evening (3:00 - 11:00)"]
-CATEGORIES = ["Operations", "Paper Work", "Job Orders", "CRM", "Meetings"]
-PRIORITIES = ["Low", "Medium", "High"]
-STATUSES = ["Not Started", "In Progress", "Completed"]
+SHIFTS = ["🌞 Morning (8:30 - 5:30)", "🌙 Evening (3:00 - 11:00)"]
+CATEGORIES = ["🛠 Operations", "📄 Paper Work", "🔧 Job Orders", "🤝 CRM", "📅 Meetings"]
+PRIORITIES = ["🟢 Low", "🟡 Medium", "🔴 High"]
+STATUSES = ["⏳ Not Started", "🔄 In Progress", "✅ Completed"]
 
 # --- Sidebar Filters ---
 with st.sidebar:
-    st.header("Filters")
-    start_date, end_date = st.date_input("Select Date Range", [datetime.today(), datetime.today()])
-    category = st.selectbox("Category", ["All"] + CATEGORIES)
-    status = st.selectbox("Status", ["All"] + STATUSES)
+    st.header("🔍 Filters")
+    start_date, end_date = st.date_input("📅 Select Date Range", [datetime.today(), datetime.today()])
+    category = st.selectbox("📂 Category", ["All"] + CATEGORIES)
+    status = st.selectbox("📌 Status", ["All"] + STATUSES)
 
 # --- Tabs ---
-tab1, tab2 = st.tabs(["Add Task", "Analytics"])
+tab1, tab2 = st.tabs(["➕ Add Task", "📈 Analytics"])
 
 with tab1:
     with st.form("task_form", clear_on_submit=True):
-        st.subheader("Add New Task")
+        st.subheader("📝 Add New Task")
         col1, col2 = st.columns(2)
         with col1:
-            shift = st.selectbox("Shift", SHIFTS)
-            date = st.date_input("Date", value=datetime.today())
-            department = st.selectbox("Department", ["FLM", "Tech Support", "CRM"])
+            shift = st.selectbox("🕒 Shift", SHIFTS)
+            date = st.date_input("📅 Date", value=datetime.today())
+            department = st.selectbox("🏢 Department", ["FLM", "Tech Support", "CRM"])
         with col2:
-            cat = st.selectbox("Category", CATEGORIES)
-            stat = st.selectbox("Status", STATUSES)
-            prio = st.selectbox("Priority", PRIORITIES)
-        desc = st.text_area("Task Description", height=100)
+            cat = st.selectbox("📂 Category", CATEGORIES)
+            stat = st.selectbox("📌 Status", STATUSES)
+            prio = st.selectbox("⚠️ Priority", PRIORITIES)
+        desc = st.text_area("🗒 Task Description", height=100)
 
-        if st.form_submit_button("Submit Task"):
+        if st.form_submit_button("Submit Task ✅"):
             st.session_state.timesheet.append({
                 "Employee": st.session_state.user_role,
                 "Date": date.strftime('%Y-%m-%d'),
@@ -144,7 +153,7 @@ with tab1:
                 "Description": desc,
                 "Submitted": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             })
-            st.success("Task added successfully!")
+            st.success("✅ Task added successfully!")
 
 with tab2:
     if st.session_state.timesheet:
@@ -157,24 +166,24 @@ with tab2:
             df = df[df['Status'] == status]
         df = df[(df['Date'] >= start_date.strftime('%Y-%m-%d')) & (df['Date'] <= end_date.strftime('%Y-%m-%d'))]
 
-        st.subheader("Task Summary")
+        st.subheader("📊 Task Summary")
         col1, col2, col3 = st.columns(3)
-        col1.metric("Total", len(df))
-        col2.metric("Completed", df[df['Status'] == "Completed"].shape[0])
-        col3.metric("In Progress", df[df['Status'] == "In Progress"].shape[0])
+        col1.metric("📌 Total", len(df))
+        col2.metric("✅ Completed", df[df['Status'].str.contains("Completed")].shape[0])
+        col3.metric("🔄 In Progress", df[df['Status'].str.contains("In Progress")].shape[0])
 
-        st.subheader("Tasks Over Time")
+        st.subheader("📈 Tasks Over Time")
         fig = px.histogram(df, x="Date", color="Status", barmode="group")
         st.plotly_chart(fig, use_container_width=True)
 
-        st.subheader("All Tasks")
+        st.subheader("📋 All Tasks")
         st.dataframe(df)
     else:
-        st.info("No tasks found.")
+        st.info("ℹ️ No tasks found.")
 
 # --- Footer ---
 st.markdown(f"""
     <center>
-        <small style="color:#888;">INTERSOFT FLM Tracker • {datetime.now().strftime('%Y-%m-%d %I:%M %p')}</small>
+        <small style="color:#888;">📅 INTERSOFT FLM Tracker • {datetime.now().strftime('%Y-%m-%d %I:%M %p')}</small>
     </center>
 """, unsafe_allow_html=True)
