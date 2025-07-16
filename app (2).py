@@ -9,7 +9,7 @@ from io import BytesIO
 st.set_page_config(
     page_title="📋 FLM Task Tracker | INTERSOFT",
     layout="wide",
-    page_icon="📋"
+    page_icon=""
 )
 
 # --- Custom Styling ---
@@ -78,18 +78,20 @@ if not st.session_state.logged_in:
     st.stop()
 
 # --- Header ---
-st.markdown(f"<div class='header'><h2>👋 Welcome {st.session_state.user_role}</h2><p>📊 FLM Task Tracker Dashboard</p></div>", unsafe_allow_html=True)
+st.markdown(f"<div class='header'><h2>👋 Welcome Back {st.session_state.user_role}</h2><p>📊 FLM Task Tracker Dashboard</p></div>", unsafe_allow_html=True)
 
 if "timesheet" not in st.session_state:
     st.session_state.timesheet = []
 
 SHIFTS = ["🌞 Morning (8:30 - 5:30)", "🌙 Evening (3:00 - 11:00)"]
-CATEGORIES = ["🛠 Operations", "📄 Paper Work", "🔧 Job Orders", "🤝 CRM", "📅 Meetings"]
+CATEGORIES = ["🛠 Operations", "📄 Paper Work", "🔧 Job Orders", "🤝 CRM", "📅 Meetings" , "💻TOMS"]
 PRIORITIES = ["🟢 Low", "🟡 Medium", "🔴 High"]
 STATUSES = ["⏳ Not Started", "🔄 In Progress", "✅ Completed"]
 
 with st.sidebar:
-    st.header("🔍 Filters")
+    st.header("INTERSOFT POS International Software Company
+")
+    st.markdown("🔍 Filters")
     start_date, end_date = st.date_input("📅 Select Date Range", [datetime.today(), datetime.today()])
     category = st.selectbox("📂 Category", ["All"] + CATEGORIES)
     status = st.selectbox("📌 Status", ["All"] + STATUSES)
