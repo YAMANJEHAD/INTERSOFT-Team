@@ -12,7 +12,7 @@ st.set_page_config(
     page_icon="⏱"
 )
 
-# --- Custom Styling ---
+# --- Enhanced CSS Styling ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
@@ -20,23 +20,23 @@ st.markdown("""
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
         background-color: #0f172a;
-        color: #f1f5f9;
+        color: #f8fafc;
         scroll-behavior: smooth;
     }
 
     .header {
-        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        background: linear-gradient(135deg, #4f46e5, #9333ea);
         border-radius: 20px;
-        padding: 2rem;
+        padding: 2.5rem;
         box-shadow: 0 8px 30px rgba(0,0,0,0.5);
         margin: 2rem auto;
         max-width: 1000px;
         text-align: center;
-        animation: fadeInSlide 1s ease;
+        animation: fadeInSlide 1s ease-in-out;
     }
 
     h2 {
-        font-size: 2.3rem;
+        font-size: 2.6rem;
         color: white;
         margin-bottom: 0.3rem;
     }
@@ -47,7 +47,7 @@ st.markdown("""
     }
 
     @keyframes fadeInSlide {
-        from { opacity: 0; transform: translateY(30px); }
+        from { opacity: 0; transform: translateY(40px); }
         to { opacity: 1; transform: translateY(0); }
     }
 
@@ -55,36 +55,65 @@ st.markdown("""
         background: linear-gradient(135deg, #7c3aed, #4f46e5);
         color: white;
         border: none;
-        padding: 0.75rem 1.5rem;
+        padding: 0.8rem 1.6rem;
         border-radius: 10px;
         font-weight: bold;
         box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        transition: all 0.3s ease;
+        transition: all 0.3s ease-in-out;
     }
 
     .stButton>button:hover {
-        transform: scale(1.05);
+        transform: scale(1.06);
         background: linear-gradient(135deg, #8b5cf6, #6366f1);
     }
 
     .metric-box {
-        background-color: #1e293b;
-        border-radius: 12px;
-        padding: 1rem;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        background: radial-gradient(circle at top left, #4f46e5, #1e293b);
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        color: white;
         text-align: center;
+        transition: all 0.4s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .metric-box:hover {
+        transform: translateY(-5px);
+    }
+
+    .metric-box::before {
+        content: "";
+        position: absolute;
+        width: 120%;
+        height: 120%;
+        background: rgba(255,255,255,0.05);
+        top: -10%;
+        left: -10%;
+        transform: rotate(45deg);
+        animation: ripple 4s infinite linear;
+    }
+
+    @keyframes ripple {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
 
     .metric-box h3 {
         margin: 0;
-        font-size: 1.3rem;
-        color: #fbbf24;
+        font-size: 1.4rem;
+        color: #facc15;
+        z-index: 1;
+        position: relative;
     }
 
     .metric-box span {
-        font-size: 1.8rem;
-        font-weight: bold;
-        color: #38bdf8;
+        font-size: 2rem;
+        font-weight: 800;
+        color: white;
+        z-index: 1;
+        position: relative;
     }
 
     .stTabs [data-baseweb="tab"] {
@@ -100,6 +129,12 @@ st.markdown("""
 
     .stSelectbox>div>div>div {
         color: black !important;
+    }
+
+    footer {
+        text-align: center;
+        color: #94a3b8;
+        padding-top: 1rem;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -132,7 +167,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 # --- Header after login ---
-st.markdown(f"<div class='header'><h2>👋 Welcome {st.session_state.user_role}</h2><p>Let's manage your tasks efficiently!</p></div>", unsafe_allow_html=True)
+st.markdown(f"<div class='header'><h2>👋 Welcome {st.session_state.user_role}</h2><p>Manage your daily operations with elegance and speed</p></div>", unsafe_allow_html=True)
 
 if "timesheet" not in st.session_state:
     st.session_state.timesheet = []
@@ -147,7 +182,6 @@ with st.sidebar:
     st.markdown("## 🧠 INTERSOFT POS")
     st.markdown("### International Software Company")
     st.markdown("—" * 10)
-    st.markdown("🎯 **Filters**")
     start_date, end_date = st.date_input("📅 Select Date Range", [datetime.today(), datetime.today()])
     category = st.selectbox("📂 Category", ["All"] + CATEGORIES)
     status = st.selectbox("📌 Status", ["All"] + STATUSES)
@@ -208,12 +242,12 @@ with tab2:
         fig1 = px.histogram(df, x="Date", color="Status", barmode="group")
         st.plotly_chart(fig1, use_container_width=True)
 
-        st.markdown("### 📉 Task Distribution by Category")
-        fig2 = px.pie(df, names="Category", title="Category Breakdown")
+        st.markdown("### 📉 Category Breakdown")
+        fig2 = px.pie(df, names="Category", title="Task Categories")
         st.plotly_chart(fig2, use_container_width=True)
 
-        st.markdown("### 📊 Tasks by Priority")
-        fig3 = px.bar(df, x="Priority", color="Priority", title="Priority Overview")
+        st.markdown("### ⚠️ Priority Overview")
+        fig3 = px.bar(df, x="Priority", color="Priority", title="Tasks by Priority")
         st.plotly_chart(fig3, use_container_width=True)
 
         st.markdown("### 📋 All Tasks")
@@ -247,4 +281,8 @@ with tab2:
         st.info("ℹ️ No tasks found.")
 
 # --- Footer ---
-st.markdown(f"<center><small style='color:#888;'>📅 INTERSOFT FLM Tracker • {datetime.now().strftime('%Y-%m-%d %I:%M %p')}</small></center>", unsafe_allow_html=True)
+st.markdown(f"""
+<footer>
+    📅 INTERSOFT FLM Tracker • {datetime.now().strftime('%Y-%m-%d %I:%M %p')}
+</footer>
+""", unsafe_allow_html=True)
