@@ -90,7 +90,7 @@ STATUSES = ["⏳ Not Started", "🔄 In Progress", "✅ Completed"]
 
 with st.sidebar:
     st.header("INTERSOFT POS - International Software Company")
-    st.subheader("Code the future. Lead with INTERSOFT")
+    st.subheader("")
     st.markdown("🔍 Filters")
     start_date, end_date = st.date_input("📅 Select Date Range", [datetime.today(), datetime.today()])
     category = st.selectbox("📂 Category", ["All"] + CATEGORIES)
