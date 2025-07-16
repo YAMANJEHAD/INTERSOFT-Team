@@ -6,6 +6,11 @@ import calendar
 from io import BytesIO
 import re
 
+try:
+    from streamlit_calendar import calendar
+except ImportError:
+    st.warning("⚠️ 'streamlit-calendar' not installed. Please install it via 'pip install streamlit-calendar'")
+
 # --- Page Configuration ---
 st.set_page_config(
     page_title="📋 FLM Task Tracker | INTERSOFT",
@@ -13,14 +18,13 @@ st.set_page_config(
     page_icon="📋"
 )
 
-# --- Custom Styling ---
+# --- Styling ---
 st.markdown("""
     <style>
     html, body, [class*="css"]  {
         font-family: 'Inter', sans-serif;
         background-color: #0f172a;
         color: #e5e7eb;
-        scroll-behavior: smooth;
     }
     .header, .card {
         background: #1e293b;
@@ -31,10 +35,6 @@ st.markdown("""
         max-width: 900px;
         animation: fadeIn 0.8s ease-in-out;
     }
-    @keyframes fadeIn {
-        0% { opacity: 0; transform: translateY(20px); }
-        100% { opacity: 1; transform: translateY(0); }
-    }
     .stButton>button {
         background: linear-gradient(135deg, #4f46e5, #6b21a8);
         color: white;
@@ -43,10 +43,6 @@ st.markdown("""
         border-radius: 8px;
         font-weight: bold;
         cursor: pointer;
-        transition: transform 0.3s ease;
-    }
-    .stButton>button:hover {
-        transform: scale(1.03);
     }
     </style>
 """, unsafe_allow_html=True)
@@ -78,7 +74,6 @@ if not st.session_state.logged_in:
                 st.error("❌ Invalid credentials")
     st.stop()
 
-# --- Header ---
 st.markdown(f"<div class='header'><h2>👋 Welcome {st.session_state.user_role}</h2><p>📊 FLM Task Tracker Dashboard</p></div>", unsafe_allow_html=True)
 
 if "timesheet" not in st.session_state:
@@ -97,10 +92,10 @@ with st.sidebar:
     status = st.selectbox("📌 Status", ["All"] + STATUSES)
     keyword = st.text_input("🔍 Search in Description")
 
-# --- AI Classification Function ---
+# --- AI Classification ---
 def classify_task(desc):
     desc = desc.lower()
-    if any(word in desc for word in ["install", "setup"]):
+    if any(word in desc for word in ["install", "setup", "assembly"]):
         return "🔧 Job Orders"
     elif "report" in desc:
         return "📄 Paper Work"
@@ -111,7 +106,7 @@ def classify_task(desc):
     return "🛠 Operations"
 
 # --- Tabs ---
-tab1, tab2 = st.tabs(["➕ Add Task", "📈 Analytics"])
+tab1, tab2, tab3 = st.tabs(["➕ Add Task", "📈 Analytics", "📅 Calendar View"])
 
 with tab1:
     with st.form("task_form", clear_on_submit=True):
@@ -146,21 +141,19 @@ with tab2:
     if st.session_state.timesheet:
         df = pd.DataFrame(st.session_state.timesheet)
         df = df[df['Employee'] == st.session_state.user_role]
-
         if category != "All":
             df = df[df['Category'] == category]
         if status != "All":
             df = df[df['Status'] == status]
         if keyword:
             df = df[df['Description'].str.contains(keyword, case=False, na=False)]
-
         df = df[(df['Date'] >= start_date.strftime('%Y-%m-%d')) & (df['Date'] <= end_date.strftime('%Y-%m-%d'))]
 
-        # Alert for overdue not started
+        # Alert
         today_str = datetime.today().strftime('%Y-%m-%d')
         overdue = df[(df['Status'] == "⏳ Not Started") & (df['Date'] < today_str)]
         if not overdue.empty:
-            st.warning(f"🔔 You have {len(overdue)} overdue task(s) that haven't been started!")
+            st.warning(f"🔔 {len(overdue)} overdue task(s) not started!")
 
         st.subheader("📊 Task Summary")
         col1, col2, col3 = st.columns(3)
@@ -169,21 +162,13 @@ with tab2:
         col3.metric("🔄 In Progress", df[df['Status'].str.contains("In Progress")].shape[0])
 
         st.subheader("📈 Tasks by Date")
-        fig1 = px.histogram(df, x="Date", color="Status", barmode="group")
-        st.plotly_chart(fig1, use_container_width=True)
+        st.plotly_chart(px.histogram(df, x="Date", color="Status", barmode="group"), use_container_width=True)
 
         st.subheader("📉 Tasks by Category")
-        fig2 = px.pie(df, names="Category", title="Task Distribution by Category")
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(px.pie(df, names="Category", title="Task Distribution"), use_container_width=True)
 
         st.subheader("📊 Tasks by Priority")
-        fig3 = px.bar(df, x="Priority", color="Priority", title="Tasks by Priority")
-        st.plotly_chart(fig3, use_container_width=True)
-
-        st.subheader("📆 Calendar View")
-        cal_df = df.groupby('Date').size().reset_index(name='Tasks')
-        cal_fig = px.bar(cal_df, x='Date', y='Tasks', title="Daily Task Calendar View", color='Tasks')
-        st.plotly_chart(cal_fig, use_container_width=True)
+        st.plotly_chart(px.bar(df, x="Priority", color="Priority"), use_container_width=True)
 
         st.subheader("📋 All Tasks")
         st.dataframe(df)
@@ -196,23 +181,30 @@ with tab2:
                 workbook = writer.book
                 worksheet = writer.sheets['Tasks']
                 header_format = workbook.add_format({
-                    'bold': True,
-                    'font_color': 'white',
-                    'bg_color': '#4f81bd',
-                    'font_size': 14,
-                    'align': 'center',
-                    'valign': 'vcenter'
+                    'bold': True, 'font_color': 'white', 'bg_color': '#4f81bd',
+                    'font_size': 14, 'align': 'center', 'valign': 'vcenter'
                 })
                 for col_num, value in enumerate(df.columns.values):
                     worksheet.write(0, col_num, value, header_format)
                     worksheet.set_column(col_num, col_num, 18)
-            st.download_button(
-                label="📥 Download Excel File",
-                data=output.getvalue(),
-                file_name="FLM_Tasks.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+            st.download_button("📥 Download Excel File", output.getvalue(), "FLM_Tasks.xlsx",
+                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     else:
         st.info("ℹ️ No tasks found.")
+
+with tab3:
+    st.subheader("🗓 Interactive Calendar")
+    if "streamlit_calendar" in globals():
+        if st.session_state.timesheet:
+            df = pd.DataFrame(st.session_state.timesheet)
+            events = [
+                {"title": row['Category'], "start": row['Date'], "end": row['Date']} 
+                for _, row in df.iterrows()
+            ]
+            calendar(events=events, options={"editable": False, "height": 600}, key="calendar_view")
+        else:
+            st.info("No tasks to display on calendar.")
+    else:
+        st.error("❌ Please install `streamlit-calendar` using `pip install streamlit-calendar`")
 
 st.markdown(f"<center><small style='color:#888;'>📅 INTERSOFT FLM Tracker • {datetime.now().strftime('%Y-%m-%d %I:%M %p')}</small></center>", unsafe_allow_html=True)
