@@ -17,3 +17,4 @@ plotly
 openpyxl
 reportlab
 streamlit-calendar
+sqlalchemy
