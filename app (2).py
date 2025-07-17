@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import calendar
 from io import BytesIO
 
-# --- Page Configuration ---
+# --- Page Configuration 
 st.set_page_config(
     page_title="INTERSOFT Dashboard | FLM",
     layout="wide",
