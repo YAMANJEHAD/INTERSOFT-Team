@@ -117,10 +117,10 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_role = None
     st.session_state.users = {
-        "Yaman": {"password": "YAMAN1", "role": "Employee"},
-        "Hatem": {"password": "HATEM2", "role": "Employee"},
-        "Mahmoud": {"password": "MAHMOUD3", "role": "Employee"},
-        "Qusai": {"password": "QUSAI4", "role": "Employee"}
+        "Yaman": {"password": "YAMAN1", "role": "Employee", "email": "yaman@intersoft.com", "full_name": "Yaman Ali"},
+        "Hatem": {"password": "HATEM2", "role": "Employee", "email": "hatem@intersoft.com", "full_name": "Hatem Mohamed"},
+        "Mahmoud": {"password": "MAHMOUD3", "role": "Employee", "email": "mahmoud@intersoft.com", "full_name": "Mahmoud Ahmed"},
+        "Qusai": {"password": "QUSAI4", "role": "Employee", "email": "qusai@intersoft.com", "full_name": "Qusai Hassan"}
     }
 if "timesheet" not in st.session_state:
     st.session_state.timesheet = []
@@ -156,7 +156,7 @@ def register_user(username, password, role, email, full_name):
 # --- Pages ---
 def login_page():
     st.markdown("<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>🔐 INTERSOFT Task Tracker</div></div>", unsafe_allow_html=True)
-    st.markdown("<div class='date-box'>📅 {}</div>".format(datetime.now().strftime('%A, %B %d, %Y - %I:%M %p')), unsafe_allow_html=True)
+    st.markdown("<div class=' date-box'>📅 {}</div>".format(datetime.now().strftime('%A, %B %d, %Y - %I:%M %p')), unsafe_allow_html=True)
     
     col1, col2 = st.columns([1, 1])
     with col1:
@@ -169,16 +169,14 @@ def login_page():
                     st.session_state.logged_in = True
                     st.session_state.user_role = st.session_state.users[username]["full_name"]
                     st.session_state.current_page = "Dashboard"
-                    st.r rer()
+                    st.rerun()
                 else:
                     st.error("❌ Invalid credentials")
     
     with col2:
         st.subheader("📝 Register")
         with st.form("register_form"):
-            new_username = st.text_input("
-
-👤 New Username")
+            new_username = st.text_input("👤 New Username")
             new_password = st.text_input("🔑 New Password", type="password")
             role = st.selectbox("👷 Role", ROLES)
             email = st.text_input("📧 Email")
@@ -187,6 +185,8 @@ def login_page():
                 success, message = register_user(new_username, new_password, role, email, full_name)
                 if success:
                     st.success(message)
+                    st.session_state.current_page = "Login"
+                    st.rerun()
                 else:
                     st.error(message)
 
