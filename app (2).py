@@ -12,86 +12,111 @@ st.set_page_config(
     page_icon="⏱"
 )
 
-# --- Custom CSS Styling ---
+# --- Enhanced Dynamic CSS Styling ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
-        background-color: #0f172a;
+        background: linear-gradient(145deg, #0f172a, #1e293b);
         color: #f8fafc;
+        scroll-behavior: smooth;
+        transition: all 0.3s ease-in-out;
     }
+
     .header {
-        background: linear-gradient(135deg, #4f46e5, #9333ea);
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 0 25px rgba(0,0,0,0.3);
-        margin-bottom: 2rem;
+        background: linear-gradient(to right, #3b82f6, #6366f1);
+        border-radius: 20px;
+        padding: 2rem 2.5rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        margin: 2rem auto;
         text-align: center;
+        animation: slideDownFade 0.8s ease-out;
     }
+
+    @keyframes slideDownFade {
+        from {opacity: 0; transform: translateY(-30px);}
+        to {opacity: 1; transform: translateY(0);}
+    }
+
     h2, h3, p {
-        color: white;
+        color: #f1f5f9;
+        margin-bottom: 0.5rem;
     }
-    .metric-box {
+
+    .form-section {
         background: rgba(255,255,255,0.05);
-        border: 1px solid #475569;
+        padding: 2rem;
+        border-radius: 18px;
+        box-shadow: 0 0 25px rgba(0,0,0,0.2);
+        transition: transform 0.3s ease;
+        animation: fadeIn 0.6s ease-in;
+    }
+
+    .form-section:hover {
+        transform: scale(1.01);
+    }
+
+    @keyframes fadeIn {
+        from {opacity: 0; transform: translateY(20px);}
+        to {opacity: 1; transform: translateY(0);}
+    }
+
+    .stButton>button {
+        background: linear-gradient(135deg, #6366f1, #7c3aed);
+        color: white;
+        font-weight: 600;
+        padding: 0.8rem 1.8rem;
         border-radius: 12px;
-        padding: 1.2rem;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        transition: all 0.3s ease-in-out;
+    }
+
+    .stButton>button:hover {
+        background: linear-gradient(135deg, #818cf8, #a78bfa);
+        transform: translateY(-2px) scale(1.03);
+    }
+
+    .metric-box {
+        background: linear-gradient(to bottom right, #1e3a8a, #3b82f6);
+        padding: 1.5rem;
+        border-radius: 16px;
         text-align: center;
-        transition: 0.3s;
-    }
-    .metric-box:hover {
-        background-color: #1e293b;
-    }
-    .metric-box span {
-        display: block;
-        font-size: 1.8rem;
-        font-weight: bold;
         color: #facc15;
+        font-size: 1.2rem;
+        font-weight: bold;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        animation: fadeIn 1s ease;
     }
+
+    .metric-box span {
+        font-size: 2.2rem;
+        color: #ffffff;
+    }
+
     .stTabs [aria-selected="true"] {
-        background-color: #1e293b !important;
+        background-color: #334155 !important;
         color: white;
         border-radius: 10px 10px 0 0;
     }
-    .stSelectbox > div > div {
-        background-color: white;
-        color: black;
-        border-radius: 8px;
+
+    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb] {
+        background-color: #f8fafc !important;
+        color: #111827 !important;
+        border-radius: 10px !important;
     }
-    .stTextInput > div > div > input, .stTextArea textarea {
-        background-color: #f8fafc;
-        color: black;
-    }
-    .form-section {
-        background-color: #1e293b;
-        padding: 2rem;
-        border-radius: 16px;
-        box-shadow: 0 0 30px rgba(0,0,0,0.4);
-    }
-    .stButton>button {
-        background: linear-gradient(135deg, #7c3aed, #4f46e5);
-        color: white;
-        font-weight: bold;
-        padding: 0.8rem 1.5rem;
-        border-radius: 10px;
-        border: none;
-        transition: all 0.3s ease-in-out;
-    }
-    .stButton>button:hover {
-        transform: scale(1.05);
-        background: linear-gradient(135deg, #8b5cf6, #6366f1);
-    }
+
     footer {
         text-align: center;
-        margin-top: 2rem;
         color: #94a3b8;
+        padding-top: 2rem;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- Login System ---
+# --- Authentication ---
 def check_login(username, password):
     return {
         "Yaman": "YAMAN1",
@@ -117,12 +142,14 @@ if not st.session_state.logged_in:
             st.error("❌ Invalid credentials")
     st.stop()
 
-# --- Welcome Header ---
-st.markdown(f"<div class='header'><h2>👋 Welcome {st.session_state.user_role}</h2><p>Start managing your daily activities with INTERSOFT</p></div>", unsafe_allow_html=True)
+# --- Header After Login ---
+st.markdown(f"<div class='header'><h2>👋 Welcome {st.session_state.user_role}</h2><p>Manage your daily operations with elegance and speed</p></div>", unsafe_allow_html=True)
 
+# --- Initialize State ---
 if "timesheet" not in st.session_state:
     st.session_state.timesheet = []
 
+# --- Constants ---
 SHIFTS = ["🌞 Morning (8:30 - 5:30)", "🌙 Evening (3:00 - 11:00)"]
 CATEGORIES = ["🛠 Operations", "📄 Paper Work", "🔧 Job Orders", "🤝 CRM", "📅 Meetings", "💻 TOMS"]
 PRIORITIES = ["🟢 Low", "🟡 Medium", "🔴 High"]
@@ -153,11 +180,9 @@ with tab1:
             stat = st.selectbox("📌 Status", STATUSES)
             prio = st.selectbox("⚠️ Priority", PRIORITIES)
         desc = st.text_area("🗒 Task Description", height=100)
-
-        submit = st.form_submit_button("✅ Submit Task")
+        submitted = st.form_submit_button("✅ Submit Task")
         st.markdown("</div>", unsafe_allow_html=True)
-
-        if submit:
+        if submitted:
             st.session_state.timesheet.append({
                 "Employee": st.session_state.user_role,
                 "Date": date.strftime('%Y-%m-%d'),
@@ -176,8 +201,6 @@ with tab2:
     if st.session_state.timesheet:
         df = pd.DataFrame(st.session_state.timesheet)
         df = df[df['Employee'] == st.session_state.user_role]
-
-        # Filter data
         df = df[(df['Date'] >= start_date.strftime('%Y-%m-%d')) & (df['Date'] <= end_date.strftime('%Y-%m-%d'))]
         if category != "All":
             df = df[df['Category'] == category]
@@ -190,7 +213,7 @@ with tab2:
         col2.markdown(f"<div class='metric-box'>Completed<span>{df[df['Status'] == '✅ Completed'].shape[0]}</span></div>", unsafe_allow_html=True)
         col3.markdown(f"<div class='metric-box'>In Progress<span>{df[df['Status'] == '🔄 In Progress'].shape[0]}</span></div>", unsafe_allow_html=True)
 
-        st.subheader("📈 Timeline View")
+        st.subheader("📈 Tasks Over Time")
         st.plotly_chart(px.histogram(df, x="Date", color="Status", barmode="group"), use_container_width=True)
 
         st.subheader("📂 Category Breakdown")
