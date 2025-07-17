@@ -1,10 +1,40 @@
-# FLM Task Tracker – Enhanced UX + Header Layout + Clear/Reset
+# FLM Task Tracker – Enhanced UX + Header Layout + SQLite + Admin Panel
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import datetime, timedelta
 import calendar
 from io import BytesIO
+import uuid
+from sqlalchemy import create_engine, Column, String, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+# --- Database Setup ---
+engine = create_engine('sqlite:///tasks.db')
+SessionLocal = sessionmaker(bind=engine)
+Base = declarative_base()
+
+class Task(Base):
+    __tablename__ = 'tasks'
+    id = Column(String, primary_key=True)
+    employee = Column(String)
+    date = Column(String)
+    day = Column(String)
+    shift = Column(String)
+    department = Column(String)
+    category = Column(String)
+    status = Column(String)
+    priority = Column(String)
+    description = Column(String)
+    submitted = Column(DateTime, default=datetime.utcnow)
+
+class User(Base):
+    __tablename__ = 'users'
+    username = Column(String, primary_key=True)
+    password = Column(String)
+
+Base.metadata.create_all(bind=engine)
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -101,12 +131,18 @@ st.markdown("""
 
 # --- Authentication ---
 def check_login(username, password):
-    return {
-        "Yaman": "YAMAN1",
-        "Hatem": "HATEM2",
-        "Mahmoud": "MAHMOUD3",
-        "Qusai": "QUSAI4"
-    }.get(username) == password
+    session = SessionLocal()
+    user = session.query(User).filter(User.username == username, User.password == password).first()
+    return user is not None
+
+def register_user(username, password):
+    session = SessionLocal()
+    if session.query(User).filter_by(username=username).first():
+        return False
+    user = User(username=username, password=password)
+    session.add(user)
+    session.commit()
+    return True
 
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -116,16 +152,32 @@ if not st.session_state.logged_in:
     st.markdown("<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>🔐 INTERSOFT Task Tracker</div></div>", unsafe_allow_html=True)
     username = st.text_input("👤 Username")
     password = st.text_input("🔑 Password", type="password")
-    if st.button("Login 🚀"):
+    col_login, col_register = st.columns(2)
+    if col_login.button("Login 🚀"):
         if check_login(username, password):
             st.session_state.logged_in = True
             st.session_state.user_role = username
             st.rerun()
         else:
             st.error("❌ Invalid credentials")
+    if col_register.button("➕ Register New User"):
+        if register_user(username, password):
+            st.success("✅ User registered. You can now log in.")
+        else:
+            st.warning("⚠️ Username already exists.")
     st.stop()
 
-# --- Initialize Session ---
+# --- Role-Based Tabs ---
+if st.session_state.user_role == "admin":
+    st.header("🔐 Admin Panel")
+    st.subheader("👥 Manage Users")
+    st.info("(Feature coming soon: modify user passwords and roles)")
+    session = SessionLocal()
+    users = session.query(User).all()
+    st.write(pd.DataFrame([u.__dict__ for u in users]).drop(columns=['_sa_instance_state']))
+    st.stop()
+
+# --- Regular User Dashboard ---
 if "timesheet" not in st.session_state:
     st.session_state.timesheet = []
 
@@ -134,7 +186,6 @@ CATEGORIES = ["🛠 Operations", "📄 Paper Work", "🔧 Job Orders", "🤝 CRM
 PRIORITIES = ["🟢 Low", "🟡 Medium", "🔴 High"]
 STATUSES = ["⏳ Not Started", "🔄 In Progress", "✅ Completed"]
 
-# --- Top Info Header ---
 st.markdown("<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>👋 Welcome <b>{}</b><br><small>Start tracking tasks, boost your day, and monitor progress like a pro!</small></div></div>".format(st.session_state.user_role), unsafe_allow_html=True)
 st.markdown(f"<div class='date-box'>📅 {datetime.now().strftime('%A, %B %d, %Y - %I:%M %p')}</div>", unsafe_allow_html=True)
 
