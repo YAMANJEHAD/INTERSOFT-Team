@@ -51,7 +51,7 @@ st.markdown("""<style>...</style>""", unsafe_allow_html=True)
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_role = None
-    st.session_state.username = None
+    st.session_state.username = ""
 
 # --- Authentication ---
 def login_user(username, password):
