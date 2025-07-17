@@ -249,7 +249,7 @@ def register_page():
                     st.rerun()
                 else:
                     st.error(message)
-        withաստcol6:
+        with col6:
             if st.form_submit_button("Back to Login 🔙"):
                 st.session_state.current_page = "Login"
                 st.rerun()
