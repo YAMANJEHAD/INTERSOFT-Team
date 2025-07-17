@@ -4,7 +4,7 @@ import plotly.express as px
 from datetime import datetime, timedelta
 import calendar
 from io import BytesIO
-import uuid
+import re
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -92,7 +92,7 @@ st.markdown("""
     }
 
     footer {
-        text-align: center;
+ travaillent-align: center;
         color: #94a3b8;
         padding-top: 2rem;
     }
@@ -109,6 +109,13 @@ st.markdown("""
         color: #f8fafc;
         font-weight: 500;
     }
+
+    .stForm {
+        background: #1e293b;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -117,10 +124,10 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_role = None
     st.session_state.users = {
-        "Yaman": {"password": "YAMAN1", "role": "Employee", "email": "yaman@intersoft.com", "full_name": "Yaman Ali"},
-        "Hatem": {"password": "HATEM2", "role": "Employee", "email": "hatem@intersoft.com", "full_name": "Hatem Mohamed"},
-        "Mahmoud": {"password": "MAHMOUD3", "role": "Employee", "email": "mahmoud@intersoft.com", "full_name": "Mahmoud Ahmed"},
-        "Qusai": {"password": "QUSAI4", "role": "Employee", "email": "qusai@intersoft.com", "full_name": "Qusai Hassan"}
+        "Yaman": {"password": "YAMAN1", "role": "Employee", "email": "yaman@intersoft.com", "full_name": "Yaman Ali", "phone": "+1234567890", "department": "FLM"},
+        "Hatem": {"password": "HATEM2", "role": "Employee", "email": "hatem@intersoft.com", "full_name": "Hatem Mohamed", "phone": "+1234567891", "department": "Tech Support"},
+        "Mahmoud": {"password": "MAHMOUD3", "role": "Employee", "email": "mahmoud@intersoft.com", "full_name": "Mahmoud Ahmed", "phone": "+1234567892", "department": "CRM"},
+        "Qusai": {"password": "QUSAI4", "role": "Employee", "email": "qusai@intersoft.com", "full_name": "Qusai Hassan", "phone": "+1234567893", "department": "FLM"}
     }
 if "timesheet" not in st.session_state:
     st.session_state.timesheet = []
@@ -133,71 +140,109 @@ CATEGORIES = ["🛠 Operations", "📄 Paper Work", "🔧 Job Orders", "🤝 CRM
 PRIORITIES = ["🟢 Low", "🟡 Medium", "🔴 High"]
 STATUSES = ["⏳ Not Started", "🔄 In Progress", "✅ Completed"]
 ROLES = ["Employee", "Manager"]
+DEPARTMENTS = ["FLM", "Tech Support", "CRM"]
 
 # --- Authentication Functions ---
 def check_login(username, password):
     return st.session_state.users.get(username, {}).get("password") == password
 
-def register_user(username, password, role, email, full_name):
+def register_user(username, password, confirm_password, role, email, full_name, phone, department):
     if username in st.session_state.users:
         return False, "Username already exists!"
-    if not username or not password or not role or not email or not full_name:
+    if not all([username, password, confirm_password, role, email, full_name, phone, department]):
         return False, "All fields are required!"
-    if "@" not in email or "." not in email:
+    if password != confirm_password:
+        return False, "Passwords do not match!"
+    if len(password) < 6:
+        return False, "Password must be at least 6 characters long!"
+    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
         return False, "Invalid email format!"
+    if not re.match(r"\+?\d{10,15}", phone):
+        return False, "Invalid phone number format (e.g., +1234567890)!"
     st.session_state.users[username] = {
         "password": password,
         "role": role,
         "email": email,
-        "full_name": full_name
+        "full_name": full_name,
+        "phone": phone,
+        "department": department
     }
     return True, "Registration successful!"
 
 # --- Pages ---
 def login_page():
     st.markdown("<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>🔐 INTERSOFT Task Tracker</div></div>", unsafe_allow_html=True)
-    st.markdown("<div class=' date-box'>📅 {}</div>".format(datetime.now().strftime('%A, %B %d, %Y - %I:%M %p')), unsafe_allow_html=True)
+    st.markdown("<div class='date-box'>📅 {}</div>".format(datetime.now().strftime('%A, %B %d, %Y - %I:%M %p')), unsafe_allow_html=True)
     
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        st.subheader("🔐 Login")
-        with st.form("login_form"):
-            username = st.text_input("👤 Username")
-            password = st.text_input("🔑 Password", type="password")
+    st.subheader("🔐 Login")
+    with st.form("login_form"):
+        username = st.text_input("👤 Username")
+        password = st.text_input("🔑 Password", type="password")
+        col1, col2 = st.columns([1, 1])
+        with col1:
             if st.form_submit_button("Login 🚀"):
                 if check_login(username, password):
                     st.session_state.logged_in = True
-                    st.session_state.user_role = st.session_state.users[username]["full_name"]
+                    st.session_state.user_role = username
                     st.session_state.current_page = "Dashboard"
                     st.rerun()
                 else:
                     st.error("❌ Invalid credentials")
+        with col2:
+            if st.form_submit_button("Go to Register 🌟"):
+                st.session_state.current_page = "Register"
+                st.rerun()
+
+def register_page():
+    st.markdown("<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>📝 Register for INTERSOFT Task Tracker</div></div>", unsafe_allow_html=True)
+    st.markdown("<div class='date-box'>📅 {}</div>".format(datetime.now().strftime('%A, %B %d, %Y - %I:%M %p')), unsafe_allow_html=True)
     
-    with col2:
-        st.subheader("📝 Register")
-        with st.form("register_form"):
-            new_username = st.text_input("👤 New Username")
-            new_password = st.text_input("🔑 New Password", type="password")
-            role = st.selectbox("👷 Role", ROLES)
-            email = st.text_input("📧 Email")
+    st.subheader("📝 Create Your Account")
+    with st.form("register_form"):
+        st.markdown("### Personal Information")
+        col1, col2 = st.columns(2)
+        with col1:
             full_name = st.text_input("🧑 Full Name")
+            email = st.text_input("📧 Email")
+            phone = st.text_input("📱 Phone Number (e.g., +1234567890)")
+        with col2:
+            username = st.text_input("👤 Username")
+            role = st.selectbox("👷 Role", ROLES)
+            department = st.selectbox("🏢 Department", DEPARTMENTS)
+        
+        st.markdown("### Account Security")
+        col3, col4 = st.columns(2)
+        with col3:
+            password = st.text_input("🔑 Password", type="password")
+        with col4:
+            confirm_password = st.text_input("🔑 Confirm Password", type="password")
+        
+        col5, col6 = st.columns([1, 1])
+        with col5:
             if st.form_submit_button("Register 🌟"):
-                success, message = register_user(new_username, new_password, role, email, full_name)
+                success, message = register_user(
+                    username, password, confirm_password, role, email, full_name, phone, department
+                )
                 if success:
                     st.success(message)
                     st.session_state.current_page = "Login"
                     st.rerun()
                 else:
                     st.error(message)
+        with col6:
+            if st.form_submit_button("Back to Login 🔙"):
+                st.session_state.current_page = "Login"
+                st.rerun()
 
 def dashboard_page():
     # --- Top Info Header ---
-    st.markdown("<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>👋 Welcome <b>{}</b><br><small>Start tracking tasks, boost your day, and monitor progress like a pro!</small></div></div!".format(st.session_state.user_role), unsafe_allow_html=True)
+    user_info = st.session_state.users.get(st.session_state.user_role, {})
+    st.markdown("<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>👋 Welcome <b>{}</b><br><small>Start tracking tasks, boost your day, and monitor progress like a pro!</small></div></div!".format(user_info.get('full_name', 'User')), unsafe_allow_html=True)
     st.markdown(f"<div class='date-box'>📅 {datetime.now().strftime('%A, %B %d, %Y - %I:%M %p')}</div>", unsafe_allow_html=True)
 
     # --- Dashboard Overview ---
     df = pd.DataFrame(st.session_state.timesheet)
-    df_user = df[df['Employee'] == st.session_state.user_role] if not df.empty else pd.DataFrame()
+    df_user = df[df['Employee'] == user_info.get('full_name')] if not df.empty else pd.DataFrame()
     total_tasks = len(df_user)
     completed_tasks = df_user[df_user['Status'] == '✅ Completed'].shape[0] if not df_user.empty else 0
     in_progress_tasks = df_user[df_user['Status'] == '🔄 In Progress'].shape[0] if not df_user.empty else 0
@@ -220,7 +265,7 @@ def dashboard_page():
             with col1:
                 shift = st.selectbox("🕒 Shift", SHIFTS)
                 date = st.date_input("📅 Date", value=datetime.today())
-                department = st.selectbox("🏢 Department", ["FLM", "Tech Support", "CRM"])
+                department = st.selectbox("🏢 Department", DEPARTMENTS)
             with col2:
                 cat = st.selectbox("📂 Category", CATEGORIES)
                 stat = st.selectbox("📌 Status", STATUSES)
@@ -233,7 +278,7 @@ def dashboard_page():
                 clear = st.form_submit_button("🧹 Clear All Tasks")
             if submitted:
                 st.session_state.timesheet.append({
-                    "Employee": st.session_state.user_role,
+                    "Employee": user_info.get('full_name'),
                     "Date": date.strftime('%Y-%m-%d'),
                     "Day": calendar.day_name[date.weekday()],
                     "Shift": shift,
@@ -285,10 +330,11 @@ def dashboard_page():
     # --- Profile ---
     with tab3:
         st.subheader("👤 User Profile")
-        user_info = st.session_state.users.get(st.session_state.user_role, {})
         st.markdown(f"**Full Name:** {user_info.get('full_name', 'N/A')}")
         st.markdown(f"**Email:** {user_info.get('email', 'N/A')}")
+        st.markdown(f"**Phone:** {user_info.get('phone', 'N/A')}")
         st.markdown(f"**Role:** {user_info.get('role', 'N/A')}")
+        st.markdown(f"**Department:** {user_info.get('department', 'N/A')}")
         if st.button("🔓 Logout"):
             st.session_state.logged_in = False
             st.session_state.user_role = None
@@ -299,7 +345,12 @@ def dashboard_page():
     st.markdown(f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now().strftime('%Y-%m-%d %I:%M %p')}</footer>", unsafe_allow_html=True)
 
 # --- Page Navigation ---
-if st.session_state.logged_in:
+if st.session_state.current_page == "Login":
+    login_page()
+elif st.session_state.current_page == "Register":
+    register_page()
+elif st.session_state.current_page == "Dashboard" and st.session_state.logged_in:
     dashboard_page()
 else:
+    st.session_state.current_page = "Login"
     login_page()
