@@ -1,144 +1,156 @@
-# FLM Task Tracker – Enhanced UX + Header Layout + Clear/Reset + Fancy Login
+# app.py
 import streamlit as st
+import sqlite3
+from datetime import datetime, time
 import pandas as pd
 import plotly.express as px
-from datetime import datetime, timedelta
-import calendar
-from io import BytesIO
+import os
 
-# --- Page Configuration 
-st.set_page_config(
-    page_title="INTERSOFT Dashboard | FLM",
-    layout="wide",
-    page_icon="🚀"
-)
+# --- DB Functions ---
+def init_connection():
+    return sqlite3.connect("timesheet.db", check_same_thread=False)
 
-# --- Beautiful Styling ---
-st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+def create_user_table():
+    conn = init_connection()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE,
+            password TEXT,
+            role TEXT
+        )
+    """)
+    conn.commit()
 
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
-        background: radial-gradient(circle at top left, #0f172a, #1e293b);
-        color: #f8fafc;
-    }
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS timesheet (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            task TEXT,
+            date TEXT,
+            start_time TEXT,
+            end_time TEXT,
+            duration REAL,
+            notes TEXT,
+            file_path TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+    """)
+    conn.commit()
+    conn.close()
 
-    .top-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0 2rem;
-        margin-top: 1rem;
-    }
+def get_user(username, password):
+    conn = init_connection()
+    result = conn.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password)).fetchone()
+    conn.close()
+    return result
 
-    .greeting {
-        font-size: 1rem;
-        font-weight: 500;
-        color: #fcd34d;
-        text-align: right;
-    }
+def get_user_by_name(username):
+    conn = init_connection()
+    result = conn.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
+    conn.close()
+    return result
 
-    .company {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: #60a5fa;
-    }
+def insert_timesheet(user_id, task, date, start_time, end_time, duration, notes, file_path):
+    conn = init_connection()
+    conn.execute("""
+        INSERT INTO timesheet (user_id, task, date, start_time, end_time, duration, notes, file_path)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (user_id, task, date, start_time, end_time, duration, notes, file_path))
+    conn.commit()
+    conn.close()
 
-    .login-box {
-        background: rgba(30, 41, 59, 0.85);
-        padding: 2rem;
-        border-radius: 12px;
-        box-shadow: 0 0 25px rgba(255, 255, 255, 0.05);
-        animation: fadeIn 1s ease;
-    }
+def get_timesheets(role, user_id=None):
+    conn = init_connection()
+    if role == 'admin':
+        df = pd.read_sql("SELECT t.*, u.username FROM timesheet t JOIN users u ON t.user_id=u.id", conn)
+    else:
+        df = pd.read_sql("SELECT t.*, u.username FROM timesheet t JOIN users u ON t.user_id=u.id WHERE user_id=?", conn, params=(user_id,))
+    conn.close()
+    return df
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .date-box {
-        font-size: 1rem;
-        font-weight: 500;
-        color: #f8fafc;
-        text-align: center;
-        background: #1e293b;
-        padding: 0.5rem 1rem;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        margin-bottom: 1.5rem;
-        display: inline-block;
-    }
-
-    .overview-box {
-        background: linear-gradient(to bottom right, #1e3a8a, #3b82f6);
-        padding: 1.5rem;
-        border-radius: 18px;
-        text-align: center;
-        margin: 1rem 0;
-        transition: 0.4s ease;
-        box-shadow: 0 12px 40px rgba(0,0,0,0.4);
-    }
-
-    .overview-box:hover {
-        transform: translateY(-5px) scale(1.02);
-    }
-    .overview-box span {
-        font-size: 2.2rem;
-        font-weight: 800;
-        color: #fcd34d;
-    }
-
-    .stButton>button {
-        background: linear-gradient(135deg, #4f46e5, #9333ea);
-        color: white;
-        font-weight: 600;
-        border-radius: 10px;
-        padding: 0.6rem 1.4rem;
-        box-shadow: 0 6px 25px rgba(0,0,0,0.3);
-        transition: all 0.3s ease-in-out;
-    }
-
-    .stButton>button:hover {
-        transform: scale(1.05);
-    }
-
-    footer {
-        text-align: center;
-        color: #94a3b8;
-        padding-top: 2rem;
-    }
-    </style>
-""", unsafe_allow_html=True)
+# --- App Start ---
+st.set_page_config(page_title="🕒 Timesheet App", layout="wide")
+st.title("🕒 Employee Timesheet System")
+create_user_table()
 
 # --- Authentication ---
-def check_login(username, password):
-    return {
-        "Yaman": "YAMAN1",
-        "Hatem": "HATEM2",
-        "Mahmoud": "MAHMOUD3",
-        "Qusai": "QUSAI4"
-    }.get(username) == password
+if 'user' not in st.session_state:
+    st.session_state.user = None
 
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-    st.session_state.user_role = None
+if st.session_state.user is None:
+    tab1, tab2 = st.tabs(["🔐 Login", "🆕 Register"])
 
-if not st.session_state.logged_in:
-    st.markdown("<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>🔐 INTERSOFT Task Tracker</div></div>", unsafe_allow_html=True)
-    with st.container():
-        st.markdown("<div class='login-box'>", unsafe_allow_html=True)
-        username = st.text_input("👤 Username")
-        password = st.text_input("🔑 Password", type="password")
-        if st.button("Login 🚀"):
-            if check_login(username, password):
-                st.session_state.logged_in = True
-                st.session_state.user_role = username
-                st.rerun()
+    with tab1:
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        if st.button("Login"):
+            user = get_user(username, password)
+            if user:
+                st.session_state.user = user
+                st.success("Logged in successfully!")
             else:
-                st.error("❌ Invalid credentials")
-        st.markdown("</div>", unsafe_allow_html=True)
-    st.stop()
+                st.error("Invalid credentials")
 
-# Rest of the app continues...
+    with tab2:
+        new_user = st.text_input("New Username")
+        new_pass = st.text_input("New Password", type="password")
+        role = st.selectbox("Role", ["employee", "admin"])
+        if st.button("Register"):
+            if get_user_by_name(new_user):
+                st.warning("User already exists")
+            else:
+                conn = init_connection()
+                conn.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", (new_user, new_pass, role))
+                conn.commit()
+                conn.close()
+                st.success("User registered")
+
+else:
+    user_id, username, _, role = st.session_state.user
+    st.sidebar.success(f"Logged in as: {username} ({role})")
+    nav = st.sidebar.radio("Navigation", ["📝 Fill Timesheet", "📊 View Report"])
+
+    if nav == "📝 Fill Timesheet":
+        st.subheader("📝 Fill Timesheet")
+        with st.form("timesheet_form"):
+            task = st.text_input("Task Title")
+            date = st.date_input("Date", value=datetime.today())
+            start = st.time_input("Start Time", value=time(8, 30))
+            end = st.time_input("End Time", value=time(17, 0))
+            notes = st.text_area("Notes (Optional)")
+            file = st.file_uploader("Upload File (Optional)")
+            submitted = st.form_submit_button("Submit")
+
+            if submitted:
+                duration = (datetime.combine(date, end) - datetime.combine(date, start)).total_seconds() / 3600
+                path = ""
+                if file:
+                    os.makedirs("uploads", exist_ok=True)
+                    path = os.path.join("uploads", file.name)
+                    with open(path, "wb") as f:
+                        f.write(file.read())
+                insert_timesheet(user_id, task, str(date), str(start), str(end), duration, notes, path)
+                st.success("Timesheet submitted successfully")
+
+    elif nav == "📊 View Report":
+        st.subheader("📊 Timesheet Report")
+        df = get_timesheets(role, user_id)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            start_date = st.date_input("Start Date", value=datetime.today())
+        with col2:
+            end_date = st.date_input("End Date", value=datetime.today())
+
+        df["date"] = pd.to_datetime(df["date"])
+        mask = (df["date"] >= pd.to_datetime(start_date)) & (df["date"] <= pd.to_datetime(end_date))
+        df_filtered = df[mask]
+
+        st.dataframe(df_filtered)
+
+        fig = px.bar(df_filtered, x="username", y="duration", color="task", title="Worked Hours per User")
+        st.plotly_chart(fig, use_container_width=True)
+
+        total_hours = df_filtered['duration'].sum()
+        st.metric("Total Hours in Selected Period", f"{total_hours:.2f} hrs")
