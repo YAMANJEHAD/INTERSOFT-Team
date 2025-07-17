@@ -8,7 +8,7 @@ from io import BytesIO
 
 # --- Page Configuration ---
 st.set_page_config(
-    page_title="⚡ INTERSOFT Dashboard | FLM",
+    page_title="INTERSOFT Dashboard | FLM",
     layout="wide",
     page_icon="🚀"
 )
