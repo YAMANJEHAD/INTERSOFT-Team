@@ -167,16 +167,18 @@ def login_page():
             if st.form_submit_button("Login 🚀"):
                 if check_login(username, password):
                     st.session_state.logged_in = True
-                    st.session_state.user_role = username
+                    st.session_state.user_role = st.session_state.users[username]["full_name"]
                     st.session_state.current_page = "Dashboard"
-                    st.rerun()
+                    st.r rer()
                 else:
                     st.error("❌ Invalid credentials")
     
     with col2:
         st.subheader("📝 Register")
         with st.form("register_form"):
-            new_username = st.text_input("👤 New Username")
+            new_username = st.text_input("
+
+👤 New Username")
             new_password = st.text_input("🔑 New Password", type="password")
             role = st.selectbox("👷 Role", ROLES)
             email = st.text_input("📧 Email")
@@ -218,7 +220,7 @@ def dashboard_page():
             with col1:
                 shift = st.selectbox("🕒 Shift", SHIFTS)
                 date = st.date_input("📅 Date", value=datetime.today())
-                department = st.selectbox("🏢 Department", ["FLM", Tech Support", "CRM"])
+                department = st.selectbox("🏢 Department", ["FLM", "Tech Support", "CRM"])
             with col2:
                 cat = st.selectbox("📂 Category", CATEGORIES)
                 stat = st.selectbox("📌 Status", STATUSES)
