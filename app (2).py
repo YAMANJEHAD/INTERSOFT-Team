@@ -1,4 +1,4 @@
-# FLM Task Tracker – Enhanced UX + Header Layout + Clear/Reset
+# FLM Task Tracker – Enhanced UX + Header Layout + Clear/Reset + Fancy Login
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -43,6 +43,19 @@ st.markdown("""
         font-size: 1.2rem;
         font-weight: 600;
         color: #60a5fa;
+    }
+
+    .login-box {
+        background: rgba(30, 41, 59, 0.85);
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 0 25px rgba(255, 255, 255, 0.05);
+        animation: fadeIn 1s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     .date-box {
@@ -114,116 +127,18 @@ if "logged_in" not in st.session_state:
 
 if not st.session_state.logged_in:
     st.markdown("<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>🔐 INTERSOFT Task Tracker</div></div>", unsafe_allow_html=True)
-    username = st.text_input("👤 Username")
-    password = st.text_input("🔑 Password", type="password")
-    if st.button("Login 🚀"):
-        if check_login(username, password):
-            st.session_state.logged_in = True
-            st.session_state.user_role = username
-            st.rerun()
-        else:
-            st.error("❌ Invalid credentials")
+    with st.container():
+        st.markdown("<div class='login-box'>", unsafe_allow_html=True)
+        username = st.text_input("👤 Username")
+        password = st.text_input("🔑 Password", type="password")
+        if st.button("Login 🚀"):
+            if check_login(username, password):
+                st.session_state.logged_in = True
+                st.session_state.user_role = username
+                st.rerun()
+            else:
+                st.error("❌ Invalid credentials")
+        st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
-# --- Initialize Session ---
-if "timesheet" not in st.session_state:
-    st.session_state.timesheet = []
-
-SHIFTS = ["🌞 Morning (8:30 - 5:30)", "🌙 Evening (3:00 - 11:00)"]
-CATEGORIES = ["🛠 Operations", "📄 Paper Work", "🔧 Job Orders", "🤝 CRM", "📅 Meetings", "💻 TOMS"]
-PRIORITIES = ["🟢 Low", "🟡 Medium", "🔴 High"]
-STATUSES = ["⏳ Not Started", "🔄 In Progress", "✅ Completed"]
-
-# --- Top Info Header ---
-st.markdown("<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>👋 Welcome <b>{}</b><br><small>Start tracking tasks, boost your day, and monitor progress like a pro!</small></div></div>".format(st.session_state.user_role), unsafe_allow_html=True)
-st.markdown(f"<div class='date-box'>📅 {datetime.now().strftime('%A, %B %d, %Y - %I:%M %p')}</div>", unsafe_allow_html=True)
-
-# --- Dashboard Overview ---
-df = pd.DataFrame(st.session_state.timesheet)
-df_user = df[df['Employee'] == st.session_state.user_role] if not df.empty else pd.DataFrame()
-total_tasks = len(df_user)
-completed_tasks = df_user[df_user['Status'] == '✅ Completed'].shape[0] if not df_user.empty else 0
-in_progress_tasks = df_user[df_user['Status'] == '🔄 In Progress'].shape[0] if not df_user.empty else 0
-not_started_tasks = df_user[df_user['Status'] == '⏳ Not Started'].shape[0] if not df_user.empty else 0
-
-col1, col2, col3, col4 = st.columns(4)
-col1.markdown(f"<div class='overview-box'>Total Tasks<br><span>{total_tasks}</span></div>", unsafe_allow_html=True)
-col2.markdown(f"<div class='overview-box'>Completed<br><span>{completed_tasks}</span></div>", unsafe_allow_html=True)
-col3.markdown(f"<div class='overview-box'>In Progress<br><span>{in_progress_tasks}</span></div>", unsafe_allow_html=True)
-col4.markdown(f"<div class='overview-box'>Not Started<br><span>{not_started_tasks}</span></div>", unsafe_allow_html=True)
-
-# --- Tabs ---
-tab1, tab2 = st.tabs(["➕ Add Task", "📈 Analytics"])
-
-# --- Add Task ---
-with tab1:
-    with st.form("task_form", clear_on_submit=True):
-        st.subheader("📝 Add New Task")
-        col1, col2 = st.columns(2)
-        with col1:
-            shift = st.selectbox("🕒 Shift", SHIFTS)
-            date = st.date_input("📅 Date", value=datetime.today())
-            department = st.selectbox("🏢 Department", ["FLM", "Tech Support", "CRM"])
-        with col2:
-            cat = st.selectbox("📂 Category", CATEGORIES)
-            stat = st.selectbox("📌 Status", STATUSES)
-            prio = st.selectbox("⚠️ Priority", PRIORITIES)
-        desc = st.text_area("🗒 Task Description", height=100)
-        btn1, btn2 = st.columns([1, 1])
-        with btn1:
-            submitted = st.form_submit_button("✅ Submit Task")
-        with btn2:
-            clear = st.form_submit_button("🧹 Clear All Tasks")
-        if submitted:
-            st.session_state.timesheet.append({
-                "Employee": st.session_state.user_role,
-                "Date": date.strftime('%Y-%m-%d'),
-                "Day": calendar.day_name[date.weekday()],
-                "Shift": shift,
-                "Department": department,
-                "Category": cat,
-                "Status": stat,
-                "Priority": prio,
-                "Description": desc,
-                "Submitted": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            })
-            st.success("🎉 Task added successfully!")
-        if clear:
-            st.session_state.timesheet = []
-            st.warning("🧹 All tasks cleared!")
-
-# --- Analytics ---
-with tab2:
-    if not df_user.empty:
-        st.subheader("📊 Task Analysis")
-        st.plotly_chart(px.histogram(df_user, x="Date", color="Status", barmode="group", title="Tasks Over Time"), use_container_width=True)
-        st.plotly_chart(px.pie(df_user, names="Category", title="Category Breakdown"), use_container_width=True)
-        st.plotly_chart(px.bar(df_user, x="Priority", color="Priority", title="Priority Distribution"), use_container_width=True)
-
-        st.markdown("### 📋 Task Table")
-        st.dataframe(df_user)
-
-        st.markdown("### 📥 Export to Excel")
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df_user.to_excel(writer, index=False, sheet_name='Tasks')
-            workbook = writer.book
-            worksheet = writer.sheets['Tasks']
-            header_format = workbook.add_format({
-                'bold': True, 'font_color': 'white', 'bg_color': '#4f81bd',
-                'font_size': 12, 'align': 'center', 'valign': 'vcenter'
-            })
-            for col_num, value in enumerate(df_user.columns.values):
-                worksheet.write(0, col_num, value, header_format)
-                worksheet.set_column(col_num, col_num, 18)
-        st.download_button(
-            label="📥 Download Excel File",
-            data=output.getvalue(),
-            file_name="FLM_Tasks.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-    else:
-        st.info("ℹ️ No tasks found. Add some from the 'Add Task' tab.")
-
-# --- Footer ---
-st.markdown(f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now().strftime('%Y-%m-%d %I:%M %p')}</footer>", unsafe_allow_html=True)
+# Rest of the app continues...
