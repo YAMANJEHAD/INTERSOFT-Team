@@ -1,4 +1,4 @@
-# FLM Task Tracker – Full Code with SQLite Integration
+# FLM Task Tracker – Full Code with SQLite Integration (Old UI Style Restored)
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -32,43 +32,61 @@ class Task(Base):
 Base.metadata.create_all(bind=engine)
 
 # --- Page Configuration ---
-st.set_page_config(page_title="⚡ INTERSOFT Dashboard | FLM", layout="wide", page_icon="🚀")
+st.set_page_config(page_title="📋 FLM Task Tracker | INTERSOFT", layout="wide", page_icon="⏱")
 
-# --- CSS Styling ---
+# --- Enhanced Styling ---
 st.markdown("""
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
 html, body, [class*="css"] {
     font-family: 'Inter', sans-serif;
-    background: radial-gradient(circle at top left, #0f172a, #1e293b);
+    background-color: #0f172a;
     color: #f8fafc;
+    scroll-behavior: smooth;
 }
-.top-header {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 0 2rem; margin-top: 1rem;
-}
-.greeting { font-size: 1rem; font-weight: 500; color: #fcd34d; text-align: right; }
-.company { font-size: 1.2rem; font-weight: 600; color: #60a5fa; }
-.date-box {
-    font-size: 1rem; color: #f8fafc; background: #1e293b;
-    padding: 0.5rem 1rem; border-radius: 12px; margin-bottom: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-}
-.overview-box {
-    background: linear-gradient(to bottom right, #1e3a8a, #3b82f6);
-    padding: 1.5rem; border-radius: 18px; text-align: center;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
-}
-.overview-box:hover { transform: translateY(-5px) scale(1.02); }
-.overview-box span { font-size: 2.2rem; font-weight: 800; color: #fcd34d; }
-.stButton>button {
+
+.header {
     background: linear-gradient(135deg, #4f46e5, #9333ea);
-    color: white; font-weight: 600; border-radius: 10px;
-    padding: 0.6rem 1.4rem; box-shadow: 0 6px 25px rgba(0,0,0,0.3);
+    border-radius: 20px;
+    padding: 2.5rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    margin: 2rem auto;
+    max-width: 1000px;
+    text-align: center;
+    animation: fadeInSlide 1s ease-in-out;
+}
+
+h2 {
+    font-size: 2.6rem;
+    color: white;
+    margin-bottom: 0.3rem;
+}
+
+p {
+    color: #cbd5e1;
+    font-size: 1.1rem;
+}
+
+@keyframes fadeInSlide {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.stButton>button {
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.6rem;
+    border-radius: 10px;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     transition: all 0.3s ease-in-out;
 }
-.stButton>button:hover { transform: scale(1.05); }
-footer {
-    text-align: center; color: #94a3b8; padding-top: 2rem;
+
+.stButton>button:hover {
+    transform: scale(1.06);
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
 }
 </style>
 """, unsafe_allow_html=True)
@@ -82,7 +100,7 @@ if "logged_in" not in st.session_state:
     st.session_state.user_role = None
 
 if not st.session_state.logged_in:
-    st.markdown("<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>🔐 INTERSOFT Task Tracker</div></div>", unsafe_allow_html=True)
+    st.markdown("<div class='header'><h2>🔐 INTERSOFT - Task Tracker</h2><p>Please log in to continue</p></div>", unsafe_allow_html=True)
     username = st.text_input("👤 Username")
     password = st.text_input("🔑 Password", type="password")
     if st.button("Login 🚀"):
@@ -94,20 +112,13 @@ if not st.session_state.logged_in:
             st.error("❌ Invalid credentials")
     st.stop()
 
-# --- Constants ---
-SHIFTS = ["🌞 Morning (8:30 - 5:30)", "🌙 Evening (3:00 - 11:00)"]
-CATEGORIES = ["🛠 Operations", "📄 Paper Work", "🔧 Job Orders", "🤝 CRM", "📅 Meetings", "💻 TOMS"]
-PRIORITIES = ["🟢 Low", "🟡 Medium", "🔴 High"]
-STATUSES = ["⏳ Not Started", "🔄 In Progress", "✅ Completed"]
-
-# --- Top Header ---
-st.markdown("<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>👋 Welcome <b>{}</b><br><small>Start tracking tasks, boost your day, and monitor progress like a pro!</small></div></div>".format(st.session_state.user_role), unsafe_allow_html=True)
-st.markdown(f"<div class='date-box'>📅 {datetime.now().strftime('%A, %B %d, %Y - %I:%M %p')}</div>", unsafe_allow_html=True)
-
 # --- Load tasks from DB ---
 session = SessionLocal()
 tasks = session.query(Task).filter(Task.employee == st.session_state.user_role).all()
 df = pd.DataFrame([t.__dict__ for t in tasks]).drop(columns=['_sa_instance_state', 'id']) if tasks else pd.DataFrame()
+
+# --- Header after login ---
+st.markdown(f"<div class='header'><h2>👋 Welcome {st.session_state.user_role}</h2><p>Manage your daily operations with elegance and speed</p></div>", unsafe_allow_html=True)
 
 # --- Overview ---
 total_tasks = len(df)
@@ -115,10 +126,16 @@ completed_tasks = df[df['status'] == '✅ Completed'].shape[0] if not df.empty e
 in_progress_tasks = df[df['status'] == '🔄 In Progress'].shape[0] if not df.empty else 0
 not_started_tasks = df[df['status'] == '⏳ Not Started'].shape[0] if not df.empty else 0
 col1, col2, col3, col4 = st.columns(4)
-col1.markdown(f"<div class='overview-box'>Total Tasks<br><span>{total_tasks}</span></div>", unsafe_allow_html=True)
-col2.markdown(f"<div class='overview-box'>Completed<br><span>{completed_tasks}</span></div>", unsafe_allow_html=True)
-col3.markdown(f"<div class='overview-box'>In Progress<br><span>{in_progress_tasks}</span></div>", unsafe_allow_html=True)
-col4.markdown(f"<div class='overview-box'>Not Started<br><span>{not_started_tasks}</span></div>", unsafe_allow_html=True)
+col1.metric("📋 Total Tasks", total_tasks)
+col2.metric("✅ Completed", completed_tasks)
+col3.metric("🔄 In Progress", in_progress_tasks)
+col4.metric("⏳ Not Started", not_started_tasks)
+
+# --- Constants ---
+SHIFTS = ["🌞 Morning (8:30 - 5:30)", "🌙 Evening (3:00 - 11:00)"]
+CATEGORIES = ["🛠 Operations", "📄 Paper Work", "🔧 Job Orders", "🤝 CRM", "📅 Meetings", "💻 TOMS"]
+PRIORITIES = ["🟢 Low", "🟡 Medium", "🔴 High"]
+STATUSES = ["⏳ Not Started", "🔄 In Progress", "✅ Completed"]
 
 # --- Tabs ---
 tab1, tab2 = st.tabs(["➕ Add Task", "📈 Analytics"])
@@ -154,7 +171,7 @@ with tab1:
             session.add(task)
             session.commit()
             st.success("🎉 Task added and saved to the database!")
-            st.experimental_rerun()
+            st.rerun()
 
 # --- Analytics ---
 with tab2:
