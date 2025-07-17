@@ -92,7 +92,7 @@ st.markdown("""
     }
 
     footer {
- travaillent-align: center;
+        text-align: center;
         color: #94a3b8;
         padding-top: 2rem;
     }
@@ -169,6 +169,26 @@ def register_user(username, password, confirm_password, role, email, full_name, 
     }
     return True, "Registration successful!"
 
+def update_user(username, full_name, email, phone, department, new_password, confirm_password):
+    if not all([full_name, email, phone, department]):
+        return False, "All fields are required!"
+    if new_password and new_password != confirm_password:
+        return False, "Passwords do not match!"
+    if new_password and len(new_password) < 6:
+        return False, "New password must be at least 6 characters long!"
+    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        return False, "Invalid email format!"
+    if not re.match(r"\+?\d{10,15}", phone):
+        return False, "Invalid phone number format (e.g., +1234567890)!"
+    user = st.session_state.users[username]
+    user["full_name"] = full_name
+    user["email"] = email
+    user["phone"] = phone
+    user["department"] = department
+    if new_password:
+        user["password"] = new_password
+    return True, "Profile updated successfully!"
+
 # --- Pages ---
 def login_page():
     st.markdown("<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>🔐 INTERSOFT Task Tracker</div></div>", unsafe_allow_html=True)
@@ -229,7 +249,7 @@ def register_page():
                     st.rerun()
                 else:
                     st.error(message)
-        with col6:
+        withաստcol6:
             if st.form_submit_button("Back to Login 🔙"):
                 st.session_state.current_page = "Login"
                 st.rerun()
@@ -255,7 +275,7 @@ def dashboard_page():
     col4.markdown(f"<div class='overview-box'>Not Started<br><span>{not_started_tasks}</span></div>", unsafe_allow_html=True)
 
     # --- Tabs ---
-    tab1, tab2, tab3 = st.tabs(["➕ Add Task", "📈 Analytics", "👤 Profile"])
+    tab1, tab2, tab3, tab4 = st.tabs(["➕ Add Task", "📈 Analytics", "👤 Profile", "⚙️ Settings"])
 
     # --- Add Task ---
     with tab1:
@@ -340,6 +360,36 @@ def dashboard_page():
             st.session_state.user_role = None
             st.session_state.current_page = "Login"
             st.rerun()
+
+    # --- Settings ---
+    with tab4:
+        st.subheader("⚙️ Account Settings")
+        with st.form("settings_form"):
+            st.markdown("### Update Personal Information")
+            col1, col2 = st.columns(2)
+            with col1:
+                full_name = st.text_input("🧑 Full Name", value=user_info.get('full_name', ''))
+                email = st.text_input("📧 Email", value=user_info.get('email', ''))
+                phone = st.text_input("📱 Phone Number (e.g., +1234567890)", value=user_info.get('phone', ''))
+            with col2:
+                department = st.selectbox("🏢 Department", DEPARTMENTS, index=DEPARTMENTS.index(user_info.get('department', DEPARTMENTS[0])))
+            
+            st.markdown("### Update Password (Optional)")
+            col3, col4 = st.columns(2)
+            with col3:
+                new_password = st.text_input("🔑 New Password", type="password")
+            with col4:
+                confirm_password = st.text_input("🔑 Confirm New Password", type="password")
+            
+            if st.form_submit_button("💾 Save Changes"):
+                success, message = update_user(
+                    st.session_state.user_role, full_name, email, phone, department, new_password, confirm_password
+                )
+                if success:
+                    st.success(message)
+                    st.rerun()
+                else:
+                    st.error(message)
 
     # --- Footer ---
     st.markdown(f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now().strftime('%Y-%m-%d %I:%M %p')}</footer>", unsafe_allow_html=True)
