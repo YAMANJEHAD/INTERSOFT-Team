@@ -13,112 +13,195 @@ st.set_page_config(
     page_icon="🚀"
 )
 
-# --- Beautiful Styling ---
+# --- Modern SaaS Styling with Animations and Dark Mode Toggle ---
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
-        background: radial-gradient(circle at top left, #0f172a, #1e293b);
-        color: #f8fafc;
+        background-color: #f9fafb;
+        color: #1f2937;
+        transition: all 0.3s ease-in-out;
+    }
+
+    .dark-mode html, .dark-mode body, .dark-mode [class*="css"] {
+        background-color: #1e293b !important;
+        color: #f8fafc !important;
     }
 
     .top-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0 2rem;
-        margin-top: 1rem;
+        padding: 1rem 2rem;
+        background-color: #ffffff;
+        border-radius: 10px;
+        border-bottom: 1px solid #e5e7eb;
+        transition: all 0.3s ease-in-out;
+    }
+
+    .dark-mode .top-header {
+        background-color: #334155;
+        border-color: #475569;
     }
 
     .greeting {
-        font-size: 1rem;
-        font-weight: 500;
-        color: #fcd34d;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #6366f1;
         text-align: right;
     }
 
     .company {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: #60a5fa;
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #1d4ed8;
+    }
+
+    .dark-mode .greeting, .dark-mode .company {
+        color: #facc15;
     }
 
     .date-box {
         font-size: 1rem;
         font-weight: 500;
-        color: #f8fafc;
+        color: #334155;
         text-align: center;
-        background: #1e293b;
-        padding: 0.5rem 1rem;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        margin-bottom: 1.5rem;
+        background: #e0f2fe;
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
         display: inline-block;
+        margin: 1rem 0;
+        transition: background 0.3s;
+    }
+
+    .dark-mode .date-box {
+        background: #475569;
+        color: #f8fafc;
     }
 
     .overview-box {
-        background: linear-gradient(to bottom right, #1e3a8a, #3b82f6);
+        background: #ffffff;
         padding: 1.5rem;
-        border-radius: 18px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         text-align: center;
-        margin: 1rem 0;
-        transition: 0.4s ease;
-        box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+        border: 1px solid #e5e7eb;
+        transition: 0.3s;
+        transform: scale(1);
     }
 
     .overview-box:hover {
-        transform: translateY(-5px) scale(1.02);
+        transform: scale(1.02);
     }
+
+    .dark-mode .overview-box {
+        background: #334155;
+        border-color: #475569;
+    }
+
     .overview-box span {
         font-size: 2.2rem;
         font-weight: 800;
+        color: #2563eb;
+    }
+
+    .dark-mode .overview-box span {
         color: #fcd34d;
     }
 
     .stButton>button {
-        background: linear-gradient(135deg, #4f46e5, #9333ea);
+        background: linear-gradient(135deg, #3b82f6, #6366f1);
         color: white;
         font-weight: 600;
+        border: none;
         border-radius: 10px;
         padding: 0.6rem 1.4rem;
-        box-shadow: 0 6px 25px rgba(0,0,0,0.3);
         transition: all 0.3s ease-in-out;
     }
 
     .stButton>button:hover {
         transform: scale(1.05);
-    }
-
-    footer {
-        text-align: center;
-        color: #94a3b8;
-        padding-top: 2rem;
+        background: linear-gradient(135deg, #2563eb, #4f46e5);
     }
 
     .stTextInput>div>input, .stSelectbox>div>select {
-        background: #1e293b;
-        color: #f8fafc;
-        border: 1px solid #4b5e8e;
+        background: #ffffff;
+        color: #111827;
+        border: 1px solid #d1d5db;
         border-radius: 8px;
         padding: 0.5rem;
     }
 
-    .stTextInput>label, .stSelectbox>label {
+    .dark-mode .stTextInput>div>input, .dark-mode .stSelectbox>div>select {
+        background: #1e293b;
         color: #f8fafc;
-        font-weight: 500;
+        border-color: #475569;
+    }
+
+    .stTextInput>label, .stSelectbox>label {
+        color: #1f2937;
+        font-weight: 600;
+    }
+
+    .dark-mode .stTextInput>label, .dark-mode .stSelectbox>label {
+        color: #f1f5f9;
     }
 
     .stForm {
-        background: #1e293b;
+        background: #ffffff;
         padding: 2rem;
         border-radius: 12px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        border: 1px solid #e5e7eb;
+    }
+
+    .dark-mode .stForm {
+        background: #1e293b;
+        border-color: #475569;
+    }
+
+    footer {
+        text-align: center;
+        color: #9ca3af;
+        padding-top: 2rem;
+        font-size: 0.9rem;
+    }
+
+    .dark-mode footer {
+        color: #94a3b8;
     }
     </style>
 """, unsafe_allow_html=True)
 
+# --- Dark Mode Toggle Script ---
+st.markdown("""
+    <script>
+    const root = window.parent.document.documentElement;
+    const darkModeToggle = document.createElement('button');
+    darkModeToggle.innerText = '🌓';
+    darkModeToggle.style.position = 'fixed';
+    darkModeToggle.style.top = '10px';
+    darkModeToggle.style.right = '10px';
+    darkModeToggle.style.zIndex = '1000';
+    darkModeToggle.style.border = 'none';
+    darkModeToggle.style.background = '#e2e8f0';
+    darkModeToggle.style.color = '#1e293b';
+    darkModeToggle.style.padding = '10px';
+    darkModeToggle.style.borderRadius = '50%';
+    darkModeToggle.style.boxShadow = '0 2px 10px rgba(0,0,0,0.15)';
+    darkModeToggle.style.cursor = 'pointer';
+    darkModeToggle.onclick = () => {
+        root.classList.toggle('dark-mode');
+    }
+    window.addEventListener('DOMContentLoaded', () => {
+        if (!document.body.contains(darkModeToggle)) {
+            document.body.appendChild(darkModeToggle);
+        }
+    });
+    </script>
+""", unsafe_allow_html=True)
 # --- Initialize Session State ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
