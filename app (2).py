@@ -91,11 +91,6 @@ st.markdown("""
         transform: scale(1.05);
     }
 
-    .delete-button>button {
-        background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
-        color: white !important;
-    }
-
     .edit-section {
         background: #1e293b;
         padding: 1.5rem;
@@ -242,13 +237,7 @@ with tab2:
                               value=selected_task['Description'] if selected_task is not None else "",
                               height=100)
             
-            btn1, btn2 = st.columns([1, 1])
-            with btn1:
-                update_submitted = st.form_submit_button("✏️ Update Task")
-            with btn2:
-                st.markdown("<div class='delete-button'>", unsafe_allow_html=True)
-                delete_submitted = st.form_submit_button("🗑 Delete Task", key="delete_task_button")
-                st.markdown("</div>", unsafe_allow_html=True)
+            update_submitted = st.form_submit_button("✏️ Update Task")
             
             if update_submitted and selected_task_id:
                 task_data = {
@@ -268,8 +257,9 @@ with tab2:
                                            for task in st.session_state.timesheet]
                 st.success("🎉 Task updated successfully!")
                 st.rerun()
-            
-            if delete_submitted and selected_task_id:
+        
+        if selected_task_id:
+            if st.button("🗑 Delete Task", key="delete_task_button"):
                 if st.checkbox("Confirm Delete Task"):
                     st.session_state.timesheet = [task for task in st.session_state.timesheet 
                                                if task['TaskID'] != selected_task_id]
@@ -313,4 +303,4 @@ with tab3:
         st.info("ℹ️ No tasks found. Add some from the 'Add Task' tab.")
 
 # --- Footer ---
-st.markdown(f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now().strftime('%Y-%m-%d %I:%M %p')}</footer>", unsafe_allow_html=True)
+st.markdown(f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now().strftime('%A, %B %d, %Y - %I:%M %p')}</footer>", unsafe_allow_html=True)
