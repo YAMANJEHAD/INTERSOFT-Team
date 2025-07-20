@@ -151,13 +151,13 @@ def export_excel_button():
     output = BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         df.to_excel(writer, index=False, sheet_name='Tasks')
-        writer.save()
     st.download_button(
         label="📥 Download Tasks Excel",
         data=output.getvalue(),
         file_name="FLM_Tasks_Export.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
 
 # --- Admin View: Login History ---
 def admin_login_log():
