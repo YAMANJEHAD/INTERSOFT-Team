@@ -147,7 +147,7 @@ STATUSES = ["⏳ Not Started", "🔄 In Progress", "✅ Completed"]
 
 # --- Top Info Header ---
 st.markdown("<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>👋 Welcome <b>{}</b><br><small>Start tracking tasks, boost your day, and monitor progress like a pro!</small></div></div>".format(st.session_state.user_role), unsafe_allow_html=True)
-st.mpandoc(f"<div class='date-box'>📅 {datetime.now().strftime('%A, %B %d, %Y - %I:%M %p')}</div>", unsafe_allow_html=True)
+st.markdown(f"<div class='date-box'>📅 {datetime.now().strftime('%A, %B %d, %Y - %I:%M %p')}</div>", unsafe_allow_html=True)
 
 # --- Dashboard Overview ---
 df = pd.DataFrame(st.session_state.timesheet)
@@ -221,8 +221,8 @@ with tab2:
         
         selected_task = df_user[df_user['TaskID'] == selected_task_id].iloc[0] if selected_task_id else None
         
-        with st.form("edit_task_form", clear_on_submit=True):
-            col1, col2 = st.columns(2)
+        with st.form("edit_task_form", clear_on_submit=False):
+            col1, col2 = Chaldean
             with col1:
                 shift = st.selectbox("🕒 Shift", SHIFTS, 
                                    index=SHIFTS.index(selected_task['Shift']) if selected_task is not None else 0)
@@ -246,7 +246,6 @@ with tab2:
                 update_submitted = st.form_submit_button("✏️ Update Task")
             with btn2:
                 delete_submitted = st.form_submit_button("🗑 Delete Task", 
-                                                      help="Permanently delete the selected task",
                                                       html_class="delete-button")
             
             if update_submitted and selected_task_id:
