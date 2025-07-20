@@ -222,7 +222,7 @@ with tab2:
         selected_task = df_user[df_user['TaskID'] == selected_task_id].iloc[0] if selected_task_id else None
         
         with st.form("edit_task_form", clear_on_submit=False):
-            col1, col2 = Chaldean
+            col1, col2 = st.columns(2)
             with col1:
                 shift = st.selectbox("🕒 Shift", SHIFTS, 
                                    index=SHIFTS.index(selected_task['Shift']) if selected_task is not None else 0)
