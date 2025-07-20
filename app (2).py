@@ -64,7 +64,7 @@ st.markdown("""
         border-radius: 18px;
         text-align: center;
         margin: 1rem 0;
-        transition: 0.4s ease;
+        transition: transform 0.4s ease;
         box-shadow: 0 12px 40px rgba(0,0,0,0.4);
     }
 
@@ -84,11 +84,23 @@ st.markdown("""
         border-radius: 10px;
         padding: 0.6rem 1.4rem;
         box-shadow: 0 6px 25px rgba(0,0,0,0.3);
-        transition: all 0.3s ease-in-out;
+        transition: all 0.2s ease-in-out;
+        border: none;
     }
 
     .stButton>button:hover {
         transform: scale(1.05);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    }
+
+    .stButton>button:active {
+        transform: scale(0.95);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .delete-button {
+        background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+        color: white !important;
     }
 
     .edit-section {
@@ -182,21 +194,24 @@ with tab1:
         with btn2:
             clear = st.form_submit_button("🧹 Clear All Tasks")
         if submitted:
-            st.session_state.timesheet.append({
-                "TaskID": str(uuid.uuid4()),
-                "Employee": st.session_state.user_role,
-                "Date": date.strftime('%Y-%m-%d'),
-                "Day": calendar.day_name[date.weekday()],
-                "Shift": shift,
-                "Department": department,
-                "Category": cat,
-                "Status": stat,
-                "Priority": prio,
-                "Description": desc,
-                "Submitted": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            })
-            st.success("🎉 Task added successfully!")
-            st.rerun()
+            if desc.strip():  # Ensure description is not empty
+                st.session_state.timesheet.append({
+                    "TaskID": str(uuid.uuid4()),
+                    "Employee": st.session_state.user_role,
+                    "Date": date.strftime('%Y-%m-%d'),
+                    "Day": calendar.day_name[date.weekday()],
+                    "Shift": shift,
+                    "Department": department,
+                    "Category": cat,
+                    "Status": stat,
+                    "Priority": prio,
+                    "Description": desc,
+                    "Submitted": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                })
+                st.success("🎉 Task added successfully!")
+                st.rerun()
+            else:
+                st.error("❌ Task description cannot be empty!")
         if clear:
             if st.checkbox("Confirm Clear All Tasks"):
                 st.session_state.timesheet = []
@@ -237,29 +252,35 @@ with tab2:
                               value=selected_task['Description'] if selected_task is not None else "",
                               height=100)
             
-            update_submitted = st.form_submit_button("✏️ Update Task")
+            btn1, btn2 = st.columns([1, 1])
+            with btn1:
+                update_submitted = st.form_submit_button("✏️ Update Task")
+            with btn2:
+                delete_submitted = st.form_submit_button("🗑 Delete Task", key="delete_task_button")
             
             if update_submitted and selected_task_id:
-                task_data = {
-                    "TaskID": selected_task_id,
-                    "Employee": st.session_state.user_role,
-                    "Date": date.strftime('%Y-%m-%d'),
-                    "Day": calendar.day_name[date.weekday()],
-                    "Shift": shift,
-                    "Department": department,
-                    "Category": cat,
-                    "Status": stat,
-                    "Priority": prio,
-                    "Description": desc,
-                    "Submitted": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                }
-                st.session_state.timesheet = [task if task['TaskID'] != selected_task_id else task_data 
-                                           for task in st.session_state.timesheet]
-                st.success("🎉 Task updated successfully!")
-                st.rerun()
-        
-        if selected_task_id:
-            if st.button("🗑 Delete Task", key="delete_task_button"):
+                if desc.strip():  # Ensure description is not empty
+                    task_data = {
+                        "TaskID": selected_task_id,
+                        "Employee": st.session_state.user_role,
+                        "Date": date.strftime('%Y-%m-%d'),
+                        "Day": calendar.day_name[date.weekday()],
+                        "Shift": shift,
+                        "Department": department,
+                        "Category": cat,
+                        "Status": stat,
+                        "Priority": prio,
+                        "Description": desc,
+                        "Submitted": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    }
+                    st.session_state.timesheet = [task if task['TaskID'] != selected_task_id else task_data 
+                                               for task in st.session_state.timesheet]
+                    st.success("🎉 Task updated successfully!")
+                    st.rerun()
+                else:
+                    st.error("❌ Task description cannot be empty!")
+            
+            if delete_submitted and selected_task_id:
                 if st.checkbox("Confirm Delete Task"):
                     st.session_state.timesheet = [task for task in st.session_state.timesheet 
                                                if task['TaskID'] != selected_task_id]
