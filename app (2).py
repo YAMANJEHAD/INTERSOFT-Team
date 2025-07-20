@@ -12,7 +12,7 @@ try:
 except ImportError:
     CALPLOT_AVAILABLE = False
 
-
+# --- Page Config
 st.set_page_config(
     page_title="⚡ INTERSOFT Dashboard | FLM",
     layout="wide",
@@ -226,7 +226,7 @@ with tab1:
             priority = st.selectbox("⚠️ Priority", ["🟢 Low", "🟡 Medium", "🔴 High"], key="add_prio")
         description = st.text_area("🗒 Description", height=120, key="add_desc")
         
-        submitted = st.form_submit_button("✅ Submit Task", key="submit_task_button")
+        submitted = st.form_submit_button("✅ Submit Task")
         
         if submitted:
             if description.strip():
@@ -259,6 +259,7 @@ with tab2:
         selected_id = task_dict[selected_label]
         selected_task = display_df[display_df["TaskID"] == selected_id].iloc[0]
 
+        # Edit Form
         with st.form("edit_form"):
             col1, col2 = st.columns(2)
             with col1:
@@ -271,38 +272,39 @@ with tab2:
                 prio = st.selectbox("⚠️ Priority", ["🟢 Low", "🟡 Medium", "🔴 High"], index=["🟢 Low", "🟡 Medium", "🔴 High"].index(selected_task["Priority"]), key="edit_prio")
             desc = st.text_area("🗒 Description", selected_task["Description"], height=120, key="edit_desc")
 
-            col_save, col_delete = st.columns(2)
-            with col_save:
-                update_submitted = st.form_submit_button("💾 Update Task", key="update_task_button")
-                if update_submitted:
-                    if desc.strip():
-                        for i, t in enumerate(st.session_state.timesheet):
-                            if t["TaskID"] == selected_id:
-                                st.session_state.timesheet[i] = {
-                                    "TaskID": selected_id,
-                                    "Employee": selected_task["Employee"],
-                                    "Date": date.strftime('%Y-%m-%d'),
-                                    "Day": calendar.day_name[date.weekday()],
-                                    "Shift": shift,
-                                    "Department": dept,
-                                    "Category": cat,
-                                    "Status": stat,
-                                    "Priority": prio,
-                                    "Description": desc,
-                                    "Submitted": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                                }
-                                st.success("✅ Task updated successfully!")
-                                st.rerun()
-                    else:
-                        st.error("⚠️ Description cannot be empty!")
-            
-            with col_delete:
-                delete_confirmed = st.checkbox("Confirm Delete Task", key="confirm_delete")
-                delete_submitted = st.form_submit_button("🗑 Delete Task", key="delete_task_button")
-                if delete_submitted and delete_confirmed:
-                    st.session_state.timesheet = [t for t in st.session_state.timesheet if t["TaskID"] != selected_id]
-                    st.warning("🗑 Task deleted successfully!")
-                    st.rerun()
+            submitted = st.form_submit_button("💾 Save Changes")
+            if submitted:
+                if desc.strip():
+                    for i, t in enumerate(st.session_state.timesheet):
+                        if t["TaskID"] == selected_id:
+                            st.session_state.timesheet[i] = {
+                                "TaskID": selected_id,
+                                "Employee": selected_task["Employee"],
+                                "Date": date.strftime('%Y-%m-%d'),
+                                "Day": calendar.day_name[date.weekday()],
+                                "Shift": shift,
+                                "Department": dept,
+                                "Category": cat,
+                                "Status": stat,
+                                "Priority": prio,
+                                "Description": desc,
+                                "Submitted": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                            }
+                            st.success("✅ Task updated successfully!")
+                            st.rerun()
+                else:
+                    st.error("⚠️ Description cannot be empty!")
+
+        # Delete Form (separate from edit form)
+        with st.form("delete_form"):
+            st.warning("⚠️ This action cannot be undone!")
+            delete_confirmed = st.checkbox("I confirm I want to delete this task", key="confirm_delete")
+            submitted_delete = st.form_submit_button("🗑 Delete Task")
+            if submitted_delete and delete_confirmed:
+                st.session_state.timesheet = [t for t in st.session_state.timesheet if t["TaskID"] != selected_id]
+                st.warning("🗑 Task deleted successfully!")
+                st.rerun()
+
         st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.info("ℹ️ No tasks available to edit/delete.")
@@ -390,7 +392,7 @@ if st.session_state.user_role_type == "Admin" and admin_tab:
             filtered_df = filtered_df[(filtered_df['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end.strftime('%Y-%m-%d'))]
             st.dataframe(filtered_df)
 
-            st.markdown("### 🧠 Login Activity Log")
+            st.markdown("### � Login Activity Log")
             st.dataframe(pd.DataFrame(st.session_state.login_log))
 
             st.markdown("### 📊 Employee Statistics")
