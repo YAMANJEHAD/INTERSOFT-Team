@@ -129,21 +129,22 @@ if "login_log" not in st.session_state:
 # --- Authentication ---
 if not st.session_state.logged_in:
     st.markdown("<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>🔐 INTERSOFT Task Tracker</div></div>", unsafe_allow_html=True)
-    username = st.text_input("👤 Username", key="login_username")
-    password = st.text_input("🔑 Password", type="password", key="login_password")
-    if st.button("Login 🚀", key="login_button"):
-        user = USERS.get(username.lower())
-        if user and user["pass"] == password:
-            st.session_state.logged_in = True
-            st.session_state.user_role = username.lower()
-            st.session_state.user_role_type = user["role"]
-            st.session_state.login_log.append({
-                "user": username.lower(),
-                "time": datetime.now().strftime("%Y-%m-%d %I:%M %p")
-            })
-            st.rerun()
-        else:
-            st.error("❌ Invalid credentials")
+    with st.container():
+        username = st.text_input("👤 Username", key="login_username")
+        password = st.text_input("🔑 Password", type="password", key="login_password")
+        if st.button("Login 🚀", key="login_button"):
+            user = USERS.get(username.lower())
+            if user and user["pass"] == password:
+                st.session_state.logged_in = True
+                st.session_state.user_role = username.lower()
+                st.session_state.user_role_type = user["role"]
+                st.session_state.login_log.append({
+                    "user": username.lower(),
+                    "time": datetime.now().strftime("%Y-%m-%d %I:%M %p")
+                })
+                st.rerun()
+            else:
+                st.error("❌ Invalid credentials")
     st.stop()
 
 # --- Auto Weekly Export ---
@@ -268,32 +269,34 @@ with tab2:
             desc = st.text_area("🗒 Description", selected_task["Description"], height=120, key="edit_desc")
 
             save, delete = st.columns(2)
-            if save.form_submit_button("💾 Update Task", key="update_task_button"):
-                if desc.strip():
-                    for i, t in enumerate(st.session_state.timesheet):
-                        if t["TaskID"] == selected_id:
-                            st.session_state.timesheet[i] = {
-                                "TaskID": selected_id,
-                                "Employee": selected_task["Employee"],
-                                "Date": date.strftime('%Y-%m-%d'),
-                                "Day": calendar.day_name[date.weekday()],
-                                "Shift": shift,
-                                "Department": dept,
-                                "Category": cat,
-                                "Status": stat,
-                                "Priority": prio,
-                                "Description": desc,
-                                "Submitted": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                            }
-                            st.success("✅ Task updated successfully!")
-                            st.rerun()
-                else:
-                    st.error("⚠️ Description cannot be empty!")
-            if delete.form_submit_button("🗑 Delete Task", key="delete_task_button", html_class="delete-button"):
-                if st.checkbox("Confirm Delete Task", key="confirm_delete"):
-                    st.session_state.timesheet = [t for t in st.session_state.timesheet if t["TaskID"] != selected_id]
-                    st.warning("🗑 Task deleted successfully!")
-                    st.rerun()
+            with save:
+                if st.form_submit_button("💾 Update Task", key="update_task_button"):
+                    if desc.strip():
+                        for i, t in enumerate(st.session_state.timesheet):
+                            if t["TaskID"] == selected_id:
+                                st.session_state.timesheet[i] = {
+                                    "TaskID": selected_id,
+                                    "Employee": selected_task["Employee"],
+                                    "Date": date.strftime('%Y-%m-%d'),
+                                    "Day": calendar.day_name[date.weekday()],
+                                    "Shift": shift,
+                                    "Department": dept,
+                                    "Category": cat,
+                                    "Status": stat,
+                                    "Priority": prio,
+                                    "Description": desc,
+                                    "Submitted": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                                }
+                                st.success("✅ Task updated successfully!")
+                                st.rerun()
+                    else:
+                        st.error("⚠️ Description cannot be empty!")
+            with delete:
+                if st.form_submit_button("🗑 Delete Task", key="delete_task_button", html_class="delete-button"):
+                    if st.checkbox("Confirm Delete Task", key="confirm_delete"):
+                        st.session_state.timesheet = [t for t in st.session_state.timesheet if t["TaskID"] != selected_id]
+                        st.warning("🗑 Task deleted successfully!")
+                        st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.info("ℹ️ No tasks available to edit/delete.")
