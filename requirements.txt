@@ -18,3 +18,7 @@ openpyxl
 reportlab
 streamlit-calendar
 sqlalchemy
+streamlit==1.38.0
+pandas
+plotly
+xlsxwriter
