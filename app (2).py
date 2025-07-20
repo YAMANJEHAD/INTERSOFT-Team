@@ -1,4 +1,4 @@
-# FLM Task Tracker – Full Version with Admin Panel, Roles, Alerts, Calendar + Auto Export Weekly + Persistent Storage + Main Interface + Logout
+# FLM Task Tracker – Full Version with Admin Panel, Roles, Alerts, Calendar + Auto Export Weekly + Persistent Storage + Main Interface
 
 import streamlit as st
 import pandas as pd
@@ -43,9 +43,6 @@ html, body, [class*="css"] {
 .overview-box:hover { transform: translateY(-5px) scale(1.02); }
 .overview-box span { font-size: 2.2rem; font-weight: 800; color: #fcd34d; }
 footer { text-align: center; color: #94a3b8; padding-top: 2rem; }
-.logout-btn {
-    text-align: right; margin-top: -20px; margin-bottom: 20px;
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -88,13 +85,6 @@ if "login_log" not in st.session_state:
 # --- Save Persistent Data Function ---
 def save_data():
     pd.DataFrame(st.session_state.timesheet).to_csv(DATA_FILE, index=False)
-
-# --- Logout ---
-def logout():
-    for key in ["logged_in", "user_role", "user_role_type"]:
-        if key in st.session_state:
-            del st.session_state[key]
-    st.experimental_rerun()
 
 # --- Authentication ---
 if not st.session_state.logged_in:
@@ -176,9 +166,6 @@ st.markdown("<div class='top-header'><div class='company'>INTERSOFT<br>Internati
 
 st.markdown(f"<div class='date-box'>📅 {datetime.now().strftime('%A, %B %d, %Y - %I:%M %p')}</div>", unsafe_allow_html=True)
 
-# Logout Button
-st.markdown("<div class='logout-btn'>🔓 <a href='#' onclick='window.location.reload();'>Logout</a></div>", unsafe_allow_html=True)
-
 # Calendar & Export
 with st.expander("📆 Task Calendar"):
     show_task_calendar()
@@ -221,7 +208,6 @@ with st.form("add_task_form", clear_on_submit=True):
         st.session_state.timesheet.append(task)
         save_data()
         st.success("🎉 Task added successfully!")
-        st.session_state.dummy = True
         st.experimental_rerun()
 
 # View & Edit Tasks
