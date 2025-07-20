@@ -187,8 +187,7 @@ with tab1:
             stat = st.selectbox("📌 Status", STATUSES, key="add_stat")
             prio = st.selectbox("⚠️ Priority", PRIORITIES, key="add_prio")
         desc = st.text_area("🗒 Task Description", height=100, key="add_desc")
-        submit = st.form_submit_button("✅ Submit Task", key="submit_task_button")
-        if submit:
+        if st.form_submit_button("✅ Submit Task", key="submit_task_button"):
             if desc.strip():
                 st.session_state.timesheet.append({
                     "TaskID": str(uuid.uuid4()),
@@ -232,10 +231,7 @@ with tab2:
             desc = st.text_area("🗒 Task Description", selected_task["Description"], key="edit_desc")
 
             save, delete = st.columns(2)
-            update = save.form_submit_button("💾 Update Task", key="update_task_button")
-            remove = delete.form_submit_button("🗑 Delete Task", key="delete_task_button")
-
-            if update:
+            if save.form_submit_button("💾 Update Task", key="update_task_button"):
                 if desc.strip():
                     for i, t in enumerate(st.session_state.timesheet):
                         if t["TaskID"] == selected_id:
@@ -257,7 +253,7 @@ with tab2:
                 else:
                     st.error("⚠️ Task description cannot be empty!")
 
-            if remove:
+            if delete.form_submit_button("🗑 Delete Task", key="delete_task_button"):
                 if st.checkbox("Confirm Delete Task", key="confirm_delete"):
                     st.session_state.timesheet = [t for t in st.session_state.timesheet if t["TaskID"] != selected_id]
                     st.warning("🗑 Task deleted.")
