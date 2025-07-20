@@ -1,10 +1,10 @@
-# FLM Task Tracker – Enhanced UX + Header Layout + Clear/Reset
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from datetime import datetime, timedelta
+from datetime import datetime
 import calendar
 from io import BytesIO
+import uuid
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -153,29 +153,55 @@ col3.markdown(f"<div class='overview-box'>In Progress<br><span>{in_progress_task
 col4.markdown(f"<div class='overview-box'>Not Started<br><span>{not_started_tasks}</span></div>", unsafe_allow_html=True)
 
 # --- Tabs ---
-tab1, tab2 = st.tabs(["➕ Add Task", "📈 Analytics"])
+tab1, tab2 = st.tabs(["➕ Add/Edit Task", "📈 Analytics"])
 
-# --- Add Task ---
+# --- Add/Edit Task ---
 with tab1:
+    st.subheader("📝 Add/Edit Task")
+    
+    # Task selection for editing
+    edit_task_id = None
+    if not df_user.empty:
+        task_options = {f"{row['Description'][:50]}... ({row['Date']})": row['TaskID'] for _, row in df_user.iterrows()}
+        edit_task_id = st.selectbox("📋 Select task to edit (or leave blank for new task)", 
+                                  ["Create New Task"] + list(task_options.keys()))
+        edit_task_id = task_options.get(edit_task_id) if edit_task_id != "Create New Task" else None
+
     with st.form("task_form", clear_on_submit=True):
-        st.subheader("📝 Add New Task")
         col1, col2 = st.columns(2)
+        
+        # Pre-fill form with existing task data if editing
+        selected_task = df_user[df_user['TaskID'] == edit_task_id].iloc[0] if edit_task_id and not df_user.empty else None
+        
         with col1:
-            shift = st.selectbox("🕒 Shift", SHIFTS)
-            date = st.date_input("📅 Date", value=datetime.today())
-            department = st.selectbox("🏢 Department", ["FLM", "Tech Support", "CRM"])
+            shift = st.selectbox("🕒 Shift", SHIFTS, 
+                               index=SHIFTS.index(selected_task['Shift']) if selected_task is not None else 0)
+            date = st.date_input("📅 Date", 
+                               value=datetime.strptime(selected_task['Date'], '%Y-%m-%d') if selected_task is not None else datetime.today())
+            department = st.selectbox("🏢 Department", ["FLM", "Tech Support", "CRM"],
+                                    index=["FLM", "Tech Support", "CRM"].index(selected_task['Department']) if selected_task is not None else 0)
         with col2:
-            cat = st.selectbox("📂 Category", CATEGORIES)
-            stat = st.selectbox("📌 Status", STATUSES)
-            prio = st.selectbox("⚠️ Priority", PRIORITIES)
-        desc = st.text_area("🗒 Task Description", height=100)
-        btn1, btn2 = st.columns([1, 1])
+            cat = st.selectbox("📂 Category", CATEGORIES,
+                             index=CATEGORIES.index(selected_task['Category']) if selected_task is not None else 0)
+            stat = st.selectbox("📌 Status", STATUSES,
+                              index=STATUSES.index(selected_task['Status']) if selected_task is not None else 0)
+            prio = st.selectbox("⚠️ Priority", PRIORITIES,
+                              index=PRIORITIES.index(selected_task['Priority']) if selected_task is not None else 0)
+        desc = st.text_area("🗒 Task Description", 
+                          value=selected_task['Description'] if selected_task is not None else "",
+                          height=100)
+        
+        btn1, btn2, btn3 = st.columns([1, 1, 1])
         with btn1:
             submitted = st.form_submit_button("✅ Submit Task")
         with btn2:
             clear = st.form_submit_button("🧹 Clear All Tasks")
+        with btn3:
+            delete = st.form_submit_button("🗑 Delete Selected Task") if edit_task_id else None
+
         if submitted:
-            st.session_state.timesheet.append({
+            task_data = {
+                "TaskID": edit_task_id if edit_task_id else str(uuid.uuid4()),
                 "Employee": st.session_state.user_role,
                 "Date": date.strftime('%Y-%m-%d'),
                 "Day": calendar.day_name[date.weekday()],
@@ -186,11 +212,28 @@ with tab1:
                 "Priority": prio,
                 "Description": desc,
                 "Submitted": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            })
-            st.success("🎉 Task added successfully!")
+            }
+            
+            # Update or add task
+            if edit_task_id:
+                st.session_state.timesheet = [task if task['TaskID'] != edit_task_id else task_data 
+                                           for task in st.session_state.timesheet]
+                st.success("🎉 Task updated successfully!")
+            else:
+                st.session_state.timesheet.append(task_data)
+                st.success("🎉 Task added successfully!")
+            st.rerun()
+
         if clear:
             st.session_state.timesheet = []
             st.warning("🧹 All tasks cleared!")
+            st.rerun()
+
+        if delete and edit_task_id:
+            st.session_state.timesheet = [task for task in st.session_state.timesheet 
+                                       if task['TaskID'] != edit_task_id]
+            st.warning("🗑 Selected task deleted!")
+            st.rerun()
 
 # --- Analytics ---
 with tab2:
@@ -223,7 +266,7 @@ with tab2:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
     else:
-        st.info("ℹ️ No tasks found. Add some from the 'Add Task' tab.")
+        st.info("ℹ️ No tasks found. Add some from the 'Add/Edit Task' tab.")
 
 # --- Footer ---
 st.markdown(f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now().strftime('%Y-%m-%d %I:%M %p')}</footer>", unsafe_allow_html=True)
