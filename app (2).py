@@ -225,7 +225,10 @@ with tab1:
             status = st.selectbox("📌 Status", ["⏳ Not Started", "🔄 In Progress", "✅ Completed"], key="add_stat")
             priority = st.selectbox("⚠️ Priority", ["🟢 Low", "🟡 Medium", "🔴 High"], key="add_prio")
         description = st.text_area("🗒 Description", height=120, key="add_desc")
-        if st.form_submit_button("✅ Submit Task", key="submit_task_button"):
+        
+        submitted = st.form_submit_button("✅ Submit Task", key="submit_task_button")
+        
+        if submitted:
             if description.strip():
                 st.session_state.timesheet.append({
                     "TaskID": str(uuid.uuid4()),
@@ -256,7 +259,7 @@ with tab2:
         selected_id = task_dict[selected_label]
         selected_task = display_df[display_df["TaskID"] == selected_id].iloc[0]
 
-        with st.form("edit_form", clear_on_submit=False):
+        with st.form("edit_form"):
             col1, col2 = st.columns(2)
             with col1:
                 shift = st.selectbox("🕒 Shift", ["Morning", "Evening"], index=["Morning", "Evening"].index(selected_task["Shift"]), key="edit_shift")
@@ -268,9 +271,10 @@ with tab2:
                 prio = st.selectbox("⚠️ Priority", ["🟢 Low", "🟡 Medium", "🔴 High"], index=["🟢 Low", "🟡 Medium", "🔴 High"].index(selected_task["Priority"]), key="edit_prio")
             desc = st.text_area("🗒 Description", selected_task["Description"], height=120, key="edit_desc")
 
-            save, delete = st.columns(2)
-            with save:
-                if st.form_submit_button("💾 Update Task", key="update_task_button"):
+            col_save, col_delete = st.columns(2)
+            with col_save:
+                update_submitted = st.form_submit_button("💾 Update Task", key="update_task_button")
+                if update_submitted:
                     if desc.strip():
                         for i, t in enumerate(st.session_state.timesheet):
                             if t["TaskID"] == selected_id:
@@ -291,12 +295,14 @@ with tab2:
                                 st.rerun()
                     else:
                         st.error("⚠️ Description cannot be empty!")
-            with delete:
-                if st.form_submit_button("🗑 Delete Task", key="delete_task_button", html_class="delete-button"):
-                    if st.checkbox("Confirm Delete Task", key="confirm_delete"):
-                        st.session_state.timesheet = [t for t in st.session_state.timesheet if t["TaskID"] != selected_id]
-                        st.warning("🗑 Task deleted successfully!")
-                        st.rerun()
+            
+            with col_delete:
+                delete_confirmed = st.checkbox("Confirm Delete Task", key="confirm_delete")
+                delete_submitted = st.form_submit_button("🗑 Delete Task", key="delete_task_button")
+                if delete_submitted and delete_confirmed:
+                    st.session_state.timesheet = [t for t in st.session_state.timesheet if t["TaskID"] != selected_id]
+                    st.warning("🗑 Task deleted successfully!")
+                    st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.info("ℹ️ No tasks available to edit/delete.")
