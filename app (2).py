@@ -7,7 +7,7 @@ from io import BytesIO
 import uuid
 
 # --- Page Config ---
-st.set_page_config("⚡ INTERSOFT Dashboard | FLM", layout="wide", page_icon="🚀")
+st.set_page_config("INTERSOFT Dashboard | FLM", layout="wide", page_icon="🚀")
 
 # --- Styling ---
 st.markdown("""
