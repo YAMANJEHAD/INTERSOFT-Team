@@ -12,7 +12,7 @@ try:
 except ImportError:
     CALPLOT_AVAILABLE = False
 
-# --- Page Config
+
 st.set_page_config(
     page_title="⚡ INTERSOFT Dashboard | FLM",
     layout="wide",
