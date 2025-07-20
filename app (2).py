@@ -47,12 +47,9 @@ html, body, [class*="css"] {
 .overview-box span { font-size: 2.4rem; font-weight: 800; color: #fcd34d; }
 footer { text-align: center; color: #94a3b8; padding-top: 2rem; }
 .logout-btn { text-align: right; margin-top: -20px; margin-bottom: 20px; }
-
 /* Table Styling */
 thead tr th { background-color: #60a5fa !important; font-weight: bold; color: white !important; }
 tbody tr td { font-weight: 600; color: #cbd5e1; }
-
-/* Animations */
 @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes bounceIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
