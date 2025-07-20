@@ -14,6 +14,14 @@ import matplotlib.pyplot as plt
 # --- Page Config ---
 st.set_page_config("⚡ INTERSOFT Dashboard | FLM", layout="wide", page_icon="🚀")
 
+# --- Ensure session keys exist ---
+if "timesheet" not in st.session_state:
+    st.session_state.timesheet = []
+if "user_role" not in st.session_state:
+    st.session_state.user_role = "Unknown"
+if "user_role_type" not in st.session_state:
+    st.session_state.user_role_type = "Employee"
+
 # --- Styling ---
 st.markdown("""
 <style>
