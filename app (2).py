@@ -1,4 +1,4 @@
-# FLM Task Tracker – Full Version with Admin Panel, Roles, Alerts, Calendar + Auto Export Weekly
+# FLM Task Tracker – Full Version with Admin Panel, Roles, Alerts, Calendar + Auto Export Weekly + Persistent Storage
 
 import streamlit as st
 import pandas as pd
@@ -51,16 +51,32 @@ USERS = {
     "Qusai": {"pass": "QUSAI4", "role": "Employee"},
 }
 
+# --- Paths ---
+DATA_FILE = "data/tasks.csv"
+EXPORT_FOLDER = "weekly_exports"
+os.makedirs("data", exist_ok=True)
+os.makedirs(EXPORT_FOLDER, exist_ok=True)
+
 # --- Session Init ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_role = None
     st.session_state.user_role_type = None
-    st.session_state.timesheet = []
     st.session_state.login_log = []
+
+# --- Load Persistent Data ---
+if "timesheet" not in st.session_state:
+    if os.path.exists(DATA_FILE):
+        st.session_state.timesheet = pd.read_csv(DATA_FILE).to_dict("records")
+    else:
+        st.session_state.timesheet = []
 
 if "login_log" not in st.session_state:
     st.session_state.login_log = []
+
+# --- Save Persistent Data Function ---
+def save_data():
+    pd.DataFrame(st.session_state.timesheet).to_csv(DATA_FILE, index=False)
 
 # --- Authentication ---
 if not st.session_state.logged_in:
@@ -80,9 +96,6 @@ if not st.session_state.logged_in:
     st.stop()
 
 # --- Auto Weekly Export ---
-EXPORT_FOLDER = "weekly_exports"
-os.makedirs(EXPORT_FOLDER, exist_ok=True)
-
 def auto_export_weekly():
     now = datetime.now()
     if now.weekday() == 6:  # Sunday
@@ -96,26 +109,17 @@ def auto_export_weekly():
 # Call auto export
 auto_export_weekly()
 
-# --- Logout Button ---
-st.sidebar.title("🔒 Session")
-if st.sidebar.button("Logout"):
-    st.session_state.logged_in = False
-    st.session_state.user_role = None
-    st.session_state.user_role_type = None
-    st.rerun()
+# --- Dashboard ---
+st.markdown(f"<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>👋 Welcome <b>{st.session_state.user_role}</b><br><small>Role: {st.session_state.user_role_type}</small></div></div>", unsafe_allow_html=True)
+st.markdown(f"<div class='date-box'>📅 {datetime.now().strftime('%A, %B %d, %Y - %I:%M %p')}</div>", unsafe_allow_html=True)
 
-# --- Header & Date ---
-st.markdown(f"<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>👋 Welcome <b>{st.session_state.user_role}</b><br><small>Today is {datetime.now().strftime('%A, %B %d, %Y')}</small></div></div>", unsafe_allow_html=True)
-st.markdown(f"<div class='date-box'>🕒 {datetime.now().strftime('%I:%M %p')}</div>", unsafe_allow_html=True)
-
-# --- DataFrame Setup ---
+# --- Overview Boxes ---
 df = pd.DataFrame(st.session_state.timesheet)
-df_user = df[df['Employee'] == st.session_state.user_role] if not df.empty else pd.DataFrame()
-
+df_user = df[df['Employee'] == st.session_state.user_role] if st.session_state.user_role_type == 'Employee' else df
 total_tasks = len(df_user)
-completed_tasks = df_user[df_user['Status'] == '✅ Completed'].shape[0] if not df_user.empty else 0
-in_progress_tasks = df_user[df_user['Status'] == '🔄 In Progress'].shape[0] if not df_user.empty else 0
-not_started_tasks = df_user[df_user['Status'] == '⏳ Not Started'].shape[0] if not df_user.empty else 0
+completed_tasks = df_user[df_user['Status'] == '✅ Completed'].shape[0]
+in_progress_tasks = df_user[df_user['Status'] == '🔄 In Progress'].shape[0]
+not_started_tasks = df_user[df_user['Status'] == '⏳ Not Started'].shape[0]
 
 col1, col2, col3, col4 = st.columns(4)
 col1.markdown(f"<div class='overview-box'>Total Tasks<br><span>{total_tasks}</span></div>", unsafe_allow_html=True)
@@ -123,83 +127,102 @@ col2.markdown(f"<div class='overview-box'>Completed<br><span>{completed_tasks}</
 col3.markdown(f"<div class='overview-box'>In Progress<br><span>{in_progress_tasks}</span></div>", unsafe_allow_html=True)
 col4.markdown(f"<div class='overview-box'>Not Started<br><span>{not_started_tasks}</span></div>", unsafe_allow_html=True)
 
-# --- Alert: No task added today ---
-today_str = datetime.now().strftime('%Y-%m-%d')
-if df_user.empty or today_str not in df_user['Date'].values:
-    st.warning("⚠️ You haven't submitted any task for today!")
-
 # --- Tabs ---
-tab1, tab2, tab3 = st.tabs(["➕ Add Task", "📈 Analytics", "🛠 Admin Panel"])
+tab1, tab2, tab3 = st.tabs(["➕ Add Task", "✏️ Edit/Delete Task", "📈 Analytics"])
 
+# --- Add Task ---
 with tab1:
-    st.header("➕ Add New Task")
-    with st.form("task_form", clear_on_submit=True):
+    with st.form("add_task", clear_on_submit=True):
+        st.subheader("📝 Add New Task")
         col1, col2 = st.columns(2)
         with col1:
-            shift = st.selectbox("🕒 Shift", ["Morning", "Evening"])
-            date_selected = st.date_input("📅 Date", value=datetime.today())
-            department = st.selectbox("🏢 Department", ["FLM", "Tech Support", "CRM"])
+            shift = st.selectbox("🕒 Shift", ["🌞 Morning (8:30 - 5:30)", "🌙 Evening (3:00 - 11:00)"])
+            task_date = st.date_input("📅 Date", value=date.today())
+            dept = st.selectbox("🏢 Department", ["FLM", "Support", "CRM"])
         with col2:
-            category = st.selectbox("📂 Category", ["Job Orders", "CRM", "Meetings", "Paperwork"])
+            category = st.selectbox("📂 Category", ["🛠 Operations", "📄 Paper Work", "🔧 Job Orders", "🤝 CRM"])
             status = st.selectbox("📌 Status", ["⏳ Not Started", "🔄 In Progress", "✅ Completed"])
             priority = st.selectbox("⚠️ Priority", ["🟢 Low", "🟡 Medium", "🔴 High"])
-        description = st.text_area("🗒 Description")
-        submitted = st.form_submit_button("Submit")
-
-        if submitted and description.strip():
-            st.session_state.timesheet.append({
+        desc = st.text_area("🗒 Task Description")
+        submitted = st.form_submit_button("✅ Submit Task")
+        if submitted and desc.strip():
+            new_task = {
                 "TaskID": str(uuid.uuid4()),
                 "Employee": st.session_state.user_role,
-                "Date": date_selected.strftime('%Y-%m-%d'),
-                "Day": calendar.day_name[date_selected.weekday()],
+                "Date": task_date.strftime('%Y-%m-%d'),
+                "Day": calendar.day_name[task_date.weekday()],
                 "Shift": shift,
-                "Department": department,
+                "Department": dept,
                 "Category": category,
                 "Status": status,
                 "Priority": priority,
-                "Description": description,
+                "Description": desc,
                 "Submitted": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            })
+            }
+            st.session_state.timesheet.append(new_task)
+            save_data()
             st.success("🎉 Task added successfully!")
             st.rerun()
 
+# --- Edit/Delete Task ---
 with tab2:
-    st.header("📊 Analytics")
-    if df_user.empty:
-        st.info("No tasks yet.")
-    else:
-        st.plotly_chart(px.histogram(df_user, x="Date", color="Status", title="Tasks Over Time"))
-        st.plotly_chart(px.pie(df_user, names="Category", title="Category Distribution"))
-        st.plotly_chart(px.bar(df_user, x="Priority", color="Priority", title="Priority Levels"))
-        st.dataframe(df_user)
+    st.subheader("✏️ Edit or Delete Existing Task")
+    if not df_user.empty:
+        options = {f"{row['Description'][:50]} | {row['Date']}": row['TaskID'] for _, row in df_user.iterrows()}
+        selected = st.selectbox("📋 Choose Task", list(options.keys()))
+        task_id = options[selected]
+        selected_task = df_user[df_user['TaskID'] == task_id].iloc[0]
+        with st.form("edit_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                shift = st.selectbox("🕒 Shift", ["🌞 Morning (8:30 - 5:30)", "🌙 Evening (3:00 - 11:00)"], index=["🌞 Morning (8:30 - 5:30)", "🌙 Evening (3:00 - 11:00)"].index(selected_task['Shift']))
+                task_date = st.date_input("📅 Date", value=datetime.strptime(selected_task['Date'], '%Y-%m-%d'))
+                dept = st.selectbox("🏢 Department", ["FLM", "Support", "CRM"], index=["FLM", "Support", "CRM"].index(selected_task['Department']))
+            with col2:
+                category = st.selectbox("📂 Category", ["🛠 Operations", "📄 Paper Work", "🔧 Job Orders", "🤝 CRM"], index=["🛠 Operations", "📄 Paper Work", "🔧 Job Orders", "🤝 CRM"].index(selected_task['Category']))
+                status = st.selectbox("📌 Status", ["⏳ Not Started", "🔄 In Progress", "✅ Completed"], index=["⏳ Not Started", "🔄 In Progress", "✅ Completed"].index(selected_task['Status']))
+                priority = st.selectbox("⚠️ Priority", ["🟢 Low", "🟡 Medium", "🔴 High"], index=["🟢 Low", "🟡 Medium", "🔴 High"].index(selected_task['Priority']))
+            desc = st.text_area("🗒 Task Description", value=selected_task['Description'])
+            update = st.form_submit_button("✏️ Update Task")
+            delete = st.form_submit_button("🗑 Delete Task")
+            if update:
+                st.session_state.timesheet = [task if task['TaskID'] != task_id else {
+                    **task, "Shift": shift, "Date": task_date.strftime('%Y-%m-%d'),
+                    "Day": calendar.day_name[task_date.weekday()], "Department": dept,
+                    "Category": category, "Status": status, "Priority": priority, "Description": desc
+                } for task in st.session_state.timesheet]
+                save_data()
+                st.success("✅ Task updated successfully!")
+                st.rerun()
+            if delete:
+                st.session_state.timesheet = [task for task in st.session_state.timesheet if task['TaskID'] != task_id]
+                save_data()
+                st.warning("🗑 Task deleted successfully!")
+                st.rerun()
 
+# --- Analytics ---
+with tab3:
+    st.subheader("📊 Task Analytics")
+    if df_user.empty:
+        st.info("ℹ️ No tasks to show.")
+    else:
+        st.plotly_chart(px.histogram(df_user, x="Date", color="Status", barmode="group", title="Tasks Over Time"), use_container_width=True)
+        st.plotly_chart(px.pie(df_user, names="Category", title="Category Breakdown"), use_container_width=True)
+        st.plotly_chart(px.bar(df_user, x="Priority", color="Priority", title="Priority Distribution"), use_container_width=True)
+        st.markdown("### 📋 Task Table")
+        st.dataframe(df_user)
+        st.markdown("### 📥 Export to Excel")
         output = BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             df_user.to_excel(writer, index=False, sheet_name='Tasks')
-        st.download_button("📥 Download Excel", data=output.getvalue(), file_name="tasks_export.xlsx")
+        st.download_button("📥 Download Excel File", data=output.getvalue(), file_name="FLM_Tasks.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-with tab3:
-    st.header("🛠 Admin Panel")
-    if st.session_state.user_role_type != "Admin":
-        st.error("Access restricted to Admins only.")
-    else:
-        df_all = pd.DataFrame(st.session_state.timesheet)
-        if not df_all.empty:
-            st.subheader("📅 Filter by Date and Employee")
-            users = df_all['Employee'].unique().tolist()
-            selected_user = st.selectbox("Employee", options=["All"] + users)
-            start = st.date_input("Start Date", value=datetime.now() - timedelta(days=7))
-            end = st.date_input("End Date", value=datetime.now())
-
-            if selected_user != "All":
-                df_all = df_all[df_all['Employee'] == selected_user]
-            df_all = df_all[(df_all['Date'] >= start.strftime('%Y-%m-%d')) & (df_all['Date'] <= end.strftime('%Y-%m-%d'))]
-
-            st.dataframe(df_all)
-            st.subheader("🧠 Login Activity Log")
-            st.dataframe(pd.DataFrame(st.session_state.login_log))
-        else:
-            st.info("No tasks recorded yet.")
+# --- Logout ---
+st.sidebar.markdown("---")
+if st.sidebar.button("🔓 Logout"):
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.rerun()
 
 # --- Footer ---
 st.markdown(f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now().strftime('%A, %B %d, %Y - %I:%M %p')}</footer>", unsafe_allow_html=True)
