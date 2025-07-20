@@ -1,5 +1,3 @@
-# FLM Task Tracker – Full Version with Admin Panel, Roles, Alerts, Calendar
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -9,7 +7,11 @@ from io import BytesIO
 import uuid
 
 # --- Page Config ---
-st.set_page_config("⚡ INTERSOFT Dashboard | FLM", layout="wide", page_icon="🚀")
+st.set_page_config(
+    page_title="⚡ INTERSOFT Dashboard | FLM",
+    layout="wide",
+    page_icon="🚀"
+)
 
 # --- Styling ---
 st.markdown("""
@@ -39,208 +41,313 @@ html, body, [class*="css"] {
 }
 .overview-box:hover { transform: translateY(-5px) scale(1.02); }
 .overview-box span { font-size: 2.2rem; font-weight: 800; color: #fcd34d; }
+.stButton>button {
+    background: linear-gradient(135deg, #4f46e5, #9333ea);
+    color: white; font-weight: 600; border-radius: 10px;
+    padding: 0.6rem 1.4rem; box-shadow: 0 6px 25px rgba(0,0,0,0.3);
+    transition: all 0.2s ease-in-out; border: none;
+}
+.stButton>button:hover {
+    transform: scale(1.05); box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+}
+.stButton>button:active {
+    transform: scale(0.95); box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+.edit-section {
+    background: #1e293b; padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem;
+}
+.alert-box {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    padding: 1rem; border-radius: 12px; color: white; margin-bottom: 1rem;
+}
 footer { text-align: center; color: #94a3b8; padding-top: 2rem; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- Users & Roles ---
-USERS = {
-    "Yaman": {"pass": "YAMAN1", "role": "Admin"},
-    "Hatem": {"pass": "HATEM2", "role": "Supervisor"},
-    "Qusai": {"pass": "QUSAI4", "role": "Employee"},
-}
+# --- Authentication ---
+def check_login(username, password):
+    users = {
+        "admin": {"password": "ADMIN1", "role": "Admin"},
+        "supervisor": {"password": "SUPERVISOR2", "role": "Supervisor"},
+        "yaman": {"password": "YAMAN1", "role": "Employee"},
+        "hatem": {"password": "HATEM2", "role": "Employee"},
+        "mahmoud": {"password": "MAHMOUD3", "role": "Employee"},
+        "qusai": {"password": "QUSAI4", "role": "Employee"}
+    }
+    user = users.get(username.lower())
+    if user and user["password"] == password:
+        return user["role"]
+    return None
 
-# --- Session Init ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_role = None
-    st.session_state.user_role_type = None
+    st.session_state.username = None
+if "timesheet" not in st.session_state:
     st.session_state.timesheet = []
-    st.session_state.login_log = []
+if "login_history" not in st.session_state:
+    st.session_state.login_history = []
 
-# --- Authentication ---
 if not st.session_state.logged_in:
     st.markdown("<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>🔐 INTERSOFT Task Tracker</div></div>", unsafe_allow_html=True)
     username = st.text_input("👤 Username")
     password = st.text_input("🔑 Password", type="password")
-    if st.button("Login 🚀"):
-        user = USERS.get(username)
-        if user and user["pass"] == password:
+    if st.button("Login 🚀", key="login_button"):
+        role = check_login(username, password)
+        if role:
             st.session_state.logged_in = True
-            st.session_state.user_role = username
-            st.session_state.user_role_type = user["role"]
-            st.session_state.login_log.append({"user": username, "time": datetime.now().strftime("%Y-%m-%d %I:%M %p")})
+            st.session_state.user_role = role
+            st.session_state.username = username.lower()
+            st.session_state.login_history.append({
+                "username": username.lower(),
+                "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                "role": role
+            })
             st.rerun()
         else:
             st.error("❌ Invalid credentials")
     st.stop()
 
-# --- Logout Button ---
-st.sidebar.title(f"Welcome, {st.session_state.user_role} 👋")
-if st.sidebar.button("Logout 🔓"):
-    st.session_state.logged_in = False
-    st.session_state.user_role = None
-    st.session_state.user_role_type = None
-    st.rerun()
-
-# --- Constants ---
+# --- Initialize Constants ---
 SHIFTS = ["🌞 Morning (8:30 - 5:30)", "🌙 Evening (3:00 - 11:00)"]
-CATEGORIES = ["💪 Operations", "📄 Paper Work", "🔧 Job Orders", "🤝 CRM", "🗕 Meetings", "💻 TOMS"]
+CATEGORIES = ["🛠 Operations", "📄 Paper Work", "🔧 Job Orders", "🤝 CRM", "📅 Meetings", "💻 TOMS"]
 PRIORITIES = ["🟢 Low", "🟡 Medium", "🔴 High"]
 STATUSES = ["⏳ Not Started", "🔄 In Progress", "✅ Completed"]
 
-# --- Top Info ---
-st.markdown(f"<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>👋 Welcome <b>{st.session_state.user_role}</b><br><small>Role: {st.session_state.user_role_type}</small></div></div>", unsafe_allow_html=True)
-st.markdown(f"<div class='date-box'>🗓 {datetime.now().strftime('%A, %B %d, %Y - %I:%M %p')}</div>", unsafe_allow_html=True)
+# --- Header ---
+st.markdown(f"<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>👋 Welcome <b>{st.session_state.username.capitalize()} ({st.session_state.user_role})</b><br><small>Start tracking tasks, boost your day, and monitor progress like a pro!</small></div></div>", unsafe_allow_html=True)
+st.markdown(f"<div class='date-box'>📅 {datetime.now().strftime('%A, %B %d, %Y - %I:%M %p')}</div>", unsafe_allow_html=True)
+
+# --- Logout Button ---
+if st.button("🔓 Logout", key="logout_button"):
+    st.session_state.logged_in = False
+    st.session_state.user_role = None
+    st.session_state.username = None
+    st.rerun()
 
 # --- Data ---
 df = pd.DataFrame(st.session_state.timesheet)
-df_user = df[df["Employee"] == st.session_state.user_role] if not df.empty else pd.DataFrame()
+df_user = df[df["Employee"] == st.session_state.username] if not df.empty else pd.DataFrame()
 
-# --- Late Task Alert ---
-today_str = datetime.today().strftime('%Y-%m-%d')
-if df_user.empty or today_str not in df_user["Date"].values:
-    st.error("⚠️ You haven't submitted any tasks today!")
+# --- Dashboard Stats ---
+display_df = df_user if st.session_state.user_role == "Employee" else df
+if not display_df.empty and "Status" in display_df.columns:
+    total_tasks = len(display_df)
+    completed_tasks = display_df[display_df["Status"] == "✅ Completed"].shape[0]
+    in_progress_tasks = display_df[display_df["Status"] == "🔄 In Progress"].shape[0]
+    not_started_tasks = display_df[display_df["Status"] == "⏳ Not Started"].shape[0]
+else:
+    total_tasks = completed_tasks = in_progress_tasks = not_started_tasks = 0
 
-# --- Overview ---
-total = len(df_user)
-completed = df_user[df_user["Status"] == "✅ Completed"].shape[0] if not df_user.empty else 0
-progress = df_user[df_user["Status"] == "🔄 In Progress"].shape[0] if not df_user.empty else 0
-not_started = df_user[df_user["Status"] == "⏳ Not Started"].shape[0] if not df_user.empty else 0
-col1, col2, col3, col4 = st.columns(4)
-col1.markdown(f"<div class='overview-box'>Total Tasks<br><span>{total}</span></div>", unsafe_allow_html=True)
-col2.markdown(f"<div class='overview-box'>Completed<br><span>{completed}</span></div>", unsafe_allow_html=True)
-col3.markdown(f"<div class='overview-box'>In Progress<br><span>{progress}</span></div>", unsafe_allow_html=True)
-col4.markdown(f"<div class='overview-box'>Not Started<br><span>{not_started}</span></div>", unsafe_allow_html=True)
+col1, col2,
+
+System: col3, col4 = st.columns(4)
+col1.markdown(f"<div class='overview-box'>Total Tasks<br><span>{total_tasks}</span></div>", unsafe_allow_html=True)
+col2.markdown(f"<div class='overview-box'>Completed<br><span>{completed_tasks}</span></div>", unsafe_allow_html=True)
+col3.markdown(f"<div class='overview-box'>In Progress<br><span>{in_progress_tasks}</span></div>", unsafe_allow_html=True)
+col4.markdown(f"<div class='overview-box'>Not Started<br><span>{not_started_tasks}</span></div>", unsafe_allow_html=True)
+
+# --- Alert for No Tasks Today (Admin/Supervisor) ---
+if st.session_state.user_role in ["Admin", "Supervisor"]:
+    today = datetime.now().strftime('%Y-%m-%d')
+    users = list(set(df['Employee'].unique()) if not df.empty else [])
+    for user in ["yaman", "hatem", "mahmoud", "qusai"]:
+        if user not in users or not any(df[df['Employee'] == user]['Date'] == today):
+            st.markdown(f"<div class='alert-box'>🔔 Alert: <b>{user.capitalize()}</b> has not submitted a task today!</div>", unsafe_allow_html=True)
 
 # --- Tabs ---
-tabs = ["➕ Add Task", "📊 Analytics"]
-if st.session_state.user_role_type == "Admin":
-    tabs.append("🧭 Admin Panel")
-page = st.tabs(tabs)
+tabs = ["➕ Add Task", "✏️ Edit/Delete Task", "📈 Analytics"]
+if st.session_state.user_role == "Admin":
+    tabs.append("🛠 Admin Panel")
+tab1, tab2, tab3, *admin_tab = st.tabs(tabs)
 
-# === TAB 1: Add Task ===
-with page[0]:
-    with st.form("add_form", clear_on_submit=True):
+# --- Add Task ---
+with tab1:
+    with st.form("add_task_form", clear_on_submit=True):
+        st.subheader("📝 Add New Task")
         c1, c2 = st.columns(2)
         with c1:
             shift = st.selectbox("🕒 Shift", SHIFTS)
-            date_val = st.date_input("📅 Date", value=date.today())
-            dept = st.selectbox("🏢 Department", ["FLM", "Tech Support", "CRM"])
+            date = st.date_input("📅 Date", value=datetime.today())
+            department = st.selectbox("🏢 Department", ["FLM", "Tech Support", "CRM"])
         with c2:
             cat = st.selectbox("📂 Category", CATEGORIES)
-            status = st.selectbox("📌 Status", STATUSES)
+            stat = st.selectbox("📌 Status", STATUSES)
             prio = st.selectbox("⚠️ Priority", PRIORITIES)
-        desc = st.text_area("📝 Task Description", height=100)
-        if st.form_submit_button("✅ Submit Task"):
+        desc = st.text_area("🗒 Task Description", height=100)
+        submit = st.form_submit_button("✅ Submit Task", key="submit_task_button")
+        if submit:
             if desc.strip():
                 st.session_state.timesheet.append({
                     "TaskID": str(uuid.uuid4()),
-                    "Employee": st.session_state.user_role,
-                    "Date": date_val.strftime('%Y-%m-%d'),
-                    "Day": calendar.day_name[date_val.weekday()],
+                    "Employee": st.session_state.username,
+                    "Date": date.strftime('%Y-%m-%d'),
+                    "Day": calendar.day_name[date.weekday()],
                     "Shift": shift,
-                    "Department": dept,
+                    "Department": department,
                     "Category": cat,
-                    "Status": status,
+                    "Status": stat,
                     "Priority": prio,
                     "Description": desc,
-                    "Submitted": datetime.now().strftime('%Y-%m-%d %I:%M:%S')
+                    "Submitted": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 })
-                st.success("✅ Task added.")
+                st.success("✅ Task added successfully.")
                 st.rerun()
+            else:
+                st.error("⚠️ Task description cannot be empty!")
 
-# === TAB 2: Analytics ===
-with page[1]:
-    st.subheader("📊 Task Analytics")
-    if not df_user.empty:
-        st.plotly_chart(px.histogram(df_user, x="Date", color="Status", title="Tasks Over Time"), use_container_width=True)
-        st.plotly_chart(px.pie(df_user, names="Category", title="Category Breakdown"), use_container_width=True)
-        st.bar_chart(df_user["Priority"].value_counts())
+# --- Edit/Delete Task ---
+with tab2:
+    st.subheader("✏️ Edit or Delete Existing Task")
+    display_df = df_user if st.session_state.user_role == "Employee" else df
+    if not display_df.empty:
+        st.markdown("<div class='edit-section'>", unsafe_allow_html=True)
+        task_dict = {f"{row['Description'][:30]}... ({row['Date']} | {row['Category']} | {row['Status']} | {row['Employee'].capitalize()})": row["TaskID"] for _, row in display_df.iterrows()}
+        selected_label = st.selectbox("📋 Select Task", list(task_dict.keys()), key="select_task")
+        selected_id = task_dict[selected_label]
+        selected_task = display_df[display_df["TaskID"] == selected_id].iloc[0]
 
-        df_user["Date"] = pd.to_datetime(df_user["Date"])
-        st.markdown("### 📆 Task Calendar View")
-        cal = df_user.groupby("Date")["TaskID"].count().reset_index()
-        cal.columns = ["Date", "Tasks"]
-        st.bar_chart(cal.set_index("Date"))
-    else:
-        st.info("No tasks to display.")
+        with st.form("edit_form", clear_on_submit=False):
+            c1, c2 = st.columns(2)
+            with c1:
+                shift = st.selectbox("🕒 Shift", SHIFTS, index=SHIFTS.index(selected_task["Shift"]), key="edit_shift")
+                date = st.date_input("📅 Date", datetime.strptime(selected_task["Date"], '%Y-%m-%d'), key="edit_date")
+                dept = st.selectbox("🏢 Department", ["FLM", "Tech Support", "CRM"], index=["FLM", "Tech Support", "CRM"].index(selected_task["Department"]), key="edit_dept")
+            with c2:
+                cat = st.selectbox("📂 Category", CATEGORIES, index=CATEGORIES.index(selected_task["Category"]), key="edit_cat")
+                stat = st.selectbox("📌 Status", STATUSES, index=STATUSES.index(selected_task["Status"]), key="edit_stat")
+                prio = st.selectbox("⚠️ Priority", PRIORITIES, index=PRIORITIES.index(selected_task["Priority"]), key="edit_prio")
+            desc = st.text_area("🗒 Task Description", selected_task["Description"], key="edit_desc")
 
-# === TAB 3: Admin Panel ===
-if st.session_state.user_role_type == "Admin":
-    with page[2]:
-        st.subheader("🧭 Admin Panel")
-        all_df = pd.DataFrame(st.session_state.timesheet)
-        if not all_df.empty:
-            employees = sorted(all_df["Employee"].unique())
-            filter_emp = st.selectbox("👤 Filter by Employee", ["All"] + employees)
-            filter_date = st.date_input("📅 Filter by Date (Optional)", value=None)
-            filtered = all_df.copy()
-            if filter_emp != "All":
-                filtered = filtered[filtered["Employee"] == filter_emp]
-            if filter_date:
-                filtered = filtered[pd.to_datetime(filtered["Date"]).dt.date == filter_date]
-            st.dataframe(filtered)
+            save, delete = st.columns(2)
+            update = save.form_submit_button("💾 Update Task", key="update_task_button")
+            remove = delete.form_submit_button("🗑 Delete Task", key="delete_task_button")
 
-            # Task selection
-            task_map = {f"{row['Employee']} | {row['Description'][:30]} ({row['Date']})": row["TaskID"] for _, row in filtered.iterrows()}
-            task_label = st.selectbox("✏️ Choose Task to Edit/Delete", list(task_map.keys()))
-            task_id = task_map[task_label]
-            target = all_df[all_df["TaskID"] == task_id].iloc[0]
-
-            with st.form("admin_edit_form"):
-                c1, c2 = st.columns(2)
-                with c1:
-                    shift = st.selectbox("🕒 Shift", SHIFTS, index=SHIFTS.index(target["Shift"]))
-                    date_val = st.date_input("📅 Date", datetime.strptime(target["Date"], "%Y-%m-%d"))
-                    dept = st.selectbox("🏢 Department", ["FLM", "Tech Support", "CRM"], index=["FLM", "Tech Support", "CRM"].index(target["Department"]))
-                    emp = st.selectbox("👤 Employee", employees, index=employees.index(target["Employee"]))
-                with c2:
-                    cat = st.selectbox("📂 Category", CATEGORIES, index=CATEGORIES.index(target["Category"]))
-                    status = st.selectbox("📌 Status", STATUSES, index=STATUSES.index(target["Status"]))
-                    prio = st.selectbox("⚠️ Priority", PRIORITIES, index=PRIORITIES.index(target["Priority"]))
-                desc = st.text_area("📝 Task Description", target["Description"])
-
-                b1, b2 = st.columns(2)
-                if b1.form_submit_button("💾 Update Task"):
-                    for i, task in enumerate(st.session_state.timesheet):
-                        if task["TaskID"] == task_id:
+            if update:
+                if desc.strip():
+                    for i, t in enumerate(st.session_state.timesheet):
+                        if t["TaskID"] == selected_id:
                             st.session_state.timesheet[i] = {
-                                "TaskID": task_id,
-                                "Employee": emp,
-                                "Date": date_val.strftime('%Y-%m-%d'),
-                                "Day": calendar.day_name[date_val.weekday()],
+                                "TaskID": selected_id,
+                                "Employee": selected_task["Employee"],
+                                "Date": date.strftime('%Y-%m-%d'),
+                                "Day": calendar.day_name[date.weekday()],
                                 "Shift": shift,
                                 "Department": dept,
                                 "Category": cat,
-                                "Status": status,
+                                "Status": stat,
                                 "Priority": prio,
                                 "Description": desc,
-                                "Submitted": datetime.now().strftime('%Y-%m-%d %I:%M:%S')
+                                "Submitted": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                             }
-                            st.success("✅ Task updated!")
+                            st.success("✅ Task updated.")
                             st.rerun()
-                if b2.form_submit_button("🗑 Delete Task"):
-                    st.session_state.timesheet = [t for t in st.session_state.timesheet if t["TaskID"] != task_id]
+                else:
+                    st.error("⚠️ Task description cannot be empty!")
+
+            if remove:
+                if st.checkbox("Confirm Delete Task", key="confirm_delete"):
+                    st.session_state.timesheet = [t for t in st.session_state.timesheet if t["TaskID"] != selected_id]
                     st.warning("🗑 Task deleted.")
                     st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+    else:
+        st.info("ℹ️ No tasks available to edit/delete.")
 
-            # Login Log
-            st.markdown("### 🕒 Login History")
-            log_df = pd.DataFrame(st.session_state.login_log)
-            st.dataframe(log_df)
+# --- Analytics ---
+with tab3:
+    if not display_df.empty:
+        st.subheader("📊 Task Analysis")
+        st.plotly_chart(px.histogram(display_df, x="Date", color="Status", title="Tasks Over Time"), use_container_width=True)
+        st.plotly_chart(px.pie(display_df, names="Category", title="Category Breakdown"), use_container_width=True)
+        st.plotly_chart(px.bar(display_df, x="Priority", color="Priority", title="Priority Distribution"), use_container_width=True)
 
-            # Stats
-            st.markdown("### 📊 Employee Stats")
-            sum_df = all_df.groupby("Employee")["TaskID"].count().reset_index().rename(columns={"TaskID": "Total"})
-            comp = all_df[all_df["Status"] == "✅ Completed"].groupby("Employee")["Status"].count().reset_index().rename(columns={"Status": "Completed"})
-            sum_df = sum_df.merge(comp, on="Employee", how="left").fillna(0)
-            sum_df["Completed"] = sum_df["Completed"].astype(int)
-            sum_df["Completion Rate"] = ((sum_df["Completed"] / sum_df["Total"]) * 100).round(0).astype(int).astype(str) + "%"
-            st.dataframe(sum_df)
-            st.bar_chart(sum_df.set_index("Employee")["Total"])
+        st.markdown("### 📋 Task Table")
+        st.dataframe(display_df)
+
+        st.markdown("### 📅 Calendar-Style Task Summary")
+        dates = pd.date_range(start=display_df['Date'].min(), end=display_df['Date'].max()) if not display_df.empty else pd.date_range(start=datetime.today(), end=datetime.today())
+        calendar_data = []
+        for d in dates:
+            d_str = d.strftime('%Y-%m-%d')
+            tasks_on_date = display_df[display_df['Date'] == d_str]
+            task_count = len(tasks_on_date)
+            calendar_data.append({"Date": d_str, "Task Count": task_count})
+        calendar_df = pd.DataFrame(calendar_data)
+        st.dataframe(calendar_df, use_container_width=True)
+
+        st.markdown("### 📥 Export to Excel")
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            display_df.to_excel(writer, index=False, sheet_name='Tasks')
+            workbook = writer.book
+            worksheet = writer.sheets['Tasks']
+            header_format = workbook.add_format({
+                'bold': True, 'font_color': 'white', 'bg_color': '#4f81bd',
+                'font_size': 12, 'align': 'center', 'valign': 'vcenter'
+            })
+            for i, col in enumerate(display_df.columns):
+                worksheet.write(0, i, col, header_format)
+                worksheet.set_column(i, i, 18)
+        st.download_button("⬇️ Download Excel", data=output.getvalue(), file_name="FLM_Tasks.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    else:
+        st.info("ℹ️ No tasks to show. Add some tasks first.")
+
+# --- Admin Panel ---
+if st.session_state.user_role == "Admin" and admin_tab:
+    with admin_tab[0]:
+        st.subheader("🛠 Admin Panel")
+
+        # --- Filter by Employee & Date ---
+        st.markdown("### 🔍 Filter Tasks")
+        col1, col2 = st.columns(2)
+        with col1:
+            filter_employee = st.selectbox("Select Employee", ["All"] + list(set(df['Employee'].unique()) if not df.empty else []), key="filter_employee")
+        with col2:
+            filter_date = st.date_input("Select Date Range", value=(datetime.today(), datetime.today()), key="filter_date")
+        filtered_df = df
+        if filter_employee != "All":
+            filtered_df = filtered_df[filtered_df['Employee'] == filter_employee]
+        if filter_date:
+            start_date, end_date = filter_date if isinstance(filter_date, tuple) else (filter_date, filter_date)
+            filtered_df = filtered_df[(filtered_df['Date'] >= start_date.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end_date.strftime('%Y-%m-%d'))]
+        st.dataframe(filtered_df)
+
+        # --- Employee Stats ---
+        st.markdown("### 📊 Employee Statistics")
+        if not df.empty:
+            stats_df = df.groupby('Employee').agg({
+                'TaskID': 'count',
+                'Status': lambda x: (x == '✅ Completed').sum()
+            }).rename(columns={'TaskID': 'Total Tasks', 'Status': 'Completed Tasks'})
+            stats_df['Completion Rate'] = (stats_df['Completed Tasks'] / stats_df['Total Tasks'] * 100).round(2)
+            st.dataframe(stats_df)
         else:
-            st.info("🚫 No tasks available.")
+            st.info("ℹ️ No employee stats available.")
+
+        # --- Login History Viewer ---
+        st.markdown("### ⏱ Login History")
+        login_df = pd.DataFrame(st.session_state.login_history)
+        if not login_df.empty:
+            st.dataframe(login_df.sort_values(by="timestamp", ascending=False))
+        else:
+            st.info("ℹ️ No login history available.")
+
+        # --- Export All Tasks ---
+        st.markdown("### 📥 Export All Tasks")
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False, sheet_name='All_Tasks')
+            workbook = writer.book
+            worksheet = writer.sheets['All_Tasks']
+            header_format = workbook.add_format({
+                'bold': True, 'font_color': 'white', 'bg_color': '#4f81bd',
+                'font_size': 12, 'align': 'center', 'valign': 'vcenter'
+            })
+            for i, col in enumerate(df.columns):
+                worksheet.write(0, i, col, header_format)
+                worksheet.set_column(i, i, 18)
+        st.download_button("⬇️ Download All Tasks", data=output.getvalue(), file_name="All_FLM_Tasks.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 # --- Footer ---
-st.markdown(f"<footer>🗓 INTERSOFT FLM Tracker • {datetime.now().strftime('%Y-%m-%d %I:%M %p')}</footer>", unsafe_allow_html=True)
+st.markdown(f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now().strftime('%Y-%m-%d %I:%M %p')}</footer>", unsafe_allow_html=True)
