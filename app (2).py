@@ -224,6 +224,8 @@ def initialize_session():
         st.session_state.timesheet = []
         st.session_state.login_log = []
         st.session_state.reminders = []
+    if "reminders" not in st.session_state:
+        st.session_state.reminders = []
 
 # --- Authentication ---
 def authenticate_user():
@@ -388,7 +390,11 @@ def render_alerts(df_user, df_all):
                 st.markdown(f"<div class='alert-box'>🔔 Alert: <b>{user.capitalize()}</b> has not submitted a task today!</div>", unsafe_allow_html=True)
 
     # Render Reminders
-    reminders = st.session_state.reminders
+    try:
+        reminders = st.session_state.reminders
+    except AttributeError:
+        st.session_state.reminders = []
+        reminders = st.session_state.reminders
     for reminder in reminders:
         if reminder["user"] == st.session_state.user_role and reminder["date"] == today_str:
             st.markdown(f"<div class='alert-box'>🔔 Reminder: Task '{reminder['task_desc'][:30]}...' is still Not Started! Due: {reminder['due_date']}</div>", unsafe_allow_html=True)
@@ -409,7 +415,7 @@ def render_add_task():
                 status = st.selectbox("📌 Status", TASK_STATUSES, key="add_stat")
                 priority = st.selectbox("⚠️ Priority", TASK_PRIORITIES, key="add_prio")
             description = st.text_area("🗒 Description", height=120, key="add_desc")
-            set_reminder = st.checkbox("🔔 Set Reminder for Not Started Task", key="add_reminder")
+            set_reminder = st.checkbox("🔔 Set Reminder for Not Started Task", key="add_reminder") if status == "⏳ Not Started" else False
             reminder_date = st.date_input("📅 Reminder Due Date", value=datetime.now(tz) + timedelta(days=1), key="add_reminder_date") if set_reminder else None
             
             submitted = st.form_submit_button("✅ Submit Task")
@@ -522,6 +528,7 @@ def render_edit_delete_task(display_df):
 
 # --- Analytics ---
 def render_analytics(display_df):
+    tz = pytz.timezone("Asia/Riyadh")
     with tab3:
         st.header("📈 Analytics")
         if display_df.empty:
@@ -552,7 +559,7 @@ def render_analytics(display_df):
                 except Exception as e:
                     st.error(f"⚠️ Error in Calplot: {e}")
             else:
-                dates = pd.date_range(start=display_df['Date'].min(), end=display_df['Date'].max()) if not display_df.empty else pd.date_range(start=datetime.now(pytz.timezone("Asia/Riyadh")), end=datetime.now(pytz.timezone("Asia/Riyadh")))
+                dates = pd.date_range(start=display_df['Date'].min(), end=display_df['Date'].max()) if not display_df.empty else pd.date_range(start=datetime.now(tz), end=datetime.now(tz))
                 calendar_data = [{"Date": d.strftime('%Y-%m-%d'), "Task Count": len(display_df[display_df['Date'] == d.strftime('%Y-%m-%d')])} for d in dates]
                 calendar_df = pd.DataFrame(calendar_data)
                 st.dataframe(calendar_df, use_container_width=True)
@@ -564,6 +571,7 @@ def render_analytics(display_df):
 
 # --- Employee Work Tab ---
 def render_employee_work():
+    tz = pytz.timezone("Asia/Riyadh")
     with tab4:
         st.header("👥 Employee Work")
         df_all = pd.DataFrame(st.session_state.timesheet)
@@ -575,8 +583,8 @@ def render_employee_work():
                 users = df_all['Employee'].unique().tolist()
                 selected_user = st.selectbox("Employee", options=["All"] + users, key="employee_work_filter")
             with col2:
-                start = st.date_input("Start Date", value=datetime.now(pytz.timezone("Asia/Riyadh")) - timedelta(days=7), key="employee_work_start")
-                end = st.date_input("End Date", value=datetime.now(pytz.timezone("Asia/Riyadh")), key="employee_work_end")
+                start = st.date_input("Start Date", value=datetime.now(tz) - timedelta(days=7), key="employee_work_start")
+                end = st.date_input("End Date", value=datetime.now(tz), key="employee_work_end")
             filtered_df = df_all
             if selected_user != "All":
                 filtered_df = filtered_df[filtered_df['Employee'] == selected_user]
@@ -587,6 +595,7 @@ def render_employee_work():
 
 # --- Admin Panel ---
 def render_admin_panel():
+    tz = pytz.timezone("Asia/Riyadh")
     if st.session_state.user_role_type == "Admin" and admin_tab:
         with admin_tab[0]:
             st.header("🛠 Admin Panel")
@@ -599,8 +608,8 @@ def render_admin_panel():
                     users = df_all['Employee'].unique().tolist()
                     selected_user = st.selectbox("Employee", options=["All"] + users, key="filter_employee")
                 with col2:
-                    start = st.date_input("Start Date", value=datetime.now(pytz.timezone("Asia/Riyadh")) - timedelta(days=7), key="filter_start")
-                    end = st.date_input("End Date", value=datetime.now(pytz.timezone("Asia/Riyadh")), key="filter_end")
+                    start = st.date_input("Start Date", value=datetime.now(tz) - timedelta(days=7), key="filter_start")
+                    end = st.date_input("End Date", value=datetime.now(tz), key="filter_end")
                 filtered_df = df_all
                 if selected_user != "All":
                     filtered_df = filtered_df[filtered_df['Employee'] == selected_user]
@@ -627,7 +636,7 @@ def render_admin_panel():
                         prio = st.selectbox("⚠️ Priority", TASK_PRIORITIES, index=TASK_PRIORITIES.index(selected_task["Priority"]), key="admin_edit_prio")
                     desc = st.text_area("🗒 Description", selected_task["Description"], height=120, key="admin_edit_desc")
                     set_reminder = st.checkbox("🔔 Set Reminder for Not Started Task", key="admin_edit_reminder") if stat == "⏳ Not Started" else False
-                    reminder_date = st.date_input("📅 Reminder Due Date", value=datetime.now(pytz.timezone("Asia/Riyadh")) + timedelta(days=1), key="admin_edit_reminder_date") if set_reminder else None
+                    reminder_date = st.date_input("📅 Reminder Due Date", value=datetime.now(tz) + timedelta(days=1), key="admin_edit_reminder_date") if set_reminder else None
 
                     submitted = st.form_submit_button("💾 Save Changes")
                     if submitted:
@@ -645,7 +654,7 @@ def render_admin_panel():
                                         "Status": stat,
                                         "Priority": prio,
                                         "Description": desc,
-                                        "Submitted": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d %H:%M:%S')
+                                        "Submitted": datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S')
                                     }
                                     if set_reminder and stat == "⏳ Not Started":
                                         st.session_state.reminders = [r for r in st.session_state.reminders if r["task_id"] != selected_id]
@@ -653,7 +662,7 @@ def render_admin_panel():
                                             "user": selected_task["Employee"],
                                             "task_id": selected_id,
                                             "task_desc": desc,
-                                            "date": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d'),
+                                            "date": datetime.now(tz).strftime('%Y-%m-%d'),
                                             "due_date": reminder_date.strftime('%Y-%m-%d')
                                         })
                                     st.success("✅ Task updated successfully!")
@@ -693,6 +702,7 @@ if __name__ == "__main__":
         st.session_state.logged_in = False
         st.session_state.user_role = None
         st.session_state.user_role_type = None
+        st.session_state.reminders = []
         st.rerun()
 
     # Data Setup
