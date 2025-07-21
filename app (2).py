@@ -413,19 +413,22 @@ def render_edit_delete_task(display_df):
                     else:
                         st.error("⚠️ Description cannot be empty!")
 
-            # Delete Form
-            with st.form("delete_form"):
-                st.warning("⚠️ This action cannot be undone!")
-                delete_confirmed = st.checkbox("I confirm I want to delete this task", key="confirm_delete")
-                submitted_delete = st.form_submit_button("🗑 Delete Task")
-                if submitted_delete and delete_confirmed:
-                    st.session_state.timesheet = [t for t in st.session_state.timesheet if t["TaskID"] != selected_id]
-                    st.warning("🗑 Task deleted successfully!")
-                    st.rerun()
+            # Delete Form (Admin Only)
+            if st.session_state.user_role_type == "Admin":
+                with st.form("delete_form"):
+                    st.warning("⚠️ This action cannot be undone!")
+                    delete_confirmed = st.checkbox("I confirm I want to delete this task", key="confirm_delete")
+                    submitted_delete = st.form_submit_button("🗑 Delete Task")
+                    if submitted_delete and delete_confirmed:
+                        st.session_state.timesheet = [t for t in st.session_state.timesheet if t["TaskID"] != selected_id]
+                        st.warning("🗑 Task deleted successfully!")
+                        st.rerun()
+            else:
+                st.info("ℹ️ Task deletion is restricted to Admins only.")
 
             st.markdown("</div>", unsafe_allow_html=True)
         else:
-            st.info("ℹ️ No tasks available to edit/delete.")
+            st.info("ℹ️ No tasks available to edit.")
 
 # --- Analytics ---
 def render_analytics(display_df):
@@ -469,7 +472,7 @@ def render_analytics(display_df):
             data, file_name = export_to_excel(display_df, "Tasks", "tasks_export.xlsx")
             st.download_button("📥 Download Excel", data=data, file_name=file_name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-# --- Admin Panel (Enhanced) ---
+# --- Admin Panel ---
 def render_admin_panel():
     if st.session_state.user_role_type == "Admin" and admin_tab:
         with admin_tab[0]:
