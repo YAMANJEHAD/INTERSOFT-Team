@@ -28,6 +28,7 @@ TASK_PRIORITIES = ["🟢 Low", "🟡 Medium", "🔴 High"]
 DEPARTMENTS = ["FLM", "Tech Support", "CRM"]
 CATEGORIES = ["Job Orders", "CRM", "Meetings", "Paperwork"]
 SHIFTS = ["Morning", "Evening"]
+ROLES = ["Admin", "Supervisor", "Employee"]
 
 # --- Page Config ---
 st.set_page_config(
@@ -208,6 +209,7 @@ def save_data():
                 k: {"name": v["name"], "email": v["email"], "picture": None}
                 for k, v in USER_PROFILE.items()
             },
+            "users": USERS,
             "login_log": st.session_state.login_log
         }
         with open(DATA_FILE, "w") as f:
@@ -216,6 +218,7 @@ def save_data():
         st.error(f"⚠️ Failed to save data: {e}")
 
 def load_data():
+    global USERS, USER_PROFILE
     try:
         if os.path.exists(DATA_FILE):
             with open(DATA_FILE, "r") as f:
@@ -223,11 +226,13 @@ def load_data():
                 st.session_state.timesheet = data.get("timesheet", [])
                 st.session_state.reminders = data.get("reminders", [])
                 st.session_state.login_log = data.get("login_log", [])
+                USERS.update(data.get("users", {}))
                 for user, profile in data.get("user_profile", {}).items():
                     if user in USER_PROFILE:
                         USER_PROFILE[user]["name"] = profile.get("name", USER_PROFILE[user]["name"])
                         USER_PROFILE[user]["email"] = profile.get("email", USER_PROFILE[user]["email"])
-                        # Picture handled separately if stored as file
+                    else:
+                        USER_PROFILE[user] = {"name": profile.get("name", ""), "email": profile.get("email", ""), "picture": None}
     except Exception as e:
         st.error(f"⚠️ Failed to load data: {e}")
 
@@ -274,24 +279,32 @@ def authenticate_user():
 # --- Excel Export Function ---
 def export_to_excel(df, sheet_name, file_name):
     output = BytesIO()
-    with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-        df.to_excel(writer, index=False, sheet_name=sheet_name)
-        workbook = writer.book
-        worksheet = writer.sheets[sheet_name]
-        header_format = workbook.add_format({
-            'bold': True, 'font_color': 'white', 'bg_color': '#4f81bd',
-            'font_size': 12, 'align': 'center', 'valign': 'vcenter'
-        })
-        cell_format = workbook.add_format({
-            'bold': True, 'font_color': '#f8fafc'
-        })
-        for i, col in enumerate(df.columns):
-            worksheet.write(0, i, col, header_format)
-            worksheet.set_column(i, i, 18)
-        for row_num in range(1, len(df) + 1):
-            for col_num in range(len(df.columns)):
-                worksheet.write(row_num, col_num, df.iloc[row_num-1, col_num], cell_format)
-    return output.getvalue(), file_name
+    try:
+        with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+            df.to_excel(writer, index=False, sheet_name=sheet_name)
+            workbook = writer.book
+            worksheet = writer.sheets[sheet_name]
+            header_format = workbook.add_format({
+                'bold': True, 'font_color': 'white', 'bg_color': '#4f81bd',
+                'font_size': 12, 'align': 'center', 'valign': 'vcenter'
+            })
+            cell_format = workbook.add_format({
+                'font_color': '#000000', 'align': 'left', 'valign': 'vcenter'
+            })
+            for col_num, col in enumerate(df.columns):
+                worksheet.write(0, col_num, col, header_format)
+                max_len = max(
+                    df[col].astype(str).map(len).max() if not df[col].empty else 10,
+                    len(col)
+                )
+                worksheet.set_column(col_num, col_num, max_len + 2)
+            for row_num in range(1, len(df) + 1):
+                for col_num in range(len(df.columns)):
+                    worksheet.write(row_num, col_num, df.iloc[row_num-1, col_num], cell_format)
+        return output.getvalue(), file_name
+    except Exception as e:
+        st.error(f"⚠️ Failed to export to Excel: {e}")
+        return None, file_name
 
 # --- Auto Weekly Export ---
 def auto_export_weekly():
@@ -324,7 +337,8 @@ def render_settings():
             name = st.text_input("Name", value=current_profile["name"], key="profile_name")
             email = st.text_input("Email", value=current_profile["email"], key="profile_email")
             picture = st.file_uploader("Upload Profile Picture", type=["png", "jpg", "jpeg"], key="profile_picture")
-            if st.form_submit_button("💾 Save Profile"):
+            submitted = st.form_submit_button("💾 Save Profile")
+            if submitted:
                 USER_PROFILE[user]["name"] = name
                 USER_PROFILE[user]["email"] = email
                 if picture:
@@ -335,18 +349,40 @@ def render_settings():
                 st.success("✅ Profile updated successfully!")
                 st.rerun()
 
+        # Change Password
+        st.subheader("🔑 Change Password")
+        with st.form("password_form"):
+            current_password = st.text_input("Current Password", type="password", key="current_password")
+            new_password = st.text_input("New Password", type="password", key="new_password")
+            confirm_password = st.text_input("Confirm New Password", type="password", key="confirm_password")
+            submitted = st.form_submit_button("🔄 Change Password")
+            if submitted:
+                if current_password == USERS[user]["pass"]:
+                    if new_password == confirm_password and new_password:
+                        USERS[user]["pass"] = new_password
+                        save_data()
+                        st.success("✅ Password changed successfully!")
+                        st.rerun()
+                    else:
+                        st.error("⚠️ New password and confirmation do not match or are empty!")
+                else:
+                    st.error("⚠️ Current password is incorrect!")
+
 # --- Download Tasks ---
 def render_download_tasks():
     current_user = st.session_state.user_role
     user_tasks = df_all[df_all['Employee'] == current_user] if not df_all.empty and 'Employee' in df_all.columns else pd.DataFrame()
     if not user_tasks.empty:
         data, file_name = export_to_excel(user_tasks, f"{current_user}_Tasks", f"{current_user}_tasks.xlsx")
-        st.download_button(
-            label="⬇️ Download My Tasks",
-            data=data,
-            file_name=file_name,
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+        if data:
+            st.download_button(
+                label="⬇️ Download My Tasks",
+                data=data,
+                file_name=file_name,
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+        else:
+            st.error("⚠️ Failed to generate Excel file.")
     else:
         st.info("ℹ️ No tasks available for your account.")
 
@@ -362,12 +398,15 @@ def render_admin_download_tasks():
                 emp_tasks = df_all[df_all['Employee'] == selected_employee]
                 if not emp_tasks.empty:
                     data, file_name = export_to_excel(emp_tasks, f"{selected_employee}_Tasks", f"{selected_employee}_tasks.xlsx")
-                    st.download_button(
-                        label=f"⬇️ Download {selected_employee.capitalize()} Tasks",
-                        data=data,
-                        file_name=file_name,
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    )
+                    if data:
+                        st.download_button(
+                            label=f"⬇️ Download {selected_employee.capitalize()} Tasks",
+                            data=data,
+                            file_name=file_name,
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        )
+                    else:
+                        st.error("⚠️ Failed to generate Excel file.")
                 else:
                     st.info(f"ℹ️ No tasks found for {selected_employee}.")
             else:
@@ -640,7 +679,10 @@ def render_analytics(display_df):
 
         st.markdown("### 📥 Download Tasks")
         data, file_name = export_to_excel(display_df, "Tasks", "tasks_export.xlsx")
-        st.download_button("📥 Download Excel", data=data, file_name=file_name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        if data:
+            st.download_button("📥 Download Excel", data=data, file_name=file_name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        else:
+            st.error("⚠️ Failed to generate Excel file.")
 
 # --- Employee Work Tab ---
 def render_employee_work():
@@ -671,8 +713,58 @@ def render_admin_panel():
     if st.session_state.user_role_type == "Admin":
         st.header("🛠 Admin Panel")
         df_all = pd.DataFrame(st.session_state.timesheet)
+        
+        # User Management
+        st.markdown("### 👤 Manage Users")
+        st.markdown("<div class='edit-section'>", unsafe_allow_html=True)
+        
+        # Add New User
+        st.subheader("Add New User")
+        with st.form("add_user_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                new_username = st.text_input("Username", key="new_username")
+                new_password = st.text_input("Password", type="password", key="new_password")
+                new_role = st.selectbox("Role", ROLES, key="new_role")
+            with col2:
+                new_name = st.text_input("Name", key="new_name")
+                new_email = st.text_input("Email", key="new_email")
+            submitted = st.form_submit_button("➕ Add User")
+            if submitted:
+                if new_username.lower() in USERS:
+                    st.error("⚠️ Username already exists!")
+                elif not all([new_username, new_password, new_name, new_email]):
+                    st.error("⚠️ All fields are required!")
+                else:
+                    USERS[new_username.lower()] = {"pass": new_password, "role": new_role}
+                    USER_PROFILE[new_username.lower()] = {"name": new_name, "email": new_email, "picture": None}
+                    save_data()
+                    st.success(f"✅ User {new_username} added successfully!")
+                    st.rerun()
+
+        # Delete User
+        st.subheader("Delete User")
+        with st.form("delete_user_form"):
+            users = [u for u in USERS.keys() if u != st.session_state.user_role]
+            selected_user = st.selectbox("Select User to Delete", users, key="delete_user_select")
+            delete_confirmed = st.checkbox("I confirm I want to delete this user", key="confirm_user_delete")
+            submitted_delete = st.form_submit_button("🗑 Delete User")
+            if submitted_delete and delete_confirmed:
+                if selected_user == st.session_state.user_role:
+                    st.error("⚠️ Cannot delete your own account!")
+                else:
+                    del USERS[selected_user]
+                    del USER_PROFILE[selected_user]
+                    st.session_state.timesheet = [t for t in st.session_state.timesheet if t["Employee"] != selected_user]
+                    st.session_state.reminders = [r for r in st.session_state.reminders if r["user"] != selected_user]
+                    save_data()
+                    st.warning(f"🗑 User {selected_user} deleted successfully!")
+                    st.rerun()
+        
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        # Filter Tasks
         if not df_all.empty and 'Employee' in df_all.columns:
-            # Filter Tasks
             st.markdown("### 📅 View and Filter Tasks")
             col1, col2 = st.columns(2)
             with col1:
@@ -759,7 +851,10 @@ def render_admin_panel():
             # Export All Tasks
             st.markdown("### 📥 Export All Tasks")
             data, file_name = export_to_excel(df_all, "All_Tasks", "all_tasks_export.xlsx")
-            st.download_button("📥 Download All Tasks", data=data, file_name=file_name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            if data:
+                st.download_button("📥 Download All Tasks", data=data, file_name=file_name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            else:
+                st.error("⚠️ Failed to generate Excel file.")
         else:
             st.info("ℹ️ No tasks recorded yet.")
 
