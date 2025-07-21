@@ -556,8 +556,10 @@ def render_overdue_tasks(display_df):
     now = datetime.now(tz)
     st.header("⏰ Overdue Tasks")
     if not display_df.empty and 'Submitted' in display_df.columns:
-        # Convert Submitted to datetime, coercing errors to NaT
-        display_df['Submitted'] = pd.to_datetime(display_df['Submitted'], errors='coerce')
+        # Convert Submitted to datetime with specific format, coercing errors to NaT
+        display_df['Submitted'] = pd.to_datetime(display_df['Submitted'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
+        # Ensure timezone consistency
+        display_df['Submitted'] = display_df['Submitted'].dt.tz_localize(tz)
         # Identify rows with invalid timestamps
         invalid_rows = display_df[display_df['Submitted'].isna()]
         if not invalid_rows.empty:
@@ -565,6 +567,9 @@ def render_overdue_tasks(display_df):
             st.dataframe(invalid_rows[['TaskID', 'Employee', 'Description', 'Submitted']])
         # Filter out NaT rows
         valid_df = display_df.dropna(subset=['Submitted'])
+        # Debug: Display types of valid_df['Submitted']
+        st.write("Debug: Types in valid_df['Submitted']")
+        st.write(valid_df['Submitted'].apply(lambda x: type(x).__name__).unique())
         # Filter tasks older than 48 hours and not completed
         overdue_df = valid_df[
             (valid_df['Status'] != '✅ Completed') &
