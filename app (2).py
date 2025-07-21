@@ -310,6 +310,7 @@ with tab2:
         st.info("ℹ️ No tasks available to edit/delete.")
 
 # --- Analytics ---
+# --- Analytics ---
 with tab3:
     st.header("📈 Analytics")
     if display_df.empty:
@@ -324,21 +325,21 @@ with tab3:
 
         st.markdown("### 📅 Calendar-Style Task Summary")
         if CALPLOT_AVAILABLE:
-            cal_df = display_df.groupby('Date').size().reset_index(name='Task Count')
-            cal_df['Date'] = pd.to_datetime(cal_df['Date'])
-            cal_df = cal_df.set_index('Date')
-            calplot.calplot(
-                data=cal_df['Task Count'],
-                how='sum',
-                cmap='Blues',
-                fillcolor='lightgrey',
-                linewidth=2,
-                dropzero=True,
-                textformat='{:.0f}',
-                textcolor='black',
-                textfillcolor='white'
-            )
-            st.pyplot()
+            try:
+                cal_df = display_df.groupby('Date').size().reset_index(name='Task Count')
+                cal_df['Date'] = pd.to_datetime(cal_df['Date'])
+                cal_df = cal_df.set_index('Date')
+                fig, ax = calplot.calplot(
+                    data=cal_df['Task Count'],
+                    how='sum',
+                    cmap='Blues',
+                    fillcolor='lightgrey',
+                    linewidth=2,
+                    dropzero=True
+                )
+                st.pyplot(fig)
+            except Exception as e:
+                st.error(f"⚠️ Error in Calplot: {e}")
         else:
             dates = pd.date_range(start=display_df['Date'].min(), end=display_df['Date'].max()) if not display_df.empty else pd.date_range(start=datetime.today(), end=datetime.today())
             calendar_data = []
