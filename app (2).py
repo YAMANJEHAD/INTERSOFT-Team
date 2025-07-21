@@ -92,26 +92,27 @@ html, body, [class*="css"] {
 .stButton>button {
     background: linear-gradient(135deg, #4f46e5, #9333ea);
     color: white; font-weight: 600; font-size: 1rem;
-    border-radius: 12px; padding: 0.7rem 1.5rem;
+    border-radius: 16px; padding: 0.8rem; min-width: 180px; height: 48px;
     box-shadow: 0 6px 20px rgba(0,0,0,0.3);
     transition: all 0.3s ease-in-out; border: none;
-    cursor: pointer; text-align: center; min-width: 150px;
+    cursor: pointer; text-align: center;
     animation: slideIn 0.4s ease-in-out;
+    display: flex; align-items: center; justify-content: center;
 }
 
 .stButton>button:hover {
-    transform: scale(1.06); box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-    background: linear-gradient(135deg, #6b7280, #9ca3af);
+    transform: scale(1.08); box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    background: linear-gradient(135deg, #7e22ce, #a855f7);
 }
 
 .stButton>button:active {
-    transform: scale(0.94); box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transform: scale(0.96); box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
 .stButton>button.selected {
     background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-    transform: scale(1.03);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+    transform: scale(1.04);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
 }
 
 @keyframes slideIn {
@@ -160,7 +161,8 @@ html, body, [class*="css"] {
     background: linear-gradient(135deg, #dc2626, #b91c1c);
     padding: 1.2rem; border-radius: 14px; color: white;
     margin-bottom: 1.5rem; font-weight: 600;
-    animation: shake 0.5s ease-in-out;
+    opacity: 1; transition: opacity 0.5s ease-out;
+    position: relative; top: 0; z-index: 1000;
 }
 
 @keyframes shake {
@@ -430,10 +432,6 @@ def render_header():
         unsafe_allow_html=True
     )
 
-    # Ensure selected_tab is initialized
-    if "selected_tab" not in st.session_state:
-        st.session_state.selected_tab = "Dashboard"
-
     # Navigation Buttons
     st.markdown("<div class='nav-buttons'>", unsafe_allow_html=True)
     tabs = [
@@ -441,7 +439,8 @@ def render_header():
         ("Add Task", "➕ Add Task"),
         ("Edit/Delete Task", "✏️ Edit/Delete Task"),
         ("Analytics", "📈 Analytics"),
-        ("Employee Work", "👥 Employee Work")
+        ("Employee Work", "👥 Employee Work"),
+        ("Overdue Tasks", "⏰ Overdue Tasks")
     ]
     if st.session_state.user_role_type == "Admin":
         tabs.append(("Admin Panel", "🛠 Admin Panel"))
@@ -499,24 +498,12 @@ def render_sidebar_stats():
     else:
         st.sidebar.info("ℹ️ No tasks recorded yet.")
 
-# --- Render Dashboard Stats ---
-def render_dashboard_stats(display_df):
-    total_tasks = len(display_df)
-    completed_tasks = display_df[display_df['Status'] == '✅ Completed'].shape[0] if not display_df.empty else 0
-    in_progress_tasks = display_df[display_df['Status'] == '🔄 In Progress'].shape[0] if not display_df.empty else 0
-    not_started_tasks = display_df[display_df['Status'] == '⏳ Not Started'].shape[0] if not display_df.empty else 0
-
-    st.markdown("### 📊 Overall Task Statistics")
-    col1, col2, col3, col4 = st.columns(4)
-    col1.markdown(f"<div class='overview-box'>Total Tasks<br><span>{total_tasks}</span></div>", unsafe_allow_html=True)
-    col2.markdown(f"<div class='overview-box'>Completed<br><span>{completed_tasks}</span></div>", unsafe_allow_html=True)
-    col3.markdown(f"<div class='overview-box'>In Progress<br><span>{in_progress_tasks}</span></div>", unsafe_allow_html=True)
-    col4.markdown(f"<div class='overview-box'>Not Started<br><span>{not_started_tasks}</span></div>", unsafe_allow_html=True)
-
 # --- Render Alerts ---
 def render_alerts(df_user, df_all):
     tz = pytz.timezone("Asia/Riyadh")
     today_str = datetime.now(tz).strftime('%Y-%m-%d')
+    st.markdown("<div id='alert-container'>", unsafe_allow_html=True)
+    
     if st.session_state.user_role_type == "Employee" and (df_user.empty or today_str not in df_user['Date'].values):
         st.markdown(f"<div class='alert-box'>⚠️ You haven't submitted any tasks for today!</div>", unsafe_allow_html=True)
     
@@ -535,6 +522,50 @@ def render_alerts(df_user, df_all):
     for reminder in reminders:
         if reminder["user"] == st.session_state.user_role and reminder["date"] == today_str:
             st.markdown(f"<div class='alert-box'>🔔 Reminder: Task '{reminder['task_desc'][:30]}...' is still Not Started! Due: {reminder['due_date']}</div>", unsafe_allow_html=True)
+    
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("""
+        <script>
+            setTimeout(() => {
+                const alertContainer = document.getElementById('alert-container');
+                if (alertContainer) {
+                    alertContainer.style.opacity = '0';
+                    setTimeout(() => { alertContainer.style.display = 'none'; }, 500);
+                }
+            }, 5000);
+        </script>
+    """, unsafe_allow_html=True)
+
+# --- Overdue Tasks ---
+def render_overdue_tasks(display_df):
+    tz = pytz.timezone("Asia/Riyadh")
+    now = datetime.now(tz)
+    st.header("⏰ Overdue Tasks")
+    if not display_df.empty and 'Submitted' in display_df.columns:
+        # Convert Submitted to datetime
+        display_df['Submitted'] = pd.to_datetime(display_df['Submitted'])
+        # Filter tasks older than 48 hours and not completed
+        overdue_df = display_df[
+            (display_df['Status'] != '✅ Completed') &
+            ((now - display_df['Submitted']).dt.total_seconds() / 3600 > 48)
+        ]
+        if not overdue_df.empty:
+            st.markdown("### 📋 Tasks Over 48 Hours Not Completed")
+            st.dataframe(overdue_df)
+            data, file_name = export_to_excel(overdue_df, "Overdue_Tasks", "overdue_tasks.xlsx")
+            if data:
+                st.download_button(
+                    label="⬇️ Download Overdue Tasks",
+                    data=data,
+                    file_name=file_name,
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+            else:
+                st.error("⚠️ Failed to generate Excel file.")
+        else:
+            st.info("ℹ️ No overdue tasks found.")
+    else:
+        st.info("ℹ️ No tasks recorded yet.")
 
 # --- Add Task ---
 def render_add_task():
@@ -882,6 +913,9 @@ if __name__ == "__main__":
     df_user = df_all[df_all['Employee'] == st.session_state.user_role] if not df_all.empty and 'Employee' in df_all.columns else pd.DataFrame()
     display_df = df_user if st.session_state.user_role_type == "Employee" else df_all
 
+    # Render Alerts at Top
+    render_alerts(df_user, df_all)
+
     # Render Header with Navigation
     render_header()
 
@@ -889,7 +923,6 @@ if __name__ == "__main__":
     if st.session_state.selected_tab == "Dashboard":
         st.header("🏠 Dashboard")
         render_dashboard_stats(display_df)
-        render_alerts(df_user, df_all)
         render_admin_download_tasks()
         auto_export_weekly()
     elif st.session_state.selected_tab == "Add Task":
@@ -900,6 +933,8 @@ if __name__ == "__main__":
         render_analytics(display_df)
     elif st.session_state.selected_tab == "Employee Work":
         render_employee_work()
+    elif st.session_state.selected_tab == "Overdue Tasks":
+        render_overdue_tasks(display_df)
     elif st.session_state.selected_tab == "Admin Panel":
         if st.session_state.user_role_type == "Admin":
             render_admin_panel()
