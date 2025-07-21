@@ -40,7 +40,7 @@ st.set_page_config(
 # --- Embed CSS ---
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
 
 html, body, [class*="css"] {
     font-family: 'Inter', sans-serif;
@@ -90,38 +90,64 @@ html, body, [class*="css"] {
 }
 
 .stButton>button {
-    background: linear-gradient(135deg, #4f46e5, #9333ea);
-    color: white; font-weight: 600; font-size: 1rem;
-    border-radius: 16px; padding: 0.8rem; min-width: 180px; height: 48px;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-    transition: all 0.3s ease-in-out; border: none;
+    background: linear-gradient(135deg, #6d28d9, #db2777);
+    color: white; font-weight: 700; font-size: 1.1rem;
+    border-radius: 20px; padding: 0.8rem; min-width: 180px; height: 48px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    transition: all 0.4s ease-in-out; border: 1px solid transparent;
     cursor: pointer; text-align: center;
-    animation: slideIn 0.4s ease-in-out;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    animation: bounceIn 0.6s ease-in-out;
+}
+
+@keyframes bounceIn {
+    0% { transform: scale(0.7); opacity: 0; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
 }
 
 .stButton>button:hover {
-    transform: scale(1.08); box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-    background: linear-gradient(135deg, #7e22ce, #a855f7);
+    transform: scale(1.1);
+    background: linear-gradient(135deg, #8b5cf6, #ec4899);
+    box-shadow: 0 12px 30px rgba(109,40,217,0.4), 0 0 15px rgba(236,72,153,0.3);
+    border: 1px solid #93c5fd;
 }
 
 .stButton>button:active {
-    transform: scale(0.96); box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transform: scale(0.95);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .stButton>button.selected {
-    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-    transform: scale(1.04);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    background: linear-gradient(135deg, #1d4ed8, #60a5fa);
+    transform: scale(1.05);
+    box-shadow: 0 10px 30px rgba(29,78,216,0.4);
+    font-weight: 800;
+    animation: pulseSelected 1.5s infinite;
 }
 
-@keyframes slideIn {
-    from { transform: translateY(10px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+@keyframes pulseSelected {
+    0%, 100% { transform: scale(1.05); }
+    50% { transform: scale(1.07); }
 }
 
 .stButton>button.delete-button {
-    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    background: linear-gradient(135deg, #dc2626, #f87171);
+}
+
+.stButton>button.delete-button:hover {
+    animation: shake 0.5s ease-in-out;
+    background: linear-gradient(135deg, #b91c1c, #ef4444);
+    box-shadow: 0 12px 30px rgba(220,38,38,0.4);
+    border: 1px solid #fca5a5;
+}
+
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+    100% { transform: translateX(0); }
 }
 
 .overview-box {
@@ -165,14 +191,6 @@ html, body, [class*="css"] {
     position: relative; top: 0; z-index: 1000;
 }
 
-@keyframes shake {
-    0% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    50% { transform: translateX(5px); }
-    75% { transform: translateX(-5px); }
-    100% { transform: translateX(0); }
-}
-
 .stDataFrame table {
     width: 100%; border-collapse: collapse;
     background: #1e293b; border-radius: 12px; overflow: hidden;
@@ -200,7 +218,6 @@ footer {
 }
 </style>
 """, unsafe_allow_html=True)
-
 # --- Persistent Storage ---
 def save_data():
     try:
