@@ -9,12 +9,6 @@ import os
 from PIL import Image
 import pytz
 
-try:
-    import calplot
-    CALPLOT_AVAILABLE = True
-except ImportError:
-    CALPLOT_AVAILABLE = False
-
 # --- Constants ---
 USERS = {
     "yaman": {"pass": "YAMAN1", "role": "Admin"},
@@ -85,6 +79,36 @@ html, body, [class*="css"] {
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     margin-bottom: 1rem; display: inline-block;
     animation: fadeIn 0.6s ease-in-out;
+}
+
+.nav-buttons {
+    display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;
+    margin: 1.5rem 0; padding: 1rem;
+}
+
+.nav-button {
+    background: linear-gradient(135deg, #4f46e5, #9333ea);
+    color: white; font-weight: 600; font-size: 1rem;
+    border-radius: 12px; padding: 0.7rem 1.5rem;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    transition: all 0.3s ease-in-out; border: none;
+    cursor: pointer; text-align: center; min-width: 150px;
+    animation: slideIn 0.4s ease-in-out;
+}
+
+.nav-button:hover {
+    transform: scale(1.06); box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+    background: linear-gradient(135deg, #6b7280, #9ca3af);
+}
+
+.nav-button:active {
+    transform: scale(0.94); box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.nav-button.selected {
+    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+    transform: scale(1.03);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
 }
 
 .settings-button {
@@ -187,21 +211,6 @@ html, body, [class*="css"] {
     border-bottom: 1px solid #334155; font-size: 1rem;
 }
 
-.stTabs [role="tab"] {
-    font-size: 1.1rem; font-weight: 600; color: #f8fafc;
-    background: #1e293b; border-radius: 10px; padding: 0.8rem 1.5rem;
-    transition: background 0.3s ease;
-}
-
-.stTabs [role="tab"]:hover {
-    background: #334155;
-}
-
-.stTabs [aria-selected="true"] {
-    background: linear-gradient(135deg, #4f46e5, #9333ea);
-    color: white;
-}
-
 footer {
     text-align: center; color: #94a3b8; padding: 2.5rem 0;
     font-size: 1rem; font-weight: 500;
@@ -224,6 +233,7 @@ def initialize_session():
         st.session_state.timesheet = []
         st.session_state.login_log = []
         st.session_state.reminders = []
+        st.session_state.selected_tab = "Dashboard"
     if "reminders" not in st.session_state:
         st.session_state.reminders = []
 
@@ -288,7 +298,6 @@ def auto_export_weekly():
 
 # --- Settings Popup ---
 def render_settings():
-    st.markdown("<div class='settings-button'>⚙️</div>", unsafe_allow_html=True)
     with st.expander("⚙️ User Settings", expanded=False):
         st.subheader("User Profile")
         user = st.session_state.user_role
@@ -316,7 +325,7 @@ def render_settings():
 # --- Download Tasks ---
 def render_download_tasks():
     current_user = st.session_state.user_role
-    user_tasks = df_all[df_all['Employee'] == current_user] if not df_all.empty else pd.DataFrame()
+    user_tasks = df_all[df_all['Employee'] == current_user] if not df_all.empty and 'Employee' in df_all.columns else pd.DataFrame()
     if not user_tasks.empty:
         data, file_name = export_to_excel(user_tasks, f"{current_user}_Tasks", f"{current_user}_tasks.xlsx")
         st.download_button(
@@ -369,6 +378,30 @@ def render_header():
         unsafe_allow_html=True
     )
 
+    # Navigation Buttons
+    st.markdown("<div class='nav-buttons'>", unsafe_allow_html=True)
+    tabs = [
+        ("Dashboard", "🏠 Dashboard"),
+        ("Add Task", "➕ Add Task"),
+        ("Edit/Delete Task", "✏️ Edit/Delete Task"),
+        ("Analytics", "📈 Analytics"),
+        ("Employee Work", "👥 Employee Work")
+    ]
+    if st.session_state.user_role_type == "Admin":
+        tabs.append(("Admin Panel", "🛠 Admin Panel"))
+    tabs.append(("Settings", "⚙️ Settings"))
+    tabs.append(("Download Tasks", "⬇️ Download My Tasks"))
+
+    cols = st.columns(len(tabs))
+    for idx, (tab_key, tab_label) in enumerate(tabs):
+        with cols[idx]:
+            button_class = "nav-button selected" if st.session_state.selected_tab == tab_key else "nav-button"
+            if st.button(tab_label, key=f"nav_{tab_key.lower().replace(' ', '_')}"):
+                st.session_state.selected_tab = tab_key
+                st.rerun()
+            st.markdown(f"<div class='{button_class}'>{tab_label}</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
 # --- Render Dashboard Stats ---
 def render_dashboard_stats(display_df):
     total_tasks = len(display_df)
@@ -408,79 +441,211 @@ def render_alerts(df_user, df_all):
 # --- Add Task ---
 def render_add_task():
     tz = pytz.timezone("Asia/Riyadh")
-    with tab1:
-        st.header("➕ Add New Task")
-        with st.form("task_form", clear_on_submit=True):
-            col1, col2 = st.columns(2)
-            with col1:
-                shift = st.selectbox("🕒 Shift", SHIFTS, key="add_shift")
-                date_selected = st.date_input("📅 Date", value=datetime.now(tz), key="add_date")
-                department = st.selectbox("🏢 Department", DEPARTMENTS, key="add_dept")
-            with col2:
-                category = st.selectbox("📂 Category", CATEGORIES, key="add_cat")
-                status = st.selectbox("📌 Status", TASK_STATUSES, key="add_stat")
-                priority = st.selectbox("⚠️ Priority", TASK_PRIORITIES, key="add_prio")
-            description = st.text_area("🗒 Description", height=120, key="add_desc")
-            set_reminder = st.checkbox("🔔 Set Reminder for Not Started Task", key="add_reminder") if status == "⏳ Not Started" else False
-            reminder_date = st.date_input("📅 Reminder Due Date", value=datetime.now(tz) + timedelta(days=1), key="add_reminder_date") if set_reminder else None
-            
-            submitted = st.form_submit_button("✅ Submit Task")
-            
-            if submitted:
-                if description.strip():
-                    task = {
-                        "TaskID": str(uuid.uuid4()),
-                        "Employee": st.session_state.user_role,
-                        "Date": date_selected.strftime('%Y-%m-%d'),
-                        "Day": calendar.day_name[date_selected.weekday()],
-                        "Shift": shift,
-                        "Department": department,
-                        "Category": category,
-                        "Status": status,
-                        "Priority": priority,
-                        "Description": description,
-                        "Submitted": datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S')
-                    }
-                    st.session_state.timesheet.append(task)
-                    if set_reminder and status == "⏳ Not Started":
-                        st.session_state.reminders.append({
-                            "user": st.session_state.user_role,
-                            "task_id": task["TaskID"],
-                            "task_desc": task["Description"],
-                            "date": datetime.now(tz).strftime('%Y-%m-%d'),
-                            "due_date": reminder_date.strftime('%Y-%m-%d')
-                        })
-                    st.success("🎉 Task added successfully!")
-                    st.rerun()
-                else:
-                    st.error("⚠️ Description cannot be empty!")
+    st.header("➕ Add New Task")
+    with st.form("task_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            shift = st.selectbox("🕒 Shift", SHIFTS, key="add_shift")
+            date_selected = st.date_input("📅 Date", value=datetime.now(tz), key="add_date")
+            department = st.selectbox("🏢 Department", DEPARTMENTS, key="add_dept")
+        with col2:
+            category = st.selectbox("📂 Category", CATEGORIES, key="add_cat")
+            status = st.selectbox("📌 Status", TASK_STATUSES, key="add_stat")
+            priority = st.selectbox("⚠️ Priority", TASK_PRIORITIES, key="add_prio")
+        description = st.text_area("🗒 Description", height=120, key="add_desc")
+        set_reminder = st.checkbox("🔔 Set Reminder for Not Started Task", key="add_reminder") if status == "⏳ Not Started" else False
+        reminder_date = st.date_input("📅 Reminder Due Date", value=datetime.now(tz) + timedelta(days=1), key="add_reminder_date") if set_reminder else None
+        
+        submitted = st.form_submit_button("✅ Submit Task")
+        
+        if submitted:
+            if description.strip():
+                task = {
+                    "TaskID": str(uuid.uuid4()),
+                    "Employee": st.session_state.user_role,
+                    "Date": date_selected.strftime('%Y-%m-%d'),
+                    "Day": calendar.day_name[date_selected.weekday()],
+                    "Shift": shift,
+                    "Department": department,
+                    "Category": category,
+                    "Status": status,
+                    "Priority": priority,
+                    "Description": description,
+                    "Submitted": datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S')
+                }
+                st.session_state.timesheet.append(task)
+                if set_reminder and status == "⏳ Not Started":
+                    st.session_state.reminders.append({
+                        "user": st.session_state.user_role,
+                        "task_id": task["TaskID"],
+                        "task_desc": task["Description"],
+                        "date": datetime.now(tz).strftime('%Y-%m-%d'),
+                        "due_date": reminder_date.strftime('%Y-%m-%d')
+                    })
+                st.success("🎉 Task added successfully!")
+                st.rerun()
+            else:
+                st.error("⚠️ Description cannot be empty!")
 
 # --- Edit/Delete Task ---
 def render_edit_delete_task(display_df):
     tz = pytz.timezone("Asia/Riyadh")
-    with tab2:
-        st.header("✏️ Edit/Delete Task")
-        if not display_df.empty:
-            st.markdown("<div class='edit-section'>", unsafe_allow_html=True)
-            task_dict = {f"{row['Description'][:30]}... ({row['Date']} | {row['Category']} | {row['Status']} | {row['Employee'].capitalize()})": row["TaskID"] for _, row in display_df.iterrows()}
-            selected_label = st.selectbox("📋 Select Task", list(task_dict.keys()), key="select_task")
-            selected_id = task_dict[selected_label]
-            selected_task = display_df[display_df["TaskID"] == selected_id].iloc[0]
+    st.header("✏️ Edit/Delete Task")
+    if not display_df.empty:
+        st.markdown("<div class='edit-section'>", unsafe_allow_html=True)
+        task_dict = {f"{row['Description'][:30]}... ({row['Date']} | {row['Category']} | {row['Status']} | {row['Employee'].capitalize()})": row["TaskID"] for _, row in display_df.iterrows()}
+        selected_label = st.selectbox("📋 Select Task", list(task_dict.keys()), key="select_task")
+        selected_id = task_dict[selected_label]
+        selected_task = display_df[display_df["TaskID"] == selected_id].iloc[0]
 
-            # Edit Form
-            with st.form("edit_form"):
+        # Edit Form
+        with st.form("edit_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                shift = st.selectbox("🕒 Shift", SHIFTS, index=SHIFTS.index(selected_task["Shift"]), key="edit_shift")
+                date = st.date_input("📅 Date", datetime.strptime(selected_task["Date"], '%Y-%m-%d'), key="edit_date")
+                dept = st.selectbox("🏢 Department", DEPARTMENTS, index=DEPARTMENTS.index(selected_task["Department"]), key="edit_dept")
+            with col2:
+                cat = st.selectbox("📂 Category", CATEGORIES, index=CATEGORIES.index(selected_task["Category"]), key="edit_cat")
+                stat = st.selectbox("📌 Status", TASK_STATUSES, index=TASK_STATUSES.index(selected_task["Status"]), key="edit_stat")
+                prio = st.selectbox("⚠️ Priority", TASK_PRIORITIES, index=TASK_PRIORITIES.index(selected_task["Priority"]), key="edit_prio")
+            desc = st.text_area("🗒 Description", selected_task["Description"], height=120, key="edit_desc")
+            set_reminder = st.checkbox("🔔 Set Reminder for Not Started Task", key="edit_reminder") if stat == "⏳ Not Started" else False
+            reminder_date = st.date_input("📅 Reminder Due Date", value=datetime.now(tz) + timedelta(days=1), key="edit_reminder_date") if set_reminder else None
+
+            submitted = st.form_submit_button("💾 Save Changes")
+            if submitted:
+                if desc.strip():
+                    for i, t in enumerate(st.session_state.timesheet):
+                        if t["TaskID"] == selected_id:
+                            st.session_state.timesheet[i] = {
+                                "TaskID": selected_id,
+                                "Employee": selected_task["Employee"],
+                                "Date": date.strftime('%Y-%m-%d'),
+                                "Day": calendar.day_name[date.weekday()],
+                                "Shift": shift,
+                                "Department": dept,
+                                "Category": cat,
+                                "Status": stat,
+                                "Priority": prio,
+                                "Description": desc,
+                                "Submitted": datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S')
+                            }
+                            if set_reminder and stat == "⏳ Not Started":
+                                st.session_state.reminders = [r for r in st.session_state.reminders if r["task_id"] != selected_id]
+                                st.session_state.reminders.append({
+                                    "user": st.session_state.user_role,
+                                    "task_id": selected_id,
+                                    "task_desc": desc,
+                                    "date": datetime.now(tz).strftime('%Y-%m-%d'),
+                                    "due_date": reminder_date.strftime('%Y-%m-%d')
+                                })
+                            st.success("✅ Task updated successfully!")
+                            st.rerun()
+                else:
+                    st.error("⚠️ Description cannot be empty!")
+
+        # Delete Form (Admin Only)
+        if st.session_state.user_role_type == "Admin":
+            with st.form("delete_form"):
+                st.warning("⚠️ This action cannot be undone!")
+                delete_confirmed = st.checkbox("I confirm I want to delete this task", key="confirm_delete")
+                submitted_delete = st.form_submit_button("🗑 Delete Task")
+                if submitted_delete and delete_confirmed:
+                    st.session_state.timesheet = [t for t in st.session_state.timesheet if t["TaskID"] != selected_id]
+                    st.session_state.reminders = [r for r in st.session_state.reminders if r["task_id"] != selected_id]
+                    st.warning("🗑 Task deleted successfully!")
+                    st.rerun()
+        else:
+            st.info("ℹ️ Task deletion is restricted to Admins only.")
+
+        st.markdown("</div>", unsafe_allow_html=True)
+    else:
+        st.info("ℹ️ No tasks available to edit.")
+
+# --- Analytics ---
+def render_analytics(display_df):
+    st.header("📈 Analytics")
+    if display_df.empty:
+        st.info("ℹ️ No tasks yet.")
+    else:
+        st.plotly_chart(px.histogram(display_df, x="Date", color="Status", title="Tasks Over Time", color_discrete_sequence=px.colors.qualitative.Plotly), use_container_width=True)
+        st.plotly_chart(px.pie(display_df, names="Category", title="Category Distribution", color_discrete_sequence=px.colors.qualitative.Plotly), use_container_width=True)
+        st.plotly_chart(px.bar(display_df, x="Priority", color="Priority", title="Priority Levels", color_discrete_sequence=px.colors.qualitative.Plotly), use_container_width=True)
+        
+        st.markdown("### 📋 Task Table")
+        st.dataframe(display_df)
+
+        st.markdown("### 📥 Download Tasks")
+        data, file_name = export_to_excel(display_df, "Tasks", "tasks_export.xlsx")
+        st.download_button("📥 Download Excel", data=data, file_name=file_name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+# --- Employee Work Tab ---
+def render_employee_work():
+    tz = pytz.timezone("Asia/Riyadh")
+    st.header("👥 Employee Work")
+    df_all = pd.DataFrame(st.session_state.timesheet)
+    if not df_all.empty and 'Employee' in df_all.columns:
+        # Filter Tasks
+        st.markdown("### 📅 View Employee Tasks")
+        col1, col2 = st.columns(2)
+        with col1:
+            users = df_all['Employee'].unique().tolist()
+            selected_user = st.selectbox("Employee", options=["All"] + users, key="employee_work_filter")
+        with col2:
+            start = st.date_input("Start Date", value=datetime.now(tz) - timedelta(days=7), key="employee_work_start")
+            end = st.date_input("End Date", value=datetime.now(tz), key="employee_work_end")
+        filtered_df = df_all
+        if selected_user != "All":
+            filtered_df = filtered_df[filtered_df['Employee'] == selected_user]
+        filtered_df = filtered_df[(filtered_df['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end.strftime('%Y-%m-%d'))]
+        st.dataframe(filtered_df)
+    else:
+        st.info("ℹ️ No tasks recorded yet.")
+
+# --- Admin Panel ---
+def render_admin_panel():
+    tz = pytz.timezone("Asia/Riyadh")
+    if st.session_state.user_role_type == "Admin":
+        st.header("🛠 Admin Panel")
+        df_all = pd.DataFrame(st.session_state.timesheet)
+        if not df_all.empty and 'Employee' in df_all.columns:
+            # Filter Tasks
+            st.markdown("### 📅 View and Filter Tasks")
+            col1, col2 = st.columns(2)
+            with col1:
+                users = df_all['Employee'].unique().tolist()
+                selected_user = st.selectbox("Employee", options=["All"] + users, key="filter_employee")
+            with col2:
+                start = st.date_input("Start Date", value=datetime.now(tz) - timedelta(days=7), key="filter_start")
+                end = st.date_input("End Date", value=datetime.now(tz), key="filter_end")
+            filtered_df = df_all
+            if selected_user != "All":
+                filtered_df = filtered_df[filtered_df['Employee'] == selected_user]
+            filtered_df = filtered_df[(filtered_df['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end.strftime('%Y-%m-%d'))]
+            st.dataframe(filtered_df)
+
+            # Edit Any Task
+            st.markdown("### ✏️ Edit Any Task")
+            st.markdown("<div class='edit-section'>", unsafe_allow_html=True)
+            task_dict = {f"{row['Description'][:30]}... ({row['Date']} | {row['Category']} | {row['Status']} | {row['Employee'].capitalize()})": row["TaskID"] for _, row in df_all.iterrows()}
+            selected_label = st.selectbox("📋 Select Task to Edit", list(task_dict.keys()), key="admin_select_task")
+            selected_id = task_dict[selected_label]
+            selected_task = df_all[df_all["TaskID"] == selected_id].iloc[0]
+
+            with st.form("admin_edit_form"):
                 col1, col2 = st.columns(2)
                 with col1:
-                    shift = st.selectbox("🕒 Shift", SHIFTS, index=SHIFTS.index(selected_task["Shift"]), key="edit_shift")
-                    date = st.date_input("📅 Date", datetime.strptime(selected_task["Date"], '%Y-%m-%d'), key="edit_date")
-                    dept = st.selectbox("🏢 Department", DEPARTMENTS, index=DEPARTMENTS.index(selected_task["Department"]), key="edit_dept")
+                    shift = st.selectbox("🕒 Shift", SHIFTS, index=SHIFTS.index(selected_task["Shift"]), key="admin_edit_shift")
+                    date = st.date_input("📅 Date", datetime.strptime(selected_task["Date"], '%Y-%m-%d'), key="admin_edit_date")
+                    dept = st.selectbox("🏢 Department", DEPARTMENTS, index=DEPARTMENTS.index(selected_task["Department"]), key="admin_edit_dept")
                 with col2:
-                    cat = st.selectbox("📂 Category", CATEGORIES, index=CATEGORIES.index(selected_task["Category"]), key="edit_cat")
-                    stat = st.selectbox("📌 Status", TASK_STATUSES, index=TASK_STATUSES.index(selected_task["Status"]), key="edit_stat")
-                    prio = st.selectbox("⚠️ Priority", TASK_PRIORITIES, index=TASK_PRIORITIES.index(selected_task["Priority"]), key="edit_prio")
-                desc = st.text_area("🗒 Description", selected_task["Description"], height=120, key="edit_desc")
-                set_reminder = st.checkbox("🔔 Set Reminder for Not Started Task", key="edit_reminder") if stat == "⏳ Not Started" else False
-                reminder_date = st.date_input("📅 Reminder Due Date", value=datetime.now(tz) + timedelta(days=1), key="edit_reminder_date") if set_reminder else None
+                    cat = st.selectbox("📂 Category", CATEGORIES, index=CATEGORIES.index(selected_task["Category"]), key="admin_edit_cat")
+                    stat = st.selectbox("📌 Status", TASK_STATUSES, index=TASK_STATUSES.index(selected_task["Status"]), key="admin_edit_stat")
+                    prio = st.selectbox("⚠️ Priority", TASK_PRIORITIES, index=TASK_PRIORITIES.index(selected_task["Priority"]), key="admin_edit_prio")
+                desc = st.text_area("🗒 Description", selected_task["Description"], height=120, key="admin_edit_desc")
+                set_reminder = st.checkbox("🔔 Set Reminder for Not Started Task", key="admin_edit_reminder") if stat == "⏳ Not Started" else False
+                reminder_date = st.date_input("📅 Reminder Due Date", value=datetime.now(tz) + timedelta(days=1), key="admin_edit_reminder_date") if set_reminder else None
 
                 submitted = st.form_submit_button("💾 Save Changes")
                 if submitted:
@@ -503,7 +668,7 @@ def render_edit_delete_task(display_df):
                                 if set_reminder and stat == "⏳ Not Started":
                                     st.session_state.reminders = [r for r in st.session_state.reminders if r["task_id"] != selected_id]
                                     st.session_state.reminders.append({
-                                        "user": st.session_state.user_role,
+                                        "user": selected_task["Employee"],
                                         "task_id": selected_id,
                                         "task_desc": desc,
                                         "date": datetime.now(tz).strftime('%Y-%m-%d'),
@@ -513,189 +678,27 @@ def render_edit_delete_task(display_df):
                                 st.rerun()
                     else:
                         st.error("⚠️ Description cannot be empty!")
-
-            # Delete Form (Admin Only)
-            if st.session_state.user_role_type == "Admin":
-                with st.form("delete_form"):
-                    st.warning("⚠️ This action cannot be undone!")
-                    delete_confirmed = st.checkbox("I confirm I want to delete this task", key="confirm_delete")
-                    submitted_delete = st.form_submit_button("🗑 Delete Task")
-                    if submitted_delete and delete_confirmed:
-                        st.session_state.timesheet = [t for t in st.session_state.timesheet if t["TaskID"] != selected_id]
-                        st.session_state.reminders = [r for r in st.session_state.reminders if r["task_id"] != selected_id]
-                        st.warning("🗑 Task deleted successfully!")
-                        st.rerun()
-            else:
-                st.info("ℹ️ Task deletion is restricted to Admins only.")
-
             st.markdown("</div>", unsafe_allow_html=True)
-        else:
-            st.info("ℹ️ No tasks available to edit.")
 
-# --- Analytics ---
-def render_analytics(display_df):
-    tz = pytz.timezone("Asia/Riyadh")
-    with tab3:
-        st.header("📈 Analytics")
-        if display_df.empty:
-            st.info("ℹ️ No tasks yet.")
-        else:
-            st.plotly_chart(px.histogram(display_df, x="Date", color="Status", title="Tasks Over Time", color_discrete_sequence=px.colors.qualitative.Plotly), use_container_width=True)
-            st.plotly_chart(px.pie(display_df, names="Category", title="Category Distribution", color_discrete_sequence=px.colors.qualitative.Plotly), use_container_width=True)
-            st.plotly_chart(px.bar(display_df, x="Priority", color="Priority", title="Priority Levels", color_discrete_sequence=px.colors.qualitative.Plotly), use_container_width=True)
-            
-            st.markdown("### 📋 Task Table")
-            st.dataframe(display_df)
+            # Login Activity Log
+            st.markdown("### 📜 Login Activity Log")
+            st.dataframe(pd.DataFrame(st.session_state.login_log))
 
-            st.markdown("### 📅 Calendar-Style Task Summary")
-            if CALPLOT_AVAILABLE:
-                try:
-                    cal_df = display_df.groupby('Date').size().reset_index(name='Task Count')
-                    cal_df['Date'] = pd.to_datetime(cal_df['Date'])
-                    cal_df = cal_df.set_index('Date')
-                    fig, ax = calplot.calplot(
-                        data=cal_df['Task Count'],
-                        how='sum',
-                        cmap='Blues',
-                        fillcolor='lightgrey',
-                        linewidth=2,
-                        dropzero=True
-                    )
-                    st.pyplot(fig)
-                except Exception as e:
-                    st.error(f"⚠️ Error in Calplot: {e}")
-            else:
-                dates = pd.date_range(start=display_df['Date'].min(), end=display_df['Date'].max()) if not display_df.empty else pd.date_range(start=datetime.now(tz), end=datetime.now(tz))
-                calendar_data = [{"Date": d.strftime('%Y-%m-%d'), "Task Count": len(display_df[display_df['Date'] == d.strftime('%Y-%m-%d')])} for d in dates]
-                calendar_df = pd.DataFrame(calendar_data)
-                st.dataframe(calendar_df, use_container_width=True)
-                st.warning("⚠️ Install 'calplot' for a visual calendar (pip install calplot).")
+            # Employee Statistics
+            st.markdown("### 📊 Employee Statistics")
+            stats_df = df_all.groupby('Employee').agg({
+                'TaskID': 'count',
+                'Status': lambda x: (x == '✅ Completed').sum()
+            }).rename(columns={'TaskID': 'Total Tasks', 'Status': 'Completed Tasks'})
+            stats_df['Completion Rate'] = (stats_df['Completed Tasks'] / stats_df['Total Tasks'] * 100).round(2)
+            st.dataframe(stats_df)
 
-            st.markdown("### 📥 Download Tasks")
-            data, file_name = export_to_excel(display_df, "Tasks", "tasks_export.xlsx")
-            st.download_button("📥 Download Excel", data=data, file_name=file_name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-# --- Employee Work Tab ---
-def render_employee_work():
-    tz = pytz.timezone("Asia/Riyadh")
-    with tab4:
-        st.header("👥 Employee Work")
-        df_all = pd.DataFrame(st.session_state.timesheet)
-        if not df_all.empty and 'Employee' in df_all.columns:
-            # Filter Tasks
-            st.markdown("### 📅 View Employee Tasks")
-            col1, col2 = st.columns(2)
-            with col1:
-                users = df_all['Employee'].unique().tolist()
-                selected_user = st.selectbox("Employee", options=["All"] + users, key="employee_work_filter")
-            with col2:
-                start = st.date_input("Start Date", value=datetime.now(tz) - timedelta(days=7), key="employee_work_start")
-                end = st.date_input("End Date", value=datetime.now(tz), key="employee_work_end")
-            filtered_df = df_all
-            if selected_user != "All":
-                filtered_df = filtered_df[filtered_df['Employee'] == selected_user]
-            filtered_df = filtered_df[(filtered_df['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end.strftime('%Y-%m-%d'))]
-            st.dataframe(filtered_df)
+            # Export All Tasks
+            st.markdown("### 📥 Export All Tasks")
+            data, file_name = export_to_excel(df_all, "All_Tasks", "all_tasks_export.xlsx")
+            st.download_button("📥 Download All Tasks", data=data, file_name=file_name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         else:
             st.info("ℹ️ No tasks recorded yet.")
-
-# --- Admin Panel ---
-def render_admin_panel():
-    tz = pytz.timezone("Asia/Riyadh")
-    if st.session_state.user_role_type == "Admin" and admin_tab:
-        with admin_tab[0]:
-            st.header("🛠 Admin Panel")
-            df_all = pd.DataFrame(st.session_state.timesheet)
-            if not df_all.empty and 'Employee' in df_all.columns:
-                # Filter Tasks
-                st.markdown("### 📅 View and Filter Tasks")
-                col1, col2 = st.columns(2)
-                with col1:
-                    users = df_all['Employee'].unique().tolist()
-                    selected_user = st.selectbox("Employee", options=["All"] + users, key="filter_employee")
-                with col2:
-                    start = st.date_input("Start Date", value=datetime.now(tz) - timedelta(days=7), key="filter_start")
-                    end = st.date_input("End Date", value=datetime.now(tz), key="filter_end")
-                filtered_df = df_all
-                if selected_user != "All":
-                    filtered_df = filtered_df[filtered_df['Employee'] == selected_user]
-                filtered_df = filtered_df[(filtered_df['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end.strftime('%Y-%m-%d'))]
-                st.dataframe(filtered_df)
-
-                # Edit Any Task
-                st.markdown("### ✏️ Edit Any Task")
-                st.markdown("<div class='edit-section'>", unsafe_allow_html=True)
-                task_dict = {f"{row['Description'][:30]}... ({row['Date']} | {row['Category']} | {row['Status']} | {row['Employee'].capitalize()})": row["TaskID"] for _, row in df_all.iterrows()}
-                selected_label = st.selectbox("📋 Select Task to Edit", list(task_dict.keys()), key="admin_select_task")
-                selected_id = task_dict[selected_label]
-                selected_task = df_all[df_all["TaskID"] == selected_id].iloc[0]
-
-                with st.form("admin_edit_form"):
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        shift = st.selectbox("🕒 Shift", SHIFTS, index=SHIFTS.index(selected_task["Shift"]), key="admin_edit_shift")
-                        date = st.date_input("📅 Date", datetime.strptime(selected_task["Date"], '%Y-%m-%d'), key="admin_edit_date")
-                        dept = st.selectbox("🏢 Department", DEPARTMENTS, index=DEPARTMENTS.index(selected_task["Department"]), key="admin_edit_dept")
-                    with col2:
-                        cat = st.selectbox("📂 Category", CATEGORIES, index=CATEGORIES.index(selected_task["Category"]), key="admin_edit_cat")
-                        stat = st.selectbox("📌 Status", TASK_STATUSES, index=TASK_STATUSES.index(selected_task["Status"]), key="admin_edit_stat")
-                        prio = st.selectbox("⚠️ Priority", TASK_PRIORITIES, index=TASK_PRIORITIES.index(selected_task["Priority"]), key="admin_edit_prio")
-                    desc = st.text_area("🗒 Description", selected_task["Description"], height=120, key="admin_edit_desc")
-                    set_reminder = st.checkbox("🔔 Set Reminder for Not Started Task", key="admin_edit_reminder") if stat == "⏳ Not Started" else False
-                    reminder_date = st.date_input("📅 Reminder Due Date", value=datetime.now(tz) + timedelta(days=1), key="admin_edit_reminder_date") if set_reminder else None
-
-                    submitted = st.form_submit_button("💾 Save Changes")
-                    if submitted:
-                        if desc.strip():
-                            for i, t in enumerate(st.session_state.timesheet):
-                                if t["TaskID"] == selected_id:
-                                    st.session_state.timesheet[i] = {
-                                        "TaskID": selected_id,
-                                        "Employee": selected_task["Employee"],
-                                        "Date": date.strftime('%Y-%m-%d'),
-                                        "Day": calendar.day_name[date.weekday()],
-                                        "Shift": shift,
-                                        "Department": dept,
-                                        "Category": cat,
-                                        "Status": stat,
-                                        "Priority": prio,
-                                        "Description": desc,
-                                        "Submitted": datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S')
-                                    }
-                                    if set_reminder and stat == "⏳ Not Started":
-                                        st.session_state.reminders = [r for r in st.session_state.reminders if r["task_id"] != selected_id]
-                                        st.session_state.reminders.append({
-                                            "user": selected_task["Employee"],
-                                            "task_id": selected_id,
-                                            "task_desc": desc,
-                                            "date": datetime.now(tz).strftime('%Y-%m-%d'),
-                                            "due_date": reminder_date.strftime('%Y-%m-%d')
-                                        })
-                                    st.success("✅ Task updated successfully!")
-                                    st.rerun()
-                        else:
-                            st.error("⚠️ Description cannot be empty!")
-                st.markdown("</div>", unsafe_allow_html=True)
-
-                # Login Activity Log
-                st.markdown("### 📜 Login Activity Log")
-                st.dataframe(pd.DataFrame(st.session_state.login_log))
-
-                # Employee Statistics
-                st.markdown("### 📊 Employee Statistics")
-                stats_df = df_all.groupby('Employee').agg({
-                    'TaskID': 'count',
-                    'Status': lambda x: (x == '✅ Completed').sum()
-                }).rename(columns={'TaskID': 'Total Tasks', 'Status': 'Completed Tasks'})
-                stats_df['Completion Rate'] = (stats_df['Completed Tasks'] / stats_df['Total Tasks'] * 100).round(2)
-                st.dataframe(stats_df)
-
-                # Export All Tasks
-                st.markdown("### 📥 Export All Tasks")
-                data, file_name = export_to_excel(df_all, "All_Tasks", "all_tasks_export.xlsx")
-                st.download_button("📥 Download All Tasks", data=data, file_name=file_name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-            else:
-                st.info("ℹ️ No tasks recorded yet.")
 
 # --- Main App Logic ---
 if __name__ == "__main__":
@@ -709,6 +712,7 @@ if __name__ == "__main__":
         st.session_state.user_role = None
         st.session_state.user_role_type = None
         st.session_state.reminders = []
+        st.session_state.selected_tab = "Dashboard"
         st.rerun()
 
     # Data Setup
@@ -716,27 +720,35 @@ if __name__ == "__main__":
     df_user = df_all[df_all['Employee'] == st.session_state.user_role] if not df_all.empty and 'Employee' in df_all.columns else pd.DataFrame()
     display_df = df_user if st.session_state.user_role_type == "Employee" else df_all
 
-    # Render UI Components
+    # Render Header with Navigation
     render_header()
-    render_settings()
-    render_download_tasks()
-    render_admin_download_tasks()
-    auto_export_weekly()
-    render_dashboard_stats(display_df)
-    render_alerts(df_user, df_all)
 
-    # Tabs
-    tabs = ["➕ Add Task", "✏️ Edit/Delete Task", "📈 Analytics", "👥 Employee Work"]
-    if st.session_state.user_role_type == "Admin":
-        tabs.append("🛠 Admin Panel")
-    tab1, tab2, tab3, tab4, *admin_tab = st.tabs(tabs)
-
-    # Render Tab Content
-    render_add_task()
-    render_edit_delete_task(display_df)
-    render_analytics(display_df)
-    render_employee_work()
-    render_admin_panel()
+    # Render Content Based on Selected Tab
+    if st.session_state.selected_tab == "Dashboard":
+        st.header("🏠 Dashboard")
+        render_dashboard_stats(display_df)
+        render_alerts(df_user, df_all)
+        render_admin_download_tasks()
+        auto_export_weekly()
+    elif st.session_state.selected_tab == "Add Task":
+        render_add_task()
+    elif st.session_state.selected_tab == "Edit/Delete Task":
+        render_edit_delete_task(display_df)
+    elif st.session_state.selected_tab == "Analytics":
+        render_analytics(display_df)
+    elif st.session_state.selected_tab == "Employee Work":
+        render_employee_work()
+    elif st.session_state.selected_tab == "Admin Panel":
+        if st.session_state.user_role_type == "Admin":
+            render_admin_panel()
+        else:
+            st.error("🚫 Access restricted to Admins only.")
+            st.session_state.selected_tab = "Dashboard"
+            st.rerun()
+    elif st.session_state.selected_tab == "Settings":
+        render_settings()
+    elif st.session_state.selected_tab == "Download Tasks":
+        render_download_tasks()
 
     # Footer
     st.markdown(
