@@ -10,6 +10,7 @@ import os
 import json
 from PIL import Image
 import pytz
+import numpy as np
 
 # --- Constants ---
 USERS = {
@@ -186,11 +187,11 @@ html, body, [class*="css"] {
 
 .alert-box {
     background: linear-gradient(135deg, #dc2626, #f87171);
-    padding: 1rem; border-radius: 16px; color: white;
-    font-size: 0.95rem; font-weight: 600; max-width: 400px;
-    margin: 0.8rem auto; box-shadow: 0 6px 16px rgba(0,0,0,0.3);
-    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-    opacity: 1; transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    padding: 0.8rem; border-radius: 14px; color: white;
+    font-size: 0.9rem; font-weight: 600; max-width: 380px;
+    margin: 0.8rem auto; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
+    opacity: 0.92; transition: opacity 0.5s ease-out, transform 0.5s ease-out;
     z-index: 1000; animation: slideInDown 0.5s ease-in-out;
 }
 
@@ -200,11 +201,11 @@ html, body, [class*="css"] {
 
 @keyframes slideInDown {
     from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
-    to { transform: translateX(-50%) translateY(0); opacity: 1; }
+    to { transform: translateX(-50%) translateY(0); opacity: 0.92; }
 }
 
 @keyframes fadeOut {
-    from { opacity: 1; transform: translateX(-50%) translateY(0); }
+    from { opacity: 0.92; transform: translateX(-50%) translateY(0); }
     to { opacity: 0; transform: translateX(-50%) translateY(-20px); }
 }
 
@@ -241,6 +242,10 @@ footer {
 .task-attachment {
     max-width: 200px; border-radius: 12px; margin-top: 0.5rem;
     border: 2px solid #60a5fa; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.attachment-info {
+    font-size: 0.9rem; color: #94a3b8; margin-top: 0.3rem;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -334,8 +339,10 @@ def authenticate_user():
 def export_to_excel(df, sheet_name, file_name):
     output = BytesIO()
     try:
-        with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-            df.to_excel(writer, index=False, sheet_name=sheet_name)
+        # Clean data: Replace NaN/INF with None
+        df_clean = df.replace([np.nan, np.inf, -np.inf], None)
+        with pd.ExcelWriter(output, engine="xlsxwriter", engine_kwargs={'options': {'nan_inf_to_errors': True}}) as writer:
+            df_clean.to_excel(writer, index=False, sheet_name=sheet_name)
             workbook = writer.book
             worksheet = writer.sheets[sheet_name]
             header_format = workbook.add_format({
@@ -345,16 +352,16 @@ def export_to_excel(df, sheet_name, file_name):
             cell_format = workbook.add_format({
                 'font_color': '#000000', 'align': 'left', 'valign': 'vcenter'
             })
-            for col_num, col in enumerate(df.columns):
+            for col_num, col in enumerate(df_clean.columns):
                 worksheet.write(0, col_num, col, header_format)
                 max_len = max(
-                    df[col].astype(str).map(len).max() if not df[col].empty else 10,
+                    df_clean[col].astype(str).map(len).max() if not df_clean[col].empty else 10,
                     len(col)
                 )
                 worksheet.set_column(col_num, col_num, max_len + 2)
-            for row_num in range(1, len(df) + 1):
-                for col_num in range(len(df.columns)):
-                    worksheet.write(row_num, col_num, df.iloc[row_num-1, col_num], cell_format)
+            for row_num in range(1, len(df_clean) + 1):
+                for col_num in range(len(df_clean.columns)):
+                    worksheet.write(row_num, col_num, df_clean.iloc[row_num-1, col_num], cell_format)
         return output.getvalue(), file_name
     except Exception as e:
         st.error(f"⚠️ Failed to export to Excel: {e}")
@@ -370,6 +377,8 @@ def auto_export_weekly():
             df_export = pd.DataFrame(st.session_state.timesheet)
             if not df_export.empty:
                 try:
+                    # Clean data for CSV export
+                    df_export = df_export.replace([np.nan, np.inf, -np.inf], '')
                     df_export.to_csv(filename, index=False)
                     st.info(f"✅ Auto-exported weekly tasks to {filename}")
                 except Exception as e:
@@ -621,7 +630,7 @@ def render_add_task():
             status = st.selectbox("📌 Status", TASK_STATUSES, key="add_stat")
             priority = st.selectbox("⚠️ Priority", TASK_PRIORITIES, key="add_prio")
         description = st.text_area("🗒 Description", height=120, key="add_desc")
-        attachment = st.file_uploader("📎 Upload File (Optional)", type=["png", "jpg", "jpeg", "pdf"], key="add_attachment")
+        attachment = st.file_uploader("📎 Upload File (Optional)", type=["png", "jpg", "jpeg", "pdf", "xlsx", "xls"], key="add_attachment")
         set_reminder = st.checkbox("🔔 Set Reminder for Not Started Task", key="add_reminder") if status == "⏳ Not Started" else False
         reminder_date = st.date_input("📅 Reminder Due Date", value=datetime.now(tz) + timedelta(days=1), key="add_reminder_date") if set_reminder else None
         
@@ -682,6 +691,7 @@ def render_edit_delete_task(display_df):
         if selected_task.get("Attachment"):
             st.markdown("### 📎 Current Attachment")
             attachment = selected_task["Attachment"]
+            st.markdown(f"<div class='attachment-info'>File: {attachment['name']} ({attachment['type']})</div>", unsafe_allow_html=True)
             if attachment["type"].startswith("image/"):
                 st.image(base64.b64decode(attachment["data"]), caption=attachment["name"], width=200, use_column_width=False)
             else:
@@ -704,7 +714,7 @@ def render_edit_delete_task(display_df):
                 stat = st.selectbox("📌 Status", TASK_STATUSES, index=TASK_STATUSES.index(selected_task["Status"]), key="edit_stat")
                 prio = st.selectbox("⚠️ Priority", TASK_PRIORITIES, index=TASK_PRIORITIES.index(selected_task["Priority"]), key="edit_prio")
             desc = st.text_area("🗒 Description", selected_task["Description"], height=120, key="edit_desc")
-            attachment = st.file_uploader("📎 Upload New File (Optional)", type=["png", "jpg", "jpeg", "pdf"], key="edit_attachment")
+            attachment = st.file_uploader("📎 Upload New File (Optional)", type=["png", "jpg", "jpeg", "pdf", "xlsx", "xls"], key="edit_attachment")
             set_reminder = st.checkbox("🔔 Set Reminder for Not Started Task", key="edit_reminder") if stat == "⏳ Not Started" else False
             reminder_date = st.date_input("📅 Reminder Due Date", value=datetime.now(tz) + timedelta(days=1), key="edit_reminder_date") if set_reminder else None
 
@@ -898,6 +908,7 @@ def render_admin_panel():
             if selected_task.get("Attachment"):
                 st.markdown("### 📎 Current Attachment")
                 attachment = selected_task["Attachment"]
+                st.markdown(f"<div class='attachment-info'>File: {attachment['name']} ({attachment['type']})</div>", unsafe_allow_html=True)
                 if attachment["type"].startswith("image/"):
                     st.image(base64.b64decode(attachment["data"]), caption=attachment["name"], width=200, use_column_width=False)
                 else:
@@ -919,7 +930,7 @@ def render_admin_panel():
                     stat = st.selectbox("📌 Status", TASK_STATUSES, index=TASK_STATUSES.index(selected_task["Status"]), key="admin_edit_stat")
                     prio = st.selectbox("⚠️ Priority", TASK_PRIORITIES, index=TASK_PRIORITIES.index(selected_task["Priority"]), key="admin_edit_prio")
                 desc = st.text_area("🗒 Description", selected_task["Description"], height=120, key="admin_edit_desc")
-                attachment = st.file_uploader("📎 Upload New File (Optional)", type=["png", "jpg", "jpeg", "pdf"], key="admin_edit_attachment")
+                attachment = st.file_uploader("📎 Upload New File (Optional)", type=["png", "jpg", "jpeg", "pdf", "xlsx", "xls"], key="admin_edit_attachment")
                 set_reminder = st.checkbox("🔔 Set Reminder for Not Started Task", key="admin_edit_reminder") if stat == "⏳ Not Started" else False
                 reminder_date = st.date_input("📅 Reminder Due Date", value=datetime.now(tz) + timedelta(days=1), key="admin_edit_reminder_date") if set_reminder else None
 
