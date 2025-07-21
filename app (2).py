@@ -86,7 +86,7 @@ html, body, [class*="css"] {
     margin: 1.5rem 0; padding: 1rem;
 }
 
-.nav-button {
+.stButton>button {
     background: linear-gradient(135deg, #4f46e5, #9333ea);
     color: white; font-weight: 600; font-size: 1rem;
     border-radius: 12px; padding: 0.7rem 1.5rem;
@@ -96,19 +96,28 @@ html, body, [class*="css"] {
     animation: slideIn 0.4s ease-in-out;
 }
 
-.nav-button:hover {
+.stButton>button:hover {
     transform: scale(1.06); box-shadow: 0 8px 25px rgba(0,0,0,0.4);
     background: linear-gradient(135deg, #6b7280, #9ca3af);
 }
 
-.nav-button:active {
+.stButton>button:active {
     transform: scale(0.94); box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
-.nav-button.selected {
+.stButton>button.selected {
     background: linear-gradient(135deg, #1e3a8a, #3b82f6);
     transform: scale(1.03);
     box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+}
+
+@keyframes slideIn {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.stButton>button.delete-button {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
 }
 
 .overview-box {
@@ -132,33 +141,6 @@ html, body, [class*="css"] {
 .overview-box span {
     font-size: 2.5rem; font-weight: 800; color: #fcd34d;
     display: block;
-}
-
-.stButton>button {
-    background: linear-gradient(135deg, #4f46e5, #9333ea);
-    color: white; font-weight: 600; font-size: 1rem;
-    border-radius: 12px; padding: 0.7rem 1.5rem;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-    transition: all 0.2s ease-in-out; border: none;
-    cursor: pointer;
-    animation: slideIn 0.4s ease-in-out;
-}
-
-@keyframes slideIn {
-    from { transform: translateY(10px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-.stButton>button:hover {
-    transform: scale(1.06); box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-}
-
-.stButton>button:active {
-    transform: scale(0.94); box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
-
-.stButton>button.delete-button {
-    background: linear-gradient(135deg, #dc2626, #b91c1c);
 }
 
 .edit-section {
@@ -286,50 +268,30 @@ def auto_export_weekly():
                     st.error(f"⚠️ Failed to export tasks: {e}")
 
 # --- Settings Popup ---
-def render_header():
-    tz = pytz.timezone("Asia/Riyadh")
-    current_time = datetime.now(tz).strftime('%I:%M %p')
-    
-    # Header layout
-    st.markdown(
-        f"""
-        <div class='top-header'>
-            <div class='company'>INTERSOFT<br>International Software Company</div>
-            <div class='greeting'>👋 Welcome <b>{st.session_state.user_role.capitalize()} ({st.session_state.user_role_type})</b><br>
-            <small>Today is {datetime.now(tz).strftime('%A, %B %d, %Y')}</small></div>
-        </div>
-        <div class='date-box'>🕒 {current_time} (+03)</div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    # Ensure selected_tab is initialized
-    if "selected_tab" not in st.session_state:
-        st.session_state.selected_tab = "Dashboard"
-
-    # Navigation buttons
-    st.markdown("<div class='nav-buttons'>", unsafe_allow_html=True)
-    tabs = [
-        ("Dashboard", "🏠 Dashboard"),
-        ("Add Task", "➕ Add Task"),
-        ("Edit/Delete Task", "✏️ Edit/Delete Task"),
-        ("Analytics", "📈 Analytics"),
-        ("Employee Work", "👥 Employee Work")
-    ]
-    if st.session_state.user_role_type == "Admin":
-        tabs.append(("Admin Panel", "🛠 Admin Panel"))
-    tabs.append(("Settings", "⚙️ Settings"))
-    tabs.append(("Download Tasks", "⬇️ Download My Tasks"))
-
-    cols = st.columns(len(tabs))
-    for idx, (tab_key, tab_label) in enumerate(tabs):
-        with cols[idx]:
-            button_class = "nav-button selected" if st.session_state.selected_tab == tab_key else "nav-button"
-            if st.button(tab_label, key=f"nav_{tab_key.lower().replace(' ', '_')}"):
-                st.session_state.selected_tab = tab_key
+def render_settings():
+    with st.expander("⚙️ User Settings", expanded=False):
+        st.subheader("User Profile")
+        user = st.session_state.user_role
+        current_profile = USER_PROFILE.get(user, {"name": "", "email": "", "picture": None})
+        
+        # Display Profile Picture
+        if current_profile["picture"]:
+            st.image(current_profile["picture"], width=100, caption="Profile Picture", output_format="PNG")
+        
+        # Edit Profile
+        with st.form("profile_form"):
+            name = st.text_input("Name", value=current_profile["name"], key="profile_name")
+            email = st.text_input("Email", value=current_profile["email"], key="profile_email")
+            picture = st.file_uploader("Upload Profile Picture", type=["png", "jpg", "jpeg"], key="profile_picture")
+            if st.form_submit_button("💾 Save Profile"):
+                USER_PROFILE[user]["name"] = name
+                USER_PROFILE[user]["email"] = email
+                if picture:
+                    img = Image.open(picture)
+                    img = img.resize((100, 100))
+                    USER_PROFILE[user]["picture"] = img
+                st.success("✅ Profile updated successfully!")
                 st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
-
 
 # --- Download Tasks ---
 def render_download_tasks():
@@ -408,11 +370,23 @@ def render_header():
     cols = st.columns(len(tabs))
     for idx, (tab_key, tab_label) in enumerate(tabs):
         with cols[idx]:
-            button_class = "nav-button selected" if st.session_state.selected_tab == tab_key else "nav-button"
-            if st.button(tab_label, key=f"nav_{tab_key.lower().replace(' ', '_')}"):
+            # Apply 'selected' class to the button if it matches the current tab
+            button_class = "selected" if st.session_state.selected_tab == tab_key else ""
+            if st.button(tab_label, key=f"nav_{tab_key.lower().replace(' ', '_')}", help=tab_label, use_container_width=True):
                 st.session_state.selected_tab = tab_key
                 st.rerun()
-            st.markdown(f"<div class='{button_class}'>{tab_label}</div>", unsafe_allow_html=True)
+            # Apply the selected class via JavaScript
+            st.markdown(f"""
+                <script>
+                    document.querySelectorAll('.stButton>button').forEach((btn, index) => {{
+                        if (index === {idx} && "{st.session_state.selected_tab}" === "{tab_key}") {{
+                            btn.classList.add('selected');
+                        }} else {{
+                            btn.classList.remove('selected');
+                        }}
+                    }});
+                </script>
+            """, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 # --- Render Dashboard Stats ---
