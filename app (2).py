@@ -1,4 +1,5 @@
 import streamlit as st
+import base64
 import pandas as pd
 import plotly.express as px
 from datetime import datetime, date, timedelta
@@ -85,50 +86,50 @@ html, body, [class*="css"] {
 }
 
 .nav-buttons {
-    display: flex; flex-wrap: wrap; gap: 1.2rem; justify-content: center;
+    display: flex; flex-wrap: wrap; gap: 1.3rem; justify-content: center;
     margin: 1.5rem 0; padding: 1rem;
 }
 
 .stButton>button {
-    background: linear-gradient(135deg, #5b21b6, #e11d48);
-    color: white; font-weight: 700; font-size: 1.15rem;
-    border-radius: 24px; padding: 0.8rem; min-width: 200px; height: 50px;
-    box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+    background: linear-gradient(135deg, #6d28d9, #e11d48);
+    color: white; font-weight: 700; font-size: 1.2rem;
+    border-radius: 26px; padding: 0.8rem; min-width: 220px; height: 52px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
     transition: all 0.4s ease; border: 1px solid transparent;
     cursor: pointer; text-align: center;
-    display: flex; align-items: center; justify-content: center; gap: 10px;
-    animation: bounceIn 0.7s ease-in-out;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    animation: bounceIn 0.8s ease-in-out;
 }
 
 @keyframes bounceIn {
-    0% { transform: scale(0.8); opacity: 0; }
-    50% { transform: scale(1.15); opacity: 0.7; }
+    0% { transform: scale(0.85); opacity: 0; }
+    50% { transform: scale(1.2); opacity: 0.7; }
     100% { transform: scale(1); opacity: 1; }
 }
 
 .stButton>button:hover {
-    transform: scale(1.12);
-    background: linear-gradient(135deg, #7c3aed, #f43f5e);
-    box-shadow: 0 14px 34px rgba(124,58,237,0.45), 0 0 18px rgba(244,63,94,0.35);
+    transform: scale(1.15);
+    background: linear-gradient(135deg, #8b5cf6, #f43f5e);
+    box-shadow: 0 16px 36px rgba(139,92,246,0.5), 0 0 20px rgba(244,63,94,0.4);
     border: 1px solid #93c5fd;
 }
 
 .stButton>button:active {
-    transform: scale(0.93);
-    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    transform: scale(0.92);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
 }
 
 .stButton>button.selected {
-    background: linear-gradient(135deg, #1e40af, #3b82f6);
-    transform: scale(1.06);
-    box-shadow: 0 12px 32px rgba(30,64,175,0.45);
+    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+    transform: scale(1.07);
+    box-shadow: 0 14px 34px rgba(30,64,175,0.5);
     font-weight: 800;
-    animation: pulseSelected 1.4s infinite;
+    animation: pulseSelected 1.3s infinite;
 }
 
 @keyframes pulseSelected {
-    0%, 100% { transform: scale(1.06); }
-    50% { transform: scale(1.09); }
+    0%, 100% { transform: scale(1.07); }
+    50% { transform: scale(1.1); }
 }
 
 .stButton>button.delete-button {
@@ -136,17 +137,17 @@ html, body, [class*="css"] {
 }
 
 .stButton>button.delete-button:hover {
-    animation: shake 0.6s ease-in-out;
+    animation: shake 0.7s ease-in-out;
     background: linear-gradient(135deg, #991b1b, #dc2626);
-    box-shadow: 0 14px 34px rgba(185,28,28,0.45);
+    box-shadow: 0 16px 36px rgba(185,28,28,0.5);
     border: 1px solid #fca5a5;
 }
 
 @keyframes shake {
     0% { transform: translateX(0); }
-    25% { transform: translateX(-7px); }
-    50% { transform: translateX(7px); }
-    75% { transform: translateX(-7px); }
+    25% { transform: translateX(-8px); }
+    50% { transform: translateX(8px); }
+    75% { transform: translateX(-8px); }
     100% { transform: translateX(0); }
 }
 
@@ -184,11 +185,31 @@ html, body, [class*="css"] {
 }
 
 .alert-box {
-    background: linear-gradient(135deg, #dc2626, #b91c1c);
-    padding: 1.2rem; border-radius: 14px; color: white;
-    margin-bottom: 1.5rem; font-weight: 600;
-    opacity: 1; transition: opacity 0.5s ease-out;
-    position: relative; top: 0; z-index: 1000;
+    background: linear-gradient(135deg, #dc2626, #f87171);
+    padding: 1rem; border-radius: 16px; color: white;
+    font-size: 0.95rem; font-weight: 600; max-width: 400px;
+    margin: 0.8rem auto; box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    opacity: 1; transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    z-index: 1000; animation: slideInDown 0.5s ease-in-out;
+}
+
+.alert-box.reminder {
+    background: linear-gradient(135deg, #eab308, #facc15);
+}
+
+@keyframes slideInDown {
+    from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+    to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: translateX(-50%) translateY(0); }
+    to { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+}
+
+.alert-box.hide {
+    animation: fadeOut 0.5s ease-out forwards;
 }
 
 .stDataFrame table {
@@ -214,6 +235,11 @@ footer {
 
 .profile-picture {
     border-radius: 50%; width: 100px; height: 100px; object-fit: cover;
+    border: 2px solid #60a5fa; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.task-attachment {
+    max-width: 200px; border-radius: 12px; margin-top: 0.5rem;
     border: 2px solid #60a5fa; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 </style>
@@ -480,7 +506,6 @@ def render_header():
         ("Edit/Delete Task", "✏️ Edit/Delete Task"),
         ("Analytics", "📈 Analytics"),
         ("Employee Work", "👥 Employee Work"),
-        ("Overdue Tasks", "⏰ Overdue Tasks"),
         ("Settings", "⚙️ Settings"),
         ("Download Tasks", "⬇️ Download My Tasks")
     ]
@@ -561,63 +586,25 @@ def render_alerts(df_user, df_all):
         reminders = st.session_state.reminders
     for reminder in reminders:
         if reminder["user"] == st.session_state.user_role and reminder["date"] == today_str:
-            st.markdown(f"<div class='alert-box'>🔔 Reminder: Task '{reminder['task_desc'][:30]}...' is still Not Started! Due: {reminder['due_date']}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='alert-box reminder'>🔔 Reminder: Task '{reminder['task_desc'][:30]}...' is still Not Started! Due: {reminder['due_date']}</div>", unsafe_allow_html=True)
     
     st.markdown("</div>", unsafe_allow_html=True)
     st.markdown("""
         <script>
             setTimeout(() => {
-                const alertContainer = document.getElementById('alert-container');
-                if (alertContainer) {
-                    alertContainer.style.opacity = '0';
-                    setTimeout(() => { alertContainer.style.display = 'none'; }, 500);
-                }
+                const alerts = document.querySelectorAll('.alert-box');
+                alerts.forEach((alert) => {
+                    alert.classList.add('hide');
+                });
+                setTimeout(() => {
+                    const alertContainer = document.getElementById('alert-container');
+                    if (alertContainer) {
+                        alertContainer.style.display = 'none';
+                    }
+                }, 500);
             }, 5000);
         </script>
     """, unsafe_allow_html=True)
-
-# --- Overdue Tasks ---
-def render_overdue_tasks(display_df):
-    tz = pytz.timezone("Asia/Riyadh")
-    now = datetime.now(tz)
-    st.header("⏰ Overdue Tasks")
-    if not display_df.empty and 'Submitted' in display_df.columns:
-        # Convert Submitted to datetime with specific format, coercing errors to NaT
-        display_df['Submitted'] = pd.to_datetime(display_df['Submitted'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
-        # Ensure timezone consistency
-        display_df['Submitted'] = display_df['Submitted'].dt.tz_localize(tz)
-        # Identify rows with invalid timestamps
-        invalid_rows = display_df[display_df['Submitted'].isna()]
-        if not invalid_rows.empty:
-            st.warning(f"⚠️ {len(invalid_rows)} task(s) have invalid 'Submitted' timestamps and will be excluded from overdue calculations.")
-            st.dataframe(invalid_rows[['TaskID', 'Employee', 'Description', 'Submitted']])
-        # Filter out NaT rows
-        valid_df = display_df.dropna(subset=['Submitted'])
-        # Debug: Display types of valid_df['Submitted']
-        st.write("Debug: Types in valid_df['Submitted']")
-        st.write(valid_df['Submitted'].apply(lambda x: type(x).__name__).unique())
-        # Filter tasks older than 48 hours and not completed
-        overdue_df = valid_df[
-            (valid_df['Status'] != '✅ Completed') &
-            ((now - valid_df['Submitted']).dt.total_seconds() / 3600 > 48)
-        ]
-        if not overdue_df.empty:
-            st.markdown("### 📋 Tasks Over 48 Hours Not Completed")
-            st.dataframe(overdue_df)
-            data, file_name = export_to_excel(overdue_df, "Overdue_Tasks", "overdue_tasks.xlsx")
-            if data:
-                st.download_button(
-                    label="⬇️ Download Overdue Tasks",
-                    data=data,
-                    file_name=file_name,
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-            else:
-                st.error("⚠️ Failed to generate Excel file.")
-        else:
-            st.info("ℹ️ No overdue tasks found.")
-    else:
-        st.info("ℹ️ No tasks recorded yet.")
 
 # --- Add Task ---
 def render_add_task():
@@ -634,6 +621,7 @@ def render_add_task():
             status = st.selectbox("📌 Status", TASK_STATUSES, key="add_stat")
             priority = st.selectbox("⚠️ Priority", TASK_PRIORITIES, key="add_prio")
         description = st.text_area("🗒 Description", height=120, key="add_desc")
+        attachment = st.file_uploader("📎 Upload File (Optional)", type=["png", "jpg", "jpeg", "pdf"], key="add_attachment")
         set_reminder = st.checkbox("🔔 Set Reminder for Not Started Task", key="add_reminder") if status == "⏳ Not Started" else False
         reminder_date = st.date_input("📅 Reminder Due Date", value=datetime.now(tz) + timedelta(days=1), key="add_reminder_date") if set_reminder else None
         
@@ -652,8 +640,18 @@ def render_add_task():
                     "Status": status,
                     "Priority": priority,
                     "Description": description,
-                    "Submitted": datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S')
+                    "Submitted": datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S'),
+                    "Attachment": None
                 }
+                if attachment:
+                    if attachment.size > 5 * 1024 * 1024:  # Limit to 5MB
+                        st.error("⚠️ File size exceeds 5MB limit!")
+                    else:
+                        task["Attachment"] = {
+                            "name": attachment.name,
+                            "data": base64.b64encode(attachment.read()).decode('utf-8'),
+                            "type": attachment.type
+                        }
                 st.session_state.timesheet.append(task)
                 if set_reminder and status == "⏳ Not Started":
                     st.session_state.reminders.append({
@@ -680,6 +678,20 @@ def render_edit_delete_task(display_df):
         selected_id = task_dict[selected_label]
         selected_task = display_df[display_df["TaskID"] == selected_id].iloc[0]
 
+        # Display Attachment
+        if selected_task.get("Attachment"):
+            st.markdown("### 📎 Current Attachment")
+            attachment = selected_task["Attachment"]
+            if attachment["type"].startswith("image/"):
+                st.image(base64.b64decode(attachment["data"]), caption=attachment["name"], width=200, use_column_width=False)
+            else:
+                st.download_button(
+                    label=f"📎 Download {attachment['name']}",
+                    data=base64.b64decode(attachment["data"]),
+                    file_name=attachment["name"],
+                    mime=attachment["type"]
+                )
+
         # Edit Form
         with st.form("edit_form"):
             col1, col2 = st.columns(2)
@@ -692,6 +704,7 @@ def render_edit_delete_task(display_df):
                 stat = st.selectbox("📌 Status", TASK_STATUSES, index=TASK_STATUSES.index(selected_task["Status"]), key="edit_stat")
                 prio = st.selectbox("⚠️ Priority", TASK_PRIORITIES, index=TASK_PRIORITIES.index(selected_task["Priority"]), key="edit_prio")
             desc = st.text_area("🗒 Description", selected_task["Description"], height=120, key="edit_desc")
+            attachment = st.file_uploader("📎 Upload New File (Optional)", type=["png", "jpg", "jpeg", "pdf"], key="edit_attachment")
             set_reminder = st.checkbox("🔔 Set Reminder for Not Started Task", key="edit_reminder") if stat == "⏳ Not Started" else False
             reminder_date = st.date_input("📅 Reminder Due Date", value=datetime.now(tz) + timedelta(days=1), key="edit_reminder_date") if set_reminder else None
 
@@ -711,8 +724,19 @@ def render_edit_delete_task(display_df):
                                 "Status": stat,
                                 "Priority": prio,
                                 "Description": desc,
-                                "Submitted": datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S')
+                                "Submitted": datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S'),
+                                "Attachment": t.get("Attachment")
                             }
+                            if attachment:
+                                if attachment.size > 5 * 1024 * 1024:  # Limit to 5MB
+                                    st.error("⚠️ File size exceeds 5MB limit!")
+                                    st.stop()
+                                else:
+                                    st.session_state.timesheet[i]["Attachment"] = {
+                                        "name": attachment.name,
+                                        "data": base64.b64encode(attachment.read()).decode('utf-8'),
+                                        "type": attachment.type
+                                    }
                             if set_reminder and stat == "⏳ Not Started":
                                 st.session_state.reminders = [r for r in st.session_state.reminders if r["task_id"] != selected_id]
                                 st.session_state.reminders.append({
@@ -870,6 +894,20 @@ def render_admin_panel():
             selected_id = task_dict[selected_label]
             selected_task = df_all[df_all["TaskID"] == selected_id].iloc[0]
 
+            # Display Attachment
+            if selected_task.get("Attachment"):
+                st.markdown("### 📎 Current Attachment")
+                attachment = selected_task["Attachment"]
+                if attachment["type"].startswith("image/"):
+                    st.image(base64.b64decode(attachment["data"]), caption=attachment["name"], width=200, use_column_width=False)
+                else:
+                    st.download_button(
+                        label=f"📎 Download {attachment['name']}",
+                        data=base64.b64decode(attachment["data"]),
+                        file_name=attachment["name"],
+                        mime=attachment["type"]
+                    )
+
             with st.form("admin_edit_form"):
                 col1, col2 = st.columns(2)
                 with col1:
@@ -881,6 +919,7 @@ def render_admin_panel():
                     stat = st.selectbox("📌 Status", TASK_STATUSES, index=TASK_STATUSES.index(selected_task["Status"]), key="admin_edit_stat")
                     prio = st.selectbox("⚠️ Priority", TASK_PRIORITIES, index=TASK_PRIORITIES.index(selected_task["Priority"]), key="admin_edit_prio")
                 desc = st.text_area("🗒 Description", selected_task["Description"], height=120, key="admin_edit_desc")
+                attachment = st.file_uploader("📎 Upload New File (Optional)", type=["png", "jpg", "jpeg", "pdf"], key="admin_edit_attachment")
                 set_reminder = st.checkbox("🔔 Set Reminder for Not Started Task", key="admin_edit_reminder") if stat == "⏳ Not Started" else False
                 reminder_date = st.date_input("📅 Reminder Due Date", value=datetime.now(tz) + timedelta(days=1), key="admin_edit_reminder_date") if set_reminder else None
 
@@ -900,8 +939,19 @@ def render_admin_panel():
                                     "Status": stat,
                                     "Priority": prio,
                                     "Description": desc,
-                                    "Submitted": datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S')
+                                    "Submitted": datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S'),
+                                    "Attachment": t.get("Attachment")
                                 }
+                                if attachment:
+                                    if attachment.size > 5 * 1024 * 1024:  # Limit to 5MB
+                                        st.error("⚠️ File size exceeds 5MB limit!")
+                                        st.stop()
+                                    else:
+                                        st.session_state.timesheet[i]["Attachment"] = {
+                                            "name": attachment.name,
+                                            "data": base64.b64encode(attachment.read()).decode('utf-8'),
+                                            "type": attachment.type
+                                        }
                                 if set_reminder and stat == "⏳ Not Started":
                                     st.session_state.reminders = [r for r in st.session_state.reminders if r["task_id"] != selected_id]
                                     st.session_state.reminders.append({
@@ -985,8 +1035,6 @@ if __name__ == "__main__":
         render_analytics(display_df)
     elif st.session_state.selected_tab == "Employee Work":
         render_employee_work()
-    elif st.session_state.selected_tab == "Overdue Tasks":
-        render_overdue_tasks(display_df)
     elif st.session_state.selected_tab == "Admin Panel":
         if st.session_state.user_role_type == "Admin":
             render_admin_panel()
