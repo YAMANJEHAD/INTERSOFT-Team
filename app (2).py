@@ -192,7 +192,7 @@ footer {
 # Full code logic continues after this block and remains unchanged.
 
 
-# --- Session Init ---
+# --- Session Initialization ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_role = None
@@ -200,29 +200,65 @@ if "logged_in" not in st.session_state:
     st.session_state.timesheet = []
     st.session_state.login_log = []
 
-if "login_log" not in st.session_state:
-    st.session_state.login_log = []
-
-# --- Authentication ---
+# --- Authentication Block ---
 if not st.session_state.logged_in:
-    st.markdown("<div class='top-header'><div class='company'>INTERSOFT<br>International Software Company</div><div class='greeting'>🔐 INTERSOFT Task Tracker</div></div>", unsafe_allow_html=True)
-    with st.container():
-        username = st.text_input("👤 Username", key="login_username")
-        password = st.text_input("🔑 Password", type="password", key="login_password")
-        if st.button("Login 🚀", key="login_button"):
-            user = USERS.get(username.lower())
-            if user and user["pass"] == password:
-                st.session_state.logged_in = True
-                st.session_state.user_role = username.lower()
-                st.session_state.user_role_type = user["role"]
-                st.session_state.login_log.append({
-                    "user": username.lower(),
-                    "time": datetime.now().strftime("%Y-%m-%d %I:%M %p")
-                })
-                st.rerun()
-            else:
-                st.error("❌ Invalid credentials")
+    st.title("🔐 Login to INTERSOFT Dashboard")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    if st.button("Login"):
+        user = USERS.get(username.lower())
+        if user and user["pass"] == password:
+            st.session_state.logged_in = True
+            st.session_state.user_role = username.lower()
+            st.session_state.user_role_type = user["role"]
+            st.experimental_rerun()
+        else:
+            st.error("❌ Invalid username or password")
     st.stop()
+
+# --- Header ---
+st.markdown(f"## 👋 Welcome {st.session_state.user_role.capitalize()} ({st.session_state.user_role_type})")
+
+# --- Task Data ---
+df_all = pd.DataFrame(st.session_state.timesheet)
+
+# --- Download Task Section ---
+st.markdown("### 📥 Download Your Tasks")
+current_user = st.session_state.user_role
+user_tasks = df_all[df_all['Employee'] == current_user] if not df_all.empty else pd.DataFrame()
+
+if not user_tasks.empty:
+    buffer = BytesIO()
+    with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
+        user_tasks.to_excel(writer, index=False, sheet_name=f"{current_user}_Tasks")
+    st.download_button(
+        label="⬇️ Download My Tasks",
+        data=buffer.getvalue(),
+        file_name=f"{current_user}_tasks.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+else:
+    st.info("ℹ️ No tasks available for your account.")
+
+# --- Admin/Manager Download Other Users' Tasks ---
+if st.session_state.user_role_type == "Admin":
+    st.markdown("### 🛠 Admin Panel: Download Employee Tasks")
+    employees = df_all['Employee'].unique().tolist()
+    if employees:
+        selected_employee = st.selectbox("Select Employee", employees)
+        emp_tasks = df_all[df_all['Employee'] == selected_employee]
+        if not emp_tasks.empty:
+            buffer = BytesIO()
+            with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
+                emp_tasks.to_excel(writer, index=False, sheet_name=f"{selected_employee}_Tasks")
+            st.download_button(
+                label=f"⬇️ Download {selected_employee.capitalize()} Tasks",
+                data=buffer.getvalue(),
+                file_name=f"{selected_employee}_tasks.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+        else:
+            st.info(f"ℹ️ No tasks found for {selected_employee}.")
 
 # --- Auto Weekly Export ---
 EXPORT_FOLDER = "weekly_exports"
