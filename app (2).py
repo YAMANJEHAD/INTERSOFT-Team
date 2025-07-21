@@ -286,30 +286,50 @@ def auto_export_weekly():
                     st.error(f"⚠️ Failed to export tasks: {e}")
 
 # --- Settings Popup ---
-def render_settings():
-    with st.expander("⚙️ User Settings", expanded=False):
-        st.subheader("User Profile")
-        user = st.session_state.user_role
-        current_profile = USER_PROFILE.get(user, {"name": "", "email": "", "picture": None})
-        
-        # Display Profile Picture
-        if current_profile["picture"]:
-            st.image(current_profile["picture"], width=100, caption="Profile Picture", output_format="PNG")
-        
-        # Edit Profile
-        with st.form("profile_form"):
-            name = st.text_input("Name", value=current_profile["name"], key="profile_name")
-            email = st.text_input("Email", value=current_profile["email"], key="profile_email")
-            picture = st.file_uploader("Upload Profile Picture", type=["png", "jpg", "jpeg"], key="profile_picture")
-            if st.form_submit_button("💾 Save Profile"):
-                USER_PROFILE[user]["name"] = name
-                USER_PROFILE[user]["email"] = email
-                if picture:
-                    img = Image.open(picture)
-                    img = img.resize((100, 100))
-                    USER_PROFILE[user]["picture"] = img
-                st.success("✅ Profile updated successfully!")
+def render_header():
+    tz = pytz.timezone("Asia/Riyadh")
+    current_time = datetime.now(tz).strftime('%I:%M %p')
+    
+    # Header layout
+    st.markdown(
+        f"""
+        <div class='top-header'>
+            <div class='company'>INTERSOFT<br>International Software Company</div>
+            <div class='greeting'>👋 Welcome <b>{st.session_state.user_role.capitalize()} ({st.session_state.user_role_type})</b><br>
+            <small>Today is {datetime.now(tz).strftime('%A, %B %d, %Y')}</small></div>
+        </div>
+        <div class='date-box'>🕒 {current_time} (+03)</div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # Ensure selected_tab is initialized
+    if "selected_tab" not in st.session_state:
+        st.session_state.selected_tab = "Dashboard"
+
+    # Navigation buttons
+    st.markdown("<div class='nav-buttons'>", unsafe_allow_html=True)
+    tabs = [
+        ("Dashboard", "🏠 Dashboard"),
+        ("Add Task", "➕ Add Task"),
+        ("Edit/Delete Task", "✏️ Edit/Delete Task"),
+        ("Analytics", "📈 Analytics"),
+        ("Employee Work", "👥 Employee Work")
+    ]
+    if st.session_state.user_role_type == "Admin":
+        tabs.append(("Admin Panel", "🛠 Admin Panel"))
+    tabs.append(("Settings", "⚙️ Settings"))
+    tabs.append(("Download Tasks", "⬇️ Download My Tasks"))
+
+    cols = st.columns(len(tabs))
+    for idx, (tab_key, tab_label) in enumerate(tabs):
+        with cols[idx]:
+            button_class = "nav-button selected" if st.session_state.selected_tab == tab_key else "nav-button"
+            if st.button(tab_label, key=f"nav_{tab_key.lower().replace(' ', '_')}"):
+                st.session_state.selected_tab = tab_key
                 st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+
 
 # --- Download Tasks ---
 def render_download_tasks():
