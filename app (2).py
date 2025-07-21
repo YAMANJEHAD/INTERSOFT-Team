@@ -122,8 +122,8 @@ html, body, [class*="css"] {
 
 .overview-box {
     background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-    padding: 2rem; border-radius: 20px; text-align: center;
-    margin: 1.2rem 0; transition: transform 0.3s ease, box-shadow 0.3s ease;
+    padding: 1.5rem; border-radius: 20px; text-align: center preci;
+    margin: 1rem 0; transition: transform 0.3s ease, box-shadow 0.3s ease;
     box-shadow: 0 12px 40px rgba(0,0,0,0.4);
     animation: zoomIn 0.6s ease-in-out;
 }
@@ -139,8 +139,12 @@ html, body, [class*="css"] {
 }
 
 .overview-box span {
-    font-size: 2.5rem; font-weight: 800; color: #fcd34d;
+    font-size: 1.8rem; font-weight: 800; color: #fcd34d;
     display: block;
+}
+
+.overview-box small {
+    font-size: 0.9rem; color: #e2e8f0;
 }
 
 .edit-section {
@@ -370,12 +374,10 @@ def render_header():
     cols = st.columns(len(tabs))
     for idx, (tab_key, tab_label) in enumerate(tabs):
         with cols[idx]:
-            # Apply 'selected' class to the button if it matches the current tab
             button_class = "selected" if st.session_state.selected_tab == tab_key else ""
             if st.button(tab_label, key=f"nav_{tab_key.lower().replace(' ', '_')}", help=tab_label, use_container_width=True):
                 st.session_state.selected_tab = tab_key
                 st.rerun()
-            # Apply the selected class via JavaScript
             st.markdown(f"""
                 <script>
                     document.querySelectorAll('.stButton>button').forEach((btn, index) => {{
@@ -391,16 +393,51 @@ def render_header():
 
 # --- Render Dashboard Stats ---
 def render_dashboard_stats(display_df):
+    tz = pytz.timezone("Asia/Riyadh")
+    today_str = datetime.now(tz).strftime('%Y-%m-%d')
+    
+    # Overall Stats
     total_tasks = len(display_df)
     completed_tasks = display_df[display_df['Status'] == '✅ Completed'].shape[0] if not display_df.empty else 0
     in_progress_tasks = display_df[display_df['Status'] == '🔄 In Progress'].shape[0] if not display_df.empty else 0
     not_started_tasks = display_df[display_df['Status'] == '⏳ Not Started'].shape[0] if not display_df.empty else 0
 
+    st.markdown("### 📊 Overall Task Statistics")
     col1, col2, col3, col4 = st.columns(4)
     col1.markdown(f"<div class='overview-box'>Total Tasks<br><span>{total_tasks}</span></div>", unsafe_allow_html=True)
     col2.markdown(f"<div class='overview-box'>Completed<br><span>{completed_tasks}</span></div>", unsafe_allow_html=True)
     col3.markdown(f"<div class='overview-box'>In Progress<br><span>{in_progress_tasks}</span></div>", unsafe_allow_html=True)
     col4.markdown(f"<div class='overview-box'>Not Started<br><span>{not_started_tasks}</span></div>", unsafe_allow_html=True)
+
+    # Employee Stats for Today
+    st.markdown(f"### 👥 Today's Employee Statistics ({today_str})")
+    df_all = pd.DataFrame(st.session_state.timesheet)
+    if not df_all.empty and 'Employee' in df_all.columns:
+        today_df = df_all[df_all['Date'] == today_str]
+        employees = sorted(today_df['Employee'].unique()) if not today_df.empty else []
+        if employees:
+            cols = st.columns(3)  # 3 columns for responsive layout
+            for idx, employee in enumerate(employees):
+                emp_df = today_df[today_df['Employee'] == employee]
+                emp_total = len(emp_df)
+                emp_completed = emp_df[emp_df['Status'] == '✅ Completed'].shape[0]
+                emp_in_progress = emp_df[emp_df['Status'] == '🔄 In Progress'].shape[0]
+                emp_not_started = emp_df[emp_df['Status'] == '⏳ Not Started'].shape[0]
+                with cols[idx % 3]:
+                    st.markdown(
+                        f"""
+                        <div class='overview-box'>
+                            <div>{employee.capitalize()}</div>
+                            <span>{emp_total}</span>
+                            <small>Completed: {emp_completed} | In Progress: {emp_in_progress} | Not Started: {emp_not_started}</small>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+        else:
+            st.info(f"ℹ️ No tasks recorded for today ({today_str}).")
+    else:
+        st.info("ℹ️ No tasks recorded yet.")
 
 # --- Render Alerts ---
 def render_alerts(df_user, df_all):
