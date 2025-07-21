@@ -246,6 +246,23 @@ footer {
 .attachment-info {
     font-size: 0.9rem; color: #94a3b8; margin-top: 0.3rem;
 }
+
+.chart-container {
+    background: #1e293b; padding: 1rem; border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    margin-bottom: 1.5rem; transition: transform 0.3s ease;
+    animation: slideInUp 0.6s ease-in-out;
+}
+
+.chart-container:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+}
+
+@keyframes slideInUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -338,10 +355,8 @@ def authenticate_user():
 def export_to_excel(df, sheet_name, file_name):
     output = BytesIO()
     try:
-        # Clean data: Remove or simplify Attachment column, replace NaN/INF
-        df_clean = df.copy()
-        if 'Attachment' in df_clean.columns:
-            df_clean['Attachment'] = df_clean['Attachment'].apply(lambda x: x['name'] if isinstance(x, dict) and 'name' in x else '')
+        # Clean data: Remove TaskID and Attachment columns, replace NaN/INF
+        df_clean = df.drop(columns=['TaskID', 'Attachment'], errors='ignore')
         df_clean = df_clean.replace([np.nan, np.inf, -np.inf], '')
         with pd.ExcelWriter(output, engine="xlsxwriter", engine_kwargs={'options': {'nan_inf_to_errors': True}}) as writer:
             df_clean.to_excel(writer, index=False, sheet_name=sheet_name)
@@ -380,8 +395,7 @@ def auto_export_weekly():
             if not df_export.empty:
                 try:
                     # Clean data for CSV export
-                    if 'Attachment' in df_export.columns:
-                        df_export['Attachment'] = df_export['Attachment'].apply(lambda x: x['name'] if isinstance(x, dict) and 'name' in x else '')
+                    df_export = df_export.drop(columns=['TaskID', 'Attachment'], errors='ignore')
                     df_export = df_export.replace([np.nan, np.inf, -np.inf], '')
                     df_export.to_csv(filename, index=False)
                     st.info(f"✅ Auto-exported weekly tasks to {filename}")
@@ -401,6 +415,133 @@ def render_dashboard_stats(display_df):
     col2.markdown(f"<div class='overview-box'>Completed<br><span>{completed_tasks}</span></div>", unsafe_allow_html=True)
     col3.markdown(f"<div class='overview-box'>In Progress<br><span>{in_progress_tasks}</span></div>", unsafe_allow_html=True)
     col4.markdown(f"<div class='overview-box'>Not Started<br><span>{not_started_tasks}</span></div>", unsafe_allow_html=True)
+
+# --- Render Analytics in Dashboard ---
+def render_analytics(display_df):
+    if not display_df.empty:
+        st.markdown("### 📈 Task Analytics")
+        col1, col2 = st.columns(2)
+        with col1:
+            # Histogram: Tasks Over Time
+            fig_hist = px.histogram(
+                display_df,
+                x="Date",
+                color="Status",
+                title="Tasks Over Time",
+                color_discrete_sequence=px.colors.qualitative.Plotly,
+                template="plotly_dark",
+                height=400,
+                animation_frame="Date" if len(display_df['Date'].unique()) > 1 else None
+            )
+            fig_hist.update_traces(
+                hovertemplate="Date: %{x}<br>Tasks: %{y}<br>Status: %{customdata[0]}",
+                customdata=display_df[["Status"]].values
+            )
+            fig_hist.update_layout(
+                title_font_size=16,
+                xaxis_title="Date",
+                yaxis_title="Number of Tasks",
+                showlegend=True,
+                bargap=0.2
+            )
+            st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
+            st.plotly_chart(fig_hist, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        with col2:
+            # Pie Chart: Category Distribution
+            fig_pie = px.pie(
+                display_df,
+                names="Category",
+                title="Category Distribution",
+                color_discrete_sequence=px.colors.qualitative.Plotly,
+                template="plotly_dark",
+                height=400
+            )
+            fig_pie.update_traces(
+                hovertemplate="Category: %{label}<br>Tasks: %{value} (%{percent})",
+                textinfo="percent+label"
+            )
+            fig_pie.update_layout(
+                title_font_size=16,
+                showlegend=True
+            )
+            st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
+            st.plotly_chart(fig_pie, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # Bar Chart: Priority Levels
+        fig_bar = px.bar(
+            display_df,
+            x="Priority",
+            color="Priority",
+            title="Priority Levels",
+            color_discrete_sequence=px.colors.qualitative.Plotly,
+            template="plotly_dark",
+            height=400
+        )
+        fig_bar.update_traces(
+            hovertemplate="Priority: %{x}<br>Tasks: %{y}"
+        )
+        fig_bar.update_layout(
+            title_font_size=16,
+            xaxis_title="Priority",
+            yaxis_title="Number of Tasks",
+            showlegend=False
+        )
+        st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
+        st.plotly_chart(fig_bar, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        # Task Table
+        st.markdown("### 📋 Task Table")
+        st.dataframe(display_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'))
+
+        # Download Tasks
+        st.markdown("### 📥 Download Tasks")
+        data, file_name = export_to_excel(display_df, "Tasks", "tasks_export.xlsx")
+        if data:
+            st.download_button("📥 Download Excel", data=data, file_name=file_name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        else:
+            st.error("⚠️ Failed to generate Excel file.")
+
+# --- Render All Uploaded Files ---
+def render_all_uploaded_files(df_all):
+    st.markdown("### 📎 All Uploaded Files")
+    if not df_all.empty and 'Attachment' in df_all.columns:
+        attachments = []
+        for _, row in df_all.iterrows():
+            if isinstance(row.get("Attachment"), dict):
+                attachments.append({
+                    "File Name": row["Attachment"].get("name", "Unknown"),
+                    "File Type": row["Attachment"].get("type", "Unknown"),
+                    "Employee": row["Employee"].capitalize(),
+                    "Task Date": row["Date"],
+                    "Data": row["Attachment"].get("data"),
+                    "TaskID": row["TaskID"]
+                })
+        if attachments:
+            attachments_df = pd.DataFrame(attachments)
+            st.markdown("<div class='edit-section'>", unsafe_allow_html=True)
+            for idx, row in attachments_df.iterrows():
+                col1, col2, col3, col4, col5 = st.columns([2, 2, 2, 2, 1])
+                col1.write(row["File Name"])
+                col2.write(row["File Type"])
+                col3.write(row["Employee"])
+                col4.write(row["Task Date"])
+                if row["Data"]:
+                    col5.download_button(
+                        label="📎 Download",
+                        data=base64.b64decode(row["Data"]),
+                        file_name=row["File Name"],
+                        mime=row["File Type"],
+                        key=f"download_all_attachment_{row['TaskID']}_{idx}"
+                    )
+            st.markdown("</div>", unsafe_allow_html=True)
+        else:
+            st.info("ℹ️ No files uploaded yet.")
+    else:
+        st.info("ℹ️ No tasks with attachments found.")
 
 # --- Settings Popup ---
 def render_settings():
@@ -517,7 +658,6 @@ def render_header():
         ("Dashboard", "🏠 Dashboard"),
         ("Add Task", "➕ Add Task"),
         ("Edit/Delete Task", "✏️ Edit/Delete Task"),
-        ("Analytics", "📈 Analytics"),
         ("Employee Work", "👥 Employee Work"),
         ("Settings", "⚙️ Settings"),
         ("Download Tasks", "⬇️ Download My Tasks")
@@ -785,26 +925,6 @@ def render_edit_delete_task(display_df):
     else:
         st.info("ℹ️ No tasks available to edit.")
 
-# --- Analytics ---
-def render_analytics(display_df):
-    st.header("📈 Analytics")
-    if display_df.empty:
-        st.info("ℹ️ No tasks yet.")
-    else:
-        st.plotly_chart(px.histogram(display_df, x="Date", color="Status", title="Tasks Over Time", color_discrete_sequence=px.colors.qualitative.Plotly), use_container_width=True)
-        st.plotly_chart(px.pie(display_df, names="Category", title="Category Distribution", color_discrete_sequence=px.colors.qualitative.Plotly), use_container_width=True)
-        st.plotly_chart(px.bar(display_df, x="Priority", color="Priority", title="Priority Levels", color_discrete_sequence=px.colors.qualitative.Plotly), use_container_width=True)
-        
-        st.markdown("### 📋 Task Table")
-        st.dataframe(display_df)
-
-        st.markdown("### 📥 Download Tasks")
-        data, file_name = export_to_excel(display_df, "Tasks", "tasks_export.xlsx")
-        if data:
-            st.download_button("📥 Download Excel", data=data, file_name=file_name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        else:
-            st.error("⚠️ Failed to generate Excel file.")
-
 # --- Employee Work Tab ---
 def render_employee_work():
     tz = pytz.timezone("Asia/Riyadh")
@@ -824,7 +944,7 @@ def render_employee_work():
         if selected_user != "All":
             filtered_df = filtered_df[filtered_df['Employee'] == selected_user]
         filtered_df = filtered_df[(filtered_df['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end.strftime('%Y-%m-%d'))]
-        st.dataframe(filtered_df)
+        st.dataframe(filtered_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'))
     else:
         st.info("ℹ️ No tasks recorded yet.")
 
@@ -898,7 +1018,7 @@ def render_admin_panel():
             if selected_user != "All":
                 filtered_df = filtered_df[filtered_df['Employee'] == selected_user]
             filtered_df = filtered_df[(filtered_df['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end.strftime('%Y-%m-%d'))]
-            st.dataframe(filtered_df)
+            st.dataframe(filtered_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'))
 
             # Edit Any Task
             st.markdown("### ✏️ Edit Any Task")
@@ -1040,14 +1160,14 @@ if __name__ == "__main__":
     if st.session_state.selected_tab == "Dashboard":
         st.header("🏠 Dashboard")
         render_dashboard_stats(display_df)
+        render_analytics(display_df)
+        render_all_uploaded_files(df_all)
         render_admin_download_tasks()
         auto_export_weekly()
     elif st.session_state.selected_tab == "Add Task":
         render_add_task()
     elif st.session_state.selected_tab == "Edit/Delete Task":
         render_edit_delete_task(display_df)
-    elif st.session_state.selected_tab == "Analytics":
-        render_analytics(display_df)
     elif st.session_state.selected_tab == "Employee Work":
         render_employee_work()
     elif st.session_state.selected_tab == "Admin Panel":
