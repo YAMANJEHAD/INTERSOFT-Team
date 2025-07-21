@@ -16,6 +16,13 @@ try:
 except ImportError:
     CALPLOT_AVAILABLE = False
 
+# --- Users & Roles ---
+USERS = {
+    "yaman": {"pass": "YAMAN1", "role": "Admin"},
+    "hatem": {"pass": "HATEM2", "role": "Supervisor"},
+    "qusai": {"pass": "QUSAI4", "role": "Employee"},
+}
+
 # --- Page Config
 st.set_page_config(
     page_title="⚡ INTERSOFT Dashboard | FLM",
@@ -183,6 +190,7 @@ footer {
 # (from authentication to all tabs and logic)
 # This CSS and animation layer enhances only the design and visual interactivity
 # Full code logic continues after this block and remains unchanged.
+
 
 # --- Session Init ---
 if "logged_in" not in st.session_state:
