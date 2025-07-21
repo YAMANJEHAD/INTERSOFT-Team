@@ -52,7 +52,6 @@ html, body, [class*="css"] {
 .top-header {
     display: flex; justify-content: space-between; align-items: center;
     padding: 0 2.5rem; margin: 1.5rem 0;
-    position: relative;
     animation: fadeIn 1s ease-in-out;
 }
 
@@ -86,95 +85,68 @@ html, body, [class*="css"] {
 }
 
 .nav-buttons {
-    display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;
+    display: flex; flex-wrap: wrap; gap: 1.2rem; justify-content: center;
     margin: 1.5rem 0; padding: 1rem;
 }
 
-.settings-button {
-    position: absolute; top: 10px; right: 2.5rem;
-    background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(5px);
-    color: #f8fafc; font-weight: 600; font-size: 1rem;
-    border-radius: 16px; padding: 0.6rem; width: 120px; height: 40px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2); border: 1px solid #93c5fd;
-    transition: all 0.4s ease; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-    animation: slideInRight 0.6s ease-in-out;
-}
-
-.settings-button:hover {
-    transform: rotate(5deg) scale(1.1);
-    background: linear-gradient(135deg, #3b82f6, #60a5fa);
-    box-shadow: 0 8px 20px rgba(59,130,246,0.4), 0 0 10px rgba(96,165,250,0.3);
-    border: 1px solid #bfdbfe;
-}
-
-.settings-button:active {
-    transform: scale(0.95);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-
 .stButton>button {
-    background: linear-gradient(135deg, #4f46e5, #db2777);
-    color: white; font-weight: 700; font-size: 1.1rem;
-    border-radius: 20px; padding: 0.8rem; min-width: 180px; height: 48px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    background: linear-gradient(135deg, #5b21b6, #e11d48);
+    color: white; font-weight: 700; font-size: 1.15rem;
+    border-radius: 24px; padding: 0.8rem; min-width: 200px; height: 50px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.35);
     transition: all 0.4s ease; border: 1px solid transparent;
     cursor: pointer; text-align: center;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    animation: slideInUp 0.6s ease-in-out;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    animation: bounceIn 0.7s ease-in-out;
 }
 
-@keyframes slideInUp {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes slideInRight {
-    from { transform: translateX(20px); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
+@keyframes bounceIn {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.15); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
 }
 
 .stButton>button:hover {
-    transform: scale(1.1);
-    background: linear-gradient(135deg, #7e22ce, #ec4899);
-    box-shadow: 0 12px 30px rgba(126,34,206,0.4), 0 0 15px rgba(236,72,153,0.3);
+    transform: scale(1.12);
+    background: linear-gradient(135deg, #7c3aed, #f43f5e);
+    box-shadow: 0 14px 34px rgba(124,58,237,0.45), 0 0 18px rgba(244,63,94,0.35);
     border: 1px solid #93c5fd;
 }
 
 .stButton>button:active {
-    transform: scale(0.95);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transform: scale(0.93);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
 }
 
 .stButton>button.selected {
-    background: linear-gradient(135deg, #1d4ed8, #60a5fa);
-    transform: scale(1.05);
-    box-shadow: 0 10px 30px rgba(29,78,216,0.4);
+    background: linear-gradient(135deg, #1e40af, #3b82f6);
+    transform: scale(1.06);
+    box-shadow: 0 12px 32px rgba(30,64,175,0.45);
     font-weight: 800;
-    animation: pulseSelected 1.5s infinite;
+    animation: pulseSelected 1.4s infinite;
 }
 
 @keyframes pulseSelected {
-    0%, 100% { transform: scale(1.05); }
-    50% { transform: scale(1.08); }
+    0%, 100% { transform: scale(1.06); }
+    50% { transform: scale(1.09); }
 }
 
 .stButton>button.delete-button {
-    background: linear-gradient(135deg, #dc2626, #f87171);
+    background: linear-gradient(135deg, #b91c1c, #ef4444);
 }
 
 .stButton>button.delete-button:hover {
-    animation: shake 0.5s ease-in-out;
-    background: linear-gradient(135deg, #b91c1c, #ef4444);
-    box-shadow: 0 12px 30px rgba(220,38,38,0.4);
+    animation: shake 0.6s ease-in-out;
+    background: linear-gradient(135deg, #991b1b, #dc2626);
+    box-shadow: 0 14px 34px rgba(185,28,28,0.45);
     border: 1px solid #fca5a5;
 }
 
 @keyframes shake {
     0% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    50% { transform: translateX(5px); }
-    75% { transform: translateX(-5px); }
+    25% { transform: translateX(-7px); }
+    50% { transform: translateX(7px); }
+    75% { transform: translateX(-7px); }
     100% { transform: translateX(0); }
 }
 
@@ -494,19 +466,13 @@ def render_header():
             <div class='company'>INTERSOFT<br>International Software Company</div>
             <div class='greeting'>👋 Welcome <b>{st.session_state.user_role.capitalize()} ({st.session_state.user_role_type})</b><br>
             <small>Today is {datetime.now(tz).strftime('%A, %B %d, %Y')}</small></div>
-            <button class='settings-button' onclick="document.getElementById('settings-btn').click()">⚙️ Settings</button>
         </div>
         <div class='date-box'>🕒 {current_time} (+03)</div>
         """,
         unsafe_allow_html=True
     )
 
-    # Hidden Streamlit button for Settings
-    if st.button("⚙️ Settings", key="settings-btn", help="Open Settings", type="primary"):
-        st.session_state.selected_tab = "Settings"
-        st.rerun()
-
-    # Navigation Buttons (excluding Settings)
+    # Navigation Buttons
     st.markdown("<div class='nav-buttons'>", unsafe_allow_html=True)
     tabs = [
         ("Dashboard", "🏠 Dashboard"),
@@ -514,11 +480,12 @@ def render_header():
         ("Edit/Delete Task", "✏️ Edit/Delete Task"),
         ("Analytics", "📈 Analytics"),
         ("Employee Work", "👥 Employee Work"),
-        ("Overdue Tasks", "⏰ Overdue Tasks")
+        ("Overdue Tasks", "⏰ Overdue Tasks"),
+        ("Settings", "⚙️ Settings"),
+        ("Download Tasks", "⬇️ Download My Tasks")
     ]
     if st.session_state.user_role_type == "Admin":
-        tabs.append(("Admin Panel", "🛠 Admin Panel"))
-    tabs.append(("Download Tasks", "⬇️ Download My Tasks"))
+        tabs.insert(-2, ("Admin Panel", "🛠 Admin Panel"))
 
     cols = st.columns(len(tabs))
     for idx, (tab_key, tab_label) in enumerate(tabs):
