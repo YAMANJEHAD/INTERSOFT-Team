@@ -323,6 +323,20 @@ def auto_export_weekly():
                 except Exception as e:
                     st.error(f"⚠️ Failed to export tasks: {e}")
 
+# --- Dashboard Stats ---
+def render_dashboard_stats(display_df):
+    total_tasks = len(display_df)
+    completed_tasks = display_df[display_df['Status'] == '✅ Completed'].shape[0] if not display_df.empty else 0
+    in_progress_tasks = display_df[display_df['Status'] == '🔄 In Progress'].shape[0] if not display_df.empty else 0
+    not_started_tasks = display_df[display_df['Status'] == '⏳ Not Started'].shape[0] if not display_df.empty else 0
+
+    st.markdown("### 📊 Overall Task Statistics")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.markdown(f"<div class='overview-box'>Total Tasks<br><span>{total_tasks}</span></div>", unsafe_allow_html=True)
+    col2.markdown(f"<div class='overview-box'>Completed<br><span>{completed_tasks}</span></div>", unsafe_allow_html=True)
+    col3.markdown(f"<div class='overview-box'>In Progress<br><span>{in_progress_tasks}</span></div>", unsafe_allow_html=True)
+    col4.markdown(f"<div class='overview-box'>Not Started<br><span>{not_started_tasks}</span></div>", unsafe_allow_html=True)
+
 # --- Settings Popup ---
 def render_settings():
     with st.expander("⚙️ User Settings", expanded=False):
