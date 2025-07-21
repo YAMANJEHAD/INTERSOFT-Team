@@ -332,20 +332,26 @@ def render_download_tasks():
 def render_admin_download_tasks():
     if st.session_state.user_role_type == "Admin":
         st.markdown("### 🛠 Admin Panel: Download Employee Tasks")
-        employees = df_all['Employee'].unique().tolist()
-        if employees:
-            selected_employee = st.selectbox("Select Employee", employees, key="admin_download_employee")
-            emp_tasks = df_all[df_all['Employee'] == selected_employee]
-            if not emp_tasks.empty:
-                data, file_name = export_to_excel(emp_tasks, f"{selected_employee}_Tasks", f"{selected_employee}_tasks.xlsx")
-                st.download_button(
-                    label=f"⬇️ Download {selected_employee.capitalize()} Tasks",
-                    data=data,
-                    file_name=file_name,
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
+        df_all = pd.DataFrame(st.session_state.timesheet)
+        if not df_all.empty and 'Employee' in df_all.columns:
+            employees = df_all['Employee'].unique().tolist()
+            if employees:
+                selected_employee = st.selectbox("Select Employee", employees, key="admin_download_employee")
+                emp_tasks = df_all[df_all['Employee'] == selected_employee]
+                if not emp_tasks.empty:
+                    data, file_name = export_to_excel(emp_tasks, f"{selected_employee}_Tasks", f"{selected_employee}_tasks.xlsx")
+                    st.download_button(
+                        label=f"⬇️ Download {selected_employee.capitalize()} Tasks",
+                        data=data,
+                        file_name=file_name,
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+                else:
+                    st.info(f"ℹ️ No tasks found for {selected_employee}.")
             else:
-                st.info(f"ℹ️ No tasks found for {selected_employee}.")
+                st.info("ℹ️ No employees with tasks found.")
+        else:
+            st.info("ℹ️ No tasks recorded yet.")
 
 # --- Render Header ---
 def render_header():
@@ -384,7 +390,7 @@ def render_alerts(df_user, df_all):
         st.markdown(f"<div class='alert-box'>⚠️ You haven't submitted any tasks for today!</div>", unsafe_allow_html=True)
     
     if st.session_state.user_role_type in ["Admin", "Supervisor"]:
-        users = list(set(df_all['Employee'].unique()) if not df_all.empty else [])
+        users = list(set(df_all['Employee'].unique()) if not df_all.empty and 'Employee' in df_all.columns else [])
         for user in USERS.keys():
             if user.lower() not in users or not any(df_all[df_all['Employee'] == user.lower()]['Date'] == today_str):
                 st.markdown(f"<div class='alert-box'>🔔 Alert: <b>{user.capitalize()}</b> has not submitted a task today!</div>", unsafe_allow_html=True)
@@ -575,7 +581,7 @@ def render_employee_work():
     with tab4:
         st.header("👥 Employee Work")
         df_all = pd.DataFrame(st.session_state.timesheet)
-        if not df_all.empty:
+        if not df_all.empty and 'Employee' in df_all.columns:
             # Filter Tasks
             st.markdown("### 📅 View Employee Tasks")
             col1, col2 = st.columns(2)
@@ -600,7 +606,7 @@ def render_admin_panel():
         with admin_tab[0]:
             st.header("🛠 Admin Panel")
             df_all = pd.DataFrame(st.session_state.timesheet)
-            if not df_all.empty:
+            if not df_all.empty and 'Employee' in df_all.columns:
                 # Filter Tasks
                 st.markdown("### 📅 View and Filter Tasks")
                 col1, col2 = st.columns(2)
@@ -707,7 +713,7 @@ if __name__ == "__main__":
 
     # Data Setup
     df_all = pd.DataFrame(st.session_state.timesheet)
-    df_user = df_all[df_all['Employee'] == st.session_state.user_role] if not df_all.empty else pd.DataFrame()
+    df_user = df_all[df_all['Employee'] == st.session_state.user_role] if not df_all.empty and 'Employee' in df_all.columns else pd.DataFrame()
     display_df = df_user if st.session_state.user_role_type == "Employee" else df_all
 
     # Render UI Components
