@@ -111,20 +111,6 @@ html, body, [class*="css"] {
     box-shadow: 0 8px 25px rgba(0,0,0,0.4);
 }
 
-.settings-button {
-    position: absolute; top: 20px; right: 20px;
-    background: linear-gradient(135deg, #4f46e5, #9333ea);
-    color: white; font-size: 1.2rem; font-weight: 600;
-    width: 50px; height: 50px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-    cursor: pointer; transition: all 0.2s ease-in-out;
-}
-
-.settings-button:hover {
-    transform: scale(1.1); box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-}
-
 .overview-box {
     background: linear-gradient(135deg, #1e3a8a, #3b82f6);
     padding: 2rem; border-radius: 20px; text-align: center;
@@ -236,6 +222,8 @@ def initialize_session():
         st.session_state.selected_tab = "Dashboard"
     if "reminders" not in st.session_state:
         st.session_state.reminders = []
+    if "selected_tab" not in st.session_state:
+        st.session_state.selected_tab = "Dashboard"
 
 # --- Authentication ---
 def authenticate_user():
@@ -254,6 +242,7 @@ def authenticate_user():
                     "Login Time": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d %H:%M:%S'),
                     "Role": user["role"]
                 })
+                st.session_state.selected_tab = "Dashboard"
                 st.rerun()
             else:
                 st.error("❌ Invalid username or password")
@@ -377,6 +366,10 @@ def render_header():
         """,
         unsafe_allow_html=True
     )
+
+    # Ensure selected_tab is initialized
+    if "selected_tab" not in st.session_state:
+        st.session_state.selected_tab = "Dashboard"
 
     # Navigation Buttons
     st.markdown("<div class='nav-buttons'>", unsafe_allow_html=True)
