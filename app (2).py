@@ -189,8 +189,7 @@ html, body, [class*="css"] {
     background: linear-gradient(135deg, #dc2626, #f87171);
     padding: 0.8rem; border-radius: 14px; color: white;
     font-size: 0.9rem; font-weight: 600; max-width: 380px;
-    margin: 0.8rem auto; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-    position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
+    margin: 0.8rem 0; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
     opacity: 0.92; transition: opacity 0.5s ease-out, transform 0.5s ease-out;
     z-index: 1000; animation: slideInDown 0.5s ease-in-out;
 }
@@ -200,13 +199,13 @@ html, body, [class*="css"] {
 }
 
 @keyframes slideInDown {
-    from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
-    to { transform: translateX(-50%) translateY(0); opacity: 0.92; }
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 0.92; }
 }
 
 @keyframes fadeOut {
-    from { opacity: 0.92; transform: translateX(-50%) translateY(0); }
-    to { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+    from { opacity: 0.92; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-20px); }
 }
 
 .alert-box.hide {
@@ -281,7 +280,7 @@ def load_data():
                         pd.to_datetime(task["Submitted"], format='%Y-%m-%d %H:%M:%S')
                         valid_timesheet.append(task)
                     except (ValueError, TypeError):
-                        st.warning(f"Invalid timestamp in task {task['TaskID']}: {task.get('Submitted')}")
+                        st.warning(f"Invalid timestamp in task {task.get('TaskID', 'Unknown')}: {task.get('Submitted', 'N/A')}")
                 st.session_state.timesheet = valid_timesheet
                 st.session_state.reminders = data.get("reminders", [])
                 st.session_state.login_log = data.get("login_log", [])
@@ -339,8 +338,11 @@ def authenticate_user():
 def export_to_excel(df, sheet_name, file_name):
     output = BytesIO()
     try:
-        # Clean data: Replace NaN/INF with None
-        df_clean = df.replace([np.nan, np.inf, -np.inf], None)
+        # Clean data: Remove or simplify Attachment column, replace NaN/INF
+        df_clean = df.copy()
+        if 'Attachment' in df_clean.columns:
+            df_clean['Attachment'] = df_clean['Attachment'].apply(lambda x: x['name'] if isinstance(x, dict) and 'name' in x else '')
+        df_clean = df_clean.replace([np.nan, np.inf, -np.inf], '')
         with pd.ExcelWriter(output, engine="xlsxwriter", engine_kwargs={'options': {'nan_inf_to_errors': True}}) as writer:
             df_clean.to_excel(writer, index=False, sheet_name=sheet_name)
             workbook = writer.book
@@ -378,6 +380,8 @@ def auto_export_weekly():
             if not df_export.empty:
                 try:
                     # Clean data for CSV export
+                    if 'Attachment' in df_export.columns:
+                        df_export['Attachment'] = df_export['Attachment'].apply(lambda x: x['name'] if isinstance(x, dict) and 'name' in x else '')
                     df_export = df_export.replace([np.nan, np.inf, -np.inf], '')
                     df_export.to_csv(filename, index=False)
                     st.info(f"✅ Auto-exported weekly tasks to {filename}")
@@ -572,20 +576,20 @@ def render_sidebar_stats():
     else:
         st.sidebar.info("ℹ️ No tasks recorded yet.")
 
-# --- Render Alerts ---
+# --- Render Alerts in Sidebar ---
 def render_alerts(df_user, df_all):
     tz = pytz.timezone("Asia/Riyadh")
     today_str = datetime.now(tz).strftime('%Y-%m-%d')
-    st.markdown("<div id='alert-container'>", unsafe_allow_html=True)
+    st.sidebar.markdown("<div id='alert-container'>", unsafe_allow_html=True)
     
     if st.session_state.user_role_type == "Employee" and (df_user.empty or today_str not in df_user['Date'].values):
-        st.markdown(f"<div class='alert-box'>⚠️ You haven't submitted any tasks for today!</div>", unsafe_allow_html=True)
+        st.sidebar.markdown(f"<div class='alert-box'>⚠️ You haven't submitted any tasks for today!</div>", unsafe_allow_html=True)
     
     if st.session_state.user_role_type in ["Admin", "Supervisor"]:
         users = list(set(df_all['Employee'].unique()) if not df_all.empty and 'Employee' in df_all.columns else [])
         for user in USERS.keys():
             if user.lower() not in users or not any(df_all[df_all['Employee'] == user.lower()]['Date'] == today_str):
-                st.markdown(f"<div class='alert-box'>🔔 Alert: <b>{user.capitalize()}</b> has not submitted a task today!</div>", unsafe_allow_html=True)
+                st.sidebar.markdown(f"<div class='alert-box'>🔔 Alert: <b>{user.capitalize()}</b> has not submitted a task today!</div>", unsafe_allow_html=True)
 
     # Render Reminders
     try:
@@ -595,10 +599,10 @@ def render_alerts(df_user, df_all):
         reminders = st.session_state.reminders
     for reminder in reminders:
         if reminder["user"] == st.session_state.user_role and reminder["date"] == today_str:
-            st.markdown(f"<div class='alert-box reminder'>🔔 Reminder: Task '{reminder['task_desc'][:30]}...' is still Not Started! Due: {reminder['due_date']}</div>", unsafe_allow_html=True)
+            st.sidebar.markdown(f"<div class='alert-box reminder'>🔔 Reminder: Task '{reminder['task_desc'][:30]}...' is still Not Started! Due: {reminder['due_date']}</div>", unsafe_allow_html=True)
     
-    st.markdown("</div>", unsafe_allow_html=True)
-    st.markdown("""
+    st.sidebar.markdown("</div>", unsafe_allow_html=True)
+    st.sidebar.markdown("""
         <script>
             setTimeout(() => {
                 const alerts = document.querySelectorAll('.alert-box');
@@ -688,19 +692,19 @@ def render_edit_delete_task(display_df):
         selected_task = display_df[display_df["TaskID"] == selected_id].iloc[0]
 
         # Display Attachment
-        if selected_task.get("Attachment"):
+        if isinstance(selected_task.get("Attachment"), dict):
             st.markdown("### 📎 Current Attachment")
             attachment = selected_task["Attachment"]
-            st.markdown(f"<div class='attachment-info'>File: {attachment['name']} ({attachment['type']})</div>", unsafe_allow_html=True)
-            if attachment["type"].startswith("image/"):
-                st.image(base64.b64decode(attachment["data"]), caption=attachment["name"], width=200, use_column_width=False)
-            else:
-                st.download_button(
-                    label=f"📎 Download {attachment['name']}",
-                    data=base64.b64decode(attachment["data"]),
-                    file_name=attachment["name"],
-                    mime=attachment["type"]
-                )
+            st.markdown(f"<div class='attachment-info'>File: {attachment.get('name', 'Unknown')} ({attachment.get('type', 'Unknown')})</div>", unsafe_allow_html=True)
+            if attachment.get("type", "").startswith("image/"):
+                st.image(base64.b64decode(attachment["data"]), caption=attachment.get("name", "Image"), width=200, use_column_width=False)
+            st.download_button(
+                label=f"📎 Download {attachment.get('name', 'File')}",
+                data=base64.b64decode(attachment["data"]),
+                file_name=attachment.get("name", "attachment"),
+                mime=attachment.get("type", "application/octet-stream"),
+                key=f"download_attachment_{selected_id}"
+            )
 
         # Edit Form
         with st.form("edit_form"):
@@ -905,19 +909,19 @@ def render_admin_panel():
             selected_task = df_all[df_all["TaskID"] == selected_id].iloc[0]
 
             # Display Attachment
-            if selected_task.get("Attachment"):
+            if isinstance(selected_task.get("Attachment"), dict):
                 st.markdown("### 📎 Current Attachment")
                 attachment = selected_task["Attachment"]
-                st.markdown(f"<div class='attachment-info'>File: {attachment['name']} ({attachment['type']})</div>", unsafe_allow_html=True)
-                if attachment["type"].startswith("image/"):
-                    st.image(base64.b64decode(attachment["data"]), caption=attachment["name"], width=200, use_column_width=False)
-                else:
-                    st.download_button(
-                        label=f"📎 Download {attachment['name']}",
-                        data=base64.b64decode(attachment["data"]),
-                        file_name=attachment["name"],
-                        mime=attachment["type"]
-                    )
+                st.markdown(f"<div class='attachment-info'>File: {attachment.get('name', 'Unknown')} ({attachment.get('type', 'Unknown')})</div>", unsafe_allow_html=True)
+                if attachment.get("type", "").startswith("image/"):
+                    st.image(base64.b64decode(attachment["data"]), caption=attachment.get("name", "Image"), width=200, use_column_width=False)
+                st.download_button(
+                    label=f"📎 Download {attachment.get('name', 'File')}",
+                    data=base64.b64decode(attachment["data"]),
+                    file_name=attachment.get("name", "attachment"),
+                    mime=attachment.get("type", "application/octet-stream"),
+                    key=f"admin_download_attachment_{selected_id}"
+                )
 
             with st.form("admin_edit_form"):
                 col1, col2 = st.columns(2)
@@ -1018,16 +1022,16 @@ if __name__ == "__main__":
         save_data()
         st.rerun()
 
+    # Render Alerts in Sidebar
+    df_all = pd.DataFrame(st.session_state.timesheet)
+    df_user = df_all[df_all['Employee'] == st.session_state.user_role] if not df_all.empty and 'Employee' in df_all.columns else pd.DataFrame()
+    render_alerts(df_user, df_all)
+
     # Render Sidebar Stats
     render_sidebar_stats()
 
     # Data Setup
-    df_all = pd.DataFrame(st.session_state.timesheet)
-    df_user = df_all[df_all['Employee'] == st.session_state.user_role] if not df_all.empty and 'Employee' in df_all.columns else pd.DataFrame()
     display_df = df_user if st.session_state.user_role_type == "Employee" else df_all
-
-    # Render Alerts at Top
-    render_alerts(df_user, df_all)
 
     # Render Header with Navigation
     render_header()
