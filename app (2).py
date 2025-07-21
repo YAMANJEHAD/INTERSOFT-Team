@@ -52,6 +52,7 @@ html, body, [class*="css"] {
 .top-header {
     display: flex; justify-content: space-between; align-items: center;
     padding: 0 2.5rem; margin: 1.5rem 0;
+    position: relative;
     animation: fadeIn 1s ease-in-out;
 }
 
@@ -89,27 +90,54 @@ html, body, [class*="css"] {
     margin: 1.5rem 0; padding: 1rem;
 }
 
+.settings-button {
+    position: absolute; top: 10px; right: 2.5rem;
+    background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(5px);
+    color: #f8fafc; font-weight: 600; font-size: 1rem;
+    border-radius: 16px; padding: 0.6rem; width: 120px; height: 40px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2); border: 1px solid #93c5fd;
+    transition: all 0.4s ease; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    animation: slideInRight 0.6s ease-in-out;
+}
+
+.settings-button:hover {
+    transform: rotate(5deg) scale(1.1);
+    background: linear-gradient(135deg, #3b82f6, #60a5fa);
+    box-shadow: 0 8px 20px rgba(59,130,246,0.4), 0 0 10px rgba(96,165,250,0.3);
+    border: 1px solid #bfdbfe;
+}
+
+.settings-button:active {
+    transform: scale(0.95);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
 .stButton>button {
-    background: linear-gradient(135deg, #6d28d9, #db2777);
+    background: linear-gradient(135deg, #4f46e5, #db2777);
     color: white; font-weight: 700; font-size: 1.1rem;
     border-radius: 20px; padding: 0.8rem; min-width: 180px; height: 48px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-    transition: all 0.4s ease-in-out; border: 1px solid transparent;
+    transition: all 0.4s ease; border: 1px solid transparent;
     cursor: pointer; text-align: center;
     display: flex; align-items: center; justify-content: center; gap: 8px;
-    animation: bounceIn 0.6s ease-in-out;
+    animation: slideInUp 0.6s ease-in-out;
 }
 
-@keyframes bounceIn {
-    0% { transform: scale(0.7); opacity: 0; }
-    50% { transform: scale(1.1); opacity: 0.7; }
-    100% { transform: scale(1); opacity: 1; }
+@keyframes slideInUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
 }
 
 .stButton>button:hover {
     transform: scale(1.1);
-    background: linear-gradient(135deg, #8b5cf6, #ec4899);
-    box-shadow: 0 12px 30px rgba(109,40,217,0.4), 0 0 15px rgba(236,72,153,0.3);
+    background: linear-gradient(135deg, #7e22ce, #ec4899);
+    box-shadow: 0 12px 30px rgba(126,34,206,0.4), 0 0 15px rgba(236,72,153,0.3);
     border: 1px solid #93c5fd;
 }
 
@@ -128,7 +156,7 @@ html, body, [class*="css"] {
 
 @keyframes pulseSelected {
     0%, 100% { transform: scale(1.05); }
-    50% { transform: scale(1.07); }
+    50% { transform: scale(1.08); }
 }
 
 .stButton>button.delete-button {
@@ -218,6 +246,7 @@ footer {
 }
 </style>
 """, unsafe_allow_html=True)
+
 # --- Persistent Storage ---
 def save_data():
     try:
@@ -242,7 +271,15 @@ def load_data():
         if os.path.exists(DATA_FILE):
             with open(DATA_FILE, "r") as f:
                 data = json.load(f)
-                st.session_state.timesheet = data.get("timesheet", [])
+                timesheet = data.get("timesheet", [])
+                valid_timesheet = []
+                for task in timesheet:
+                    try:
+                        pd.to_datetime(task["Submitted"], format='%Y-%m-%d %H:%M:%S')
+                        valid_timesheet.append(task)
+                    except (ValueError, TypeError):
+                        st.warning(f"Invalid timestamp in task {task['TaskID']}: {task.get('Submitted')}")
+                st.session_state.timesheet = valid_timesheet
                 st.session_state.reminders = data.get("reminders", [])
                 st.session_state.login_log = data.get("login_log", [])
                 USERS.update(data.get("users", {}))
@@ -457,13 +494,19 @@ def render_header():
             <div class='company'>INTERSOFT<br>International Software Company</div>
             <div class='greeting'>👋 Welcome <b>{st.session_state.user_role.capitalize()} ({st.session_state.user_role_type})</b><br>
             <small>Today is {datetime.now(tz).strftime('%A, %B %d, %Y')}</small></div>
+            <button class='settings-button' onclick="document.getElementById('settings-btn').click()">⚙️ Settings</button>
         </div>
         <div class='date-box'>🕒 {current_time} (+03)</div>
         """,
         unsafe_allow_html=True
     )
 
-    # Navigation Buttons
+    # Hidden Streamlit button for Settings
+    if st.button("⚙️ Settings", key="settings-btn", help="Open Settings", type="primary"):
+        st.session_state.selected_tab = "Settings"
+        st.rerun()
+
+    # Navigation Buttons (excluding Settings)
     st.markdown("<div class='nav-buttons'>", unsafe_allow_html=True)
     tabs = [
         ("Dashboard", "🏠 Dashboard"),
@@ -475,7 +518,6 @@ def render_header():
     ]
     if st.session_state.user_role_type == "Admin":
         tabs.append(("Admin Panel", "🛠 Admin Panel"))
-    tabs.append(("Settings", "⚙️ Settings"))
     tabs.append(("Download Tasks", "⬇️ Download My Tasks"))
 
     cols = st.columns(len(tabs))
@@ -724,7 +766,7 @@ def render_edit_delete_task(display_df):
             with st.form("delete_form"):
                 st.warning("⚠️ This action cannot be undone!")
                 delete_confirmed = st.checkbox("I confirm I want to delete this task", key="confirm_delete")
-                submitted_delete = st.form_submit_button("🗑 Delete Task")
+                submitted_delete = st.form_submit_button("🗑 Delete Task", type="primary", help="Delete selected task")
                 if submitted_delete and delete_confirmed:
                     st.session_state.timesheet = [t for t in st.session_state.timesheet if t["TaskID"] != selected_id]
                     st.session_state.reminders = [r for r in st.session_state.reminders if r["task_id"] != selected_id]
@@ -822,7 +864,7 @@ def render_admin_panel():
             users = [u for u in USERS.keys() if u != st.session_state.user_role]
             selected_user = st.selectbox("Select User to Delete", users, key="delete_user_select")
             delete_confirmed = st.checkbox("I confirm I want to delete this user", key="confirm_user_delete")
-            submitted_delete = st.form_submit_button("🗑 Delete User")
+            submitted_delete = st.form_submit_button("🗑 Delete User", type="primary", help="Delete selected user")
             if submitted_delete and delete_confirmed:
                 if selected_user == st.session_state.user_role:
                     st.error("⚠️ Cannot delete your own account!")
