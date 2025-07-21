@@ -556,12 +556,19 @@ def render_overdue_tasks(display_df):
     now = datetime.now(tz)
     st.header("⏰ Overdue Tasks")
     if not display_df.empty and 'Submitted' in display_df.columns:
-        # Convert Submitted to datetime
-        display_df['Submitted'] = pd.to_datetime(display_df['Submitted'])
+        # Convert Submitted to datetime, coercing errors to NaT
+        display_df['Submitted'] = pd.to_datetime(display_df['Submitted'], errors='coerce')
+        # Identify rows with invalid timestamps
+        invalid_rows = display_df[display_df['Submitted'].isna()]
+        if not invalid_rows.empty:
+            st.warning(f"⚠️ {len(invalid_rows)} task(s) have invalid 'Submitted' timestamps and will be excluded from overdue calculations.")
+            st.dataframe(invalid_rows[['TaskID', 'Employee', 'Description', 'Submitted']])
+        # Filter out NaT rows
+        valid_df = display_df.dropna(subset=['Submitted'])
         # Filter tasks older than 48 hours and not completed
-        overdue_df = display_df[
-            (display_df['Status'] != '✅ Completed') &
-            ((now - display_df['Submitted']).dt.total_seconds() / 3600 > 48)
+        overdue_df = valid_df[
+            (valid_df['Status'] != '✅ Completed') &
+            ((now - valid_df['Submitted']).dt.total_seconds() / 3600 > 48)
         ]
         if not overdue_df.empty:
             st.markdown("### 📋 Tasks Over 48 Hours Not Completed")
