@@ -6,6 +6,7 @@ import calendar
 from io import BytesIO
 import uuid
 import os
+import json
 from PIL import Image
 import pytz
 
@@ -21,6 +22,7 @@ USER_PROFILE = {
     "qusai": {"name": "Qusai", "email": "qusai@example.com", "picture": None},
 }
 EXPORT_FOLDER = "weekly_exports"
+DATA_FILE = "data.json"
 TASK_STATUSES = ["⏳ Not Started", "🔄 In Progress", "✅ Completed"]
 TASK_PRIORITIES = ["🟢 Low", "🟡 Medium", "🔴 High"]
 DEPARTMENTS = ["FLM", "Tech Support", "CRM"]
@@ -122,15 +124,15 @@ html, body, [class*="css"] {
 
 .overview-box {
     background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-    padding: 1.5rem; border-radius: 20px; text-align: center preci;
-    margin: 1rem 0; transition: transform 0.3s ease, box-shadow 0.3s ease;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    padding: 1rem; border-radius: 15px; text-align: center;
+    margin: 0.5rem 0; transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
     animation: zoomIn 0.6s ease-in-out;
 }
 
 .overview-box:hover {
-    transform: translateY(-8px) scale(1.03);
-    box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
 }
 
 @keyframes zoomIn {
@@ -139,12 +141,12 @@ html, body, [class*="css"] {
 }
 
 .overview-box span {
-    font-size: 1.8rem; font-weight: 800; color: #fcd34d;
+    font-size: 1.5rem; font-weight: 800; color: #fcd34d;
     display: block;
 }
 
 .overview-box small {
-    font-size: 0.9rem; color: #e2e8f0;
+    font-size: 0.8rem; color: #e2e8f0;
 }
 
 .edit-section {
@@ -196,6 +198,39 @@ footer {
 </style>
 """, unsafe_allow_html=True)
 
+# --- Persistent Storage ---
+def save_data():
+    try:
+        data = {
+            "timesheet": st.session_state.timesheet,
+            "reminders": st.session_state.reminders,
+            "user_profile": {
+                k: {"name": v["name"], "email": v["email"], "picture": None}
+                for k, v in USER_PROFILE.items()
+            },
+            "login_log": st.session_state.login_log
+        }
+        with open(DATA_FILE, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        st.error(f"⚠️ Failed to save data: {e}")
+
+def load_data():
+    try:
+        if os.path.exists(DATA_FILE):
+            with open(DATA_FILE, "r") as f:
+                data = json.load(f)
+                st.session_state.timesheet = data.get("timesheet", [])
+                st.session_state.reminders = data.get("reminders", [])
+                st.session_state.login_log = data.get("login_log", [])
+                for user, profile in data.get("user_profile", {}).items():
+                    if user in USER_PROFILE:
+                        USER_PROFILE[user]["name"] = profile.get("name", USER_PROFILE[user]["name"])
+                        USER_PROFILE[user]["email"] = profile.get("email", USER_PROFILE[user]["email"])
+                        # Picture handled separately if stored as file
+    except Exception as e:
+        st.error(f"⚠️ Failed to load data: {e}")
+
 # --- Session Initialization ---
 def initialize_session():
     if "logged_in" not in st.session_state:
@@ -210,6 +245,7 @@ def initialize_session():
         st.session_state.reminders = []
     if "selected_tab" not in st.session_state:
         st.session_state.selected_tab = "Dashboard"
+    load_data()
 
 # --- Authentication ---
 def authenticate_user():
@@ -228,6 +264,7 @@ def authenticate_user():
                     "Login Time": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d %H:%M:%S'),
                     "Role": user["role"]
                 })
+                save_data()
                 st.session_state.selected_tab = "Dashboard"
                 st.rerun()
             else:
@@ -294,6 +331,7 @@ def render_settings():
                     img = Image.open(picture)
                     img = img.resize((100, 100))
                     USER_PROFILE[user]["picture"] = img
+                save_data()
                 st.success("✅ Profile updated successfully!")
                 st.rerun()
 
@@ -391,12 +429,39 @@ def render_header():
             """, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Render Dashboard Stats ---
-def render_dashboard_stats(display_df):
+# --- Render Sidebar Stats ---
+def render_sidebar_stats():
     tz = pytz.timezone("Asia/Riyadh")
     today_str = datetime.now(tz).strftime('%Y-%m-%d')
-    
-    # Overall Stats
+    st.sidebar.markdown(f"### 👥 Today's Employee Statistics ({today_str})")
+    df_all = pd.DataFrame(st.session_state.timesheet)
+    if not df_all.empty and 'Employee' in df_all.columns:
+        today_df = df_all[df_all['Date'] == today_str]
+        employees = sorted(today_df['Employee'].unique()) if not today_df.empty else []
+        if employees:
+            for employee in employees:
+                emp_df = today_df[today_df['Employee'] == employee]
+                emp_total = len(emp_df)
+                emp_completed = emp_df[emp_df['Status'] == '✅ Completed'].shape[0]
+                emp_in_progress = emp_df[emp_df['Status'] == '🔄 In Progress'].shape[0]
+                emp_not_started = emp_df[emp_df['Status'] == '⏳ Not Started'].shape[0]
+                st.sidebar.markdown(
+                    f"""
+                    <div class='overview-box'>
+                        <div>{employee.capitalize()}</div>
+                        <span>{emp_total}</span>
+                        <small>Completed: {emp_completed} | In Progress: {emp_in_progress} | Not Started: {emp_not_started}</small>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+        else:
+            st.sidebar.info(f"ℹ️ No tasks recorded for today ({today_str}).")
+    else:
+        st.sidebar.info("ℹ️ No tasks recorded yet.")
+
+# --- Render Dashboard Stats ---
+def render_dashboard_stats(display_df):
     total_tasks = len(display_df)
     completed_tasks = display_df[display_df['Status'] == '✅ Completed'].shape[0] if not display_df.empty else 0
     in_progress_tasks = display_df[display_df['Status'] == '🔄 In Progress'].shape[0] if not display_df.empty else 0
@@ -408,36 +473,6 @@ def render_dashboard_stats(display_df):
     col2.markdown(f"<div class='overview-box'>Completed<br><span>{completed_tasks}</span></div>", unsafe_allow_html=True)
     col3.markdown(f"<div class='overview-box'>In Progress<br><span>{in_progress_tasks}</span></div>", unsafe_allow_html=True)
     col4.markdown(f"<div class='overview-box'>Not Started<br><span>{not_started_tasks}</span></div>", unsafe_allow_html=True)
-
-    # Employee Stats for Today
-    st.markdown(f"### 👥 Today's Employee Statistics ({today_str})")
-    df_all = pd.DataFrame(st.session_state.timesheet)
-    if not df_all.empty and 'Employee' in df_all.columns:
-        today_df = df_all[df_all['Date'] == today_str]
-        employees = sorted(today_df['Employee'].unique()) if not today_df.empty else []
-        if employees:
-            cols = st.columns(3)  # 3 columns for responsive layout
-            for idx, employee in enumerate(employees):
-                emp_df = today_df[today_df['Employee'] == employee]
-                emp_total = len(emp_df)
-                emp_completed = emp_df[emp_df['Status'] == '✅ Completed'].shape[0]
-                emp_in_progress = emp_df[emp_df['Status'] == '🔄 In Progress'].shape[0]
-                emp_not_started = emp_df[emp_df['Status'] == '⏳ Not Started'].shape[0]
-                with cols[idx % 3]:
-                    st.markdown(
-                        f"""
-                        <div class='overview-box'>
-                            <div>{employee.capitalize()}</div>
-                            <span>{emp_total}</span>
-                            <small>Completed: {emp_completed} | In Progress: {emp_in_progress} | Not Started: {emp_not_started}</small>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-        else:
-            st.info(f"ℹ️ No tasks recorded for today ({today_str}).")
-    else:
-        st.info("ℹ️ No tasks recorded yet.")
 
 # --- Render Alerts ---
 def render_alerts(df_user, df_all):
@@ -506,6 +541,7 @@ def render_add_task():
                         "date": datetime.now(tz).strftime('%Y-%m-%d'),
                         "due_date": reminder_date.strftime('%Y-%m-%d')
                     })
+                save_data()
                 st.success("🎉 Task added successfully!")
                 st.rerun()
             else:
@@ -564,6 +600,7 @@ def render_edit_delete_task(display_df):
                                     "date": datetime.now(tz).strftime('%Y-%m-%d'),
                                     "due_date": reminder_date.strftime('%Y-%m-%d')
                                 })
+                            save_data()
                             st.success("✅ Task updated successfully!")
                             st.rerun()
                 else:
@@ -578,6 +615,7 @@ def render_edit_delete_task(display_df):
                 if submitted_delete and delete_confirmed:
                     st.session_state.timesheet = [t for t in st.session_state.timesheet if t["TaskID"] != selected_id]
                     st.session_state.reminders = [r for r in st.session_state.reminders if r["task_id"] != selected_id]
+                    save_data()
                     st.warning("🗑 Task deleted successfully!")
                     st.rerun()
         else:
@@ -698,6 +736,7 @@ def render_admin_panel():
                                         "date": datetime.now(tz).strftime('%Y-%m-%d'),
                                         "due_date": reminder_date.strftime('%Y-%m-%d')
                                     })
+                                save_data()
                                 st.success("✅ Task updated successfully!")
                                 st.rerun()
                     else:
@@ -729,7 +768,7 @@ if __name__ == "__main__":
     initialize_session()
     authenticate_user()
 
-    # Sidebar Logout
+    # Sidebar
     st.sidebar.title("🔒 Session")
     if st.sidebar.button("Logout", key="logout_button"):
         st.session_state.logged_in = False
@@ -737,7 +776,11 @@ if __name__ == "__main__":
         st.session_state.user_role_type = None
         st.session_state.reminders = []
         st.session_state.selected_tab = "Dashboard"
+        save_data()
         st.rerun()
+
+    # Render Sidebar Stats
+    render_sidebar_stats()
 
     # Data Setup
     df_all = pd.DataFrame(st.session_state.timesheet)
