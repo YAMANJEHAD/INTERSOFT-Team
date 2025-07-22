@@ -336,63 +336,102 @@ def authenticate_user():
     if not st.session_state.logged_in:
         st.markdown("""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Asap:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap');
 
-        body {
-            background-color: #f45b69;
-            font-family: 'Asap', sans-serif;
+        .background {
+            width: 430px;
+            height: 520px;
+            position: absolute;
+            transform: translate(-50%,-50%);
+            left: 50%;
+            top: 50%;
         }
 
-        .login-box {
+        .background .shape {
+            height: 200px;
+            width: 200px;
             position: absolute;
+            border-radius: 50%;
+        }
+
+        .shape:first-child {
+            background: linear-gradient(#1845ad, #23a2f6);
+            left: -80px;
+            top: -80px;
+        }
+
+        .shape:last-child {
+            background: linear-gradient(to right, #ff512f, #f09819);
+            right: -30px;
+            bottom: -80px;
+        }
+
+        .glass-form {
+            height: 520px;
+            width: 400px;
+            background-color: rgba(255,255,255,0.1);
+            position: absolute;
+            transform: translate(-50%,-50%);
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: white;
-            padding: 40px 30px 30px 30px;
             border-radius: 10px;
-            box-shadow: 5px 10px 20px rgba(2, 128, 144, 0.2);
-            width: 360px;
-            text-align: center;
-            z-index: 1;
-        }
-
-        .login-box input[type="text"],
-        .login-box input[type="password"] {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            margin: 15px 0;
-            border-radius: 5px;
-            border: none;
-            font-size: 16px;
-            background: #fff;
-            color: #333;
-            font-family: 'Asap', sans-serif;
-        }
-
-        .login-box button {
-            background-color: #f45b69;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.1);
+            box-shadow: 0 0 40px rgba(8,7,16,0.6);
+            padding: 50px 35px;
+            font-family: 'Poppins', sans-serif;
             color: white;
-            border: none;
-            padding: 10px 0;
-            width: 100%;
-            border-radius: 5px;
+            z-index: 2;
+        }
+
+        .glass-form h3 {
+            font-size: 32px;
+            font-weight: 500;
+            line-height: 42px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .glass-form label {
+            display: block;
+            margin-top: 20px;
             font-size: 16px;
-            font-weight: bold;
+            font-weight: 500;
+        }
+
+        .glass-form input {
+            display: block;
+            height: 50px;
+            width: 100%;
+            background-color: rgba(255,255,255,0.07);
+            border-radius: 3px;
+            padding: 0 10px;
+            margin-top: 8px;
+            font-size: 14px;
+            font-weight: 300;
+            color: white;
+        }
+
+        .glass-form ::placeholder {
+            color: #e5e5e5;
+        }
+
+        .glass-form button {
+            margin-top: 40px;
+            width: 100%;
+            background-color: #ffffff;
+            color: #080710;
+            padding: 15px 0;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 5px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            border: none;
+            transition: 0.3s ease;
         }
 
-        .login-box button:hover {
-            background-color: #e13a50;
-        }
-
-        .login-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #f45b69;
-            margin-bottom: 1.5rem;
+        .glass-form button:hover {
+            background-color: #f0f0f0;
         }
 
         .error-msg {
@@ -400,46 +439,24 @@ def authenticate_user():
             font-weight: 600;
             margin-top: 1rem;
             font-size: 0.9rem;
-        }
-
-        .wavy-bg::before,
-        .wavy-bg::after {
-            content: '';
-            position: absolute;
-            width: 600px;
-            height: 600px;
-            border-radius: 40% 45% 35% 40%;
-            z-index: 0;
-            animation: waves 20s linear infinite;
-        }
-
-        .wavy-bg::before {
-            background-color: rgba(69, 105, 144, 0.15);
-            bottom: -130%;
-            left: 40%;
-        }
-
-        .wavy-bg::after {
-            background-color: rgba(2, 128, 144, 0.2);
-            bottom: -125%;
-            left: 35%;
-        }
-
-        @keyframes waves {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            text-align: center;
         }
         </style>
         """, unsafe_allow_html=True)
 
-        st.markdown('<div class="wavy-bg"></div>', unsafe_allow_html=True)
-        st.markdown('<div class="login-box">', unsafe_allow_html=True)
-        st.markdown('<div class="login-title">🚀 INTERSOFT Login</div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div class="background">
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+        <div class="glass-form">
+        """, unsafe_allow_html=True)
 
         with st.form("login_form"):
-            username = st.text_input("", placeholder="Username")
-            password = st.text_input("", placeholder="Password", type="password")
-            submitted = st.form_submit_button("Login")
+            st.markdown("<h3>Login Here</h3>", unsafe_allow_html=True)
+            username = st.text_input("Username", placeholder="Email or Phone")
+            password = st.text_input("Password", placeholder="Password", type="password")
+            submitted = st.form_submit_button("Log In")
 
             if submitted:
                 user = USERS.get(username.lower())
@@ -462,7 +479,6 @@ def authenticate_user():
 
         st.markdown("</div>", unsafe_allow_html=True)
         st.stop()
-
 
 
         # Handle login data from JavaScript
