@@ -96,11 +96,10 @@ h1, h2, h3 {
     color: white; font-weight: 700; font-size: 1.2rem;
     border-radius: 26px; padding: 0.8rem; min-width: 220px;
     box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-    transition: all 0.3s ease; border: 1px solid transparent;
+    border: 1px solid transparent;
 }
 
 .stSelectbox:hover {
-    transform: scale(1.05);
     background: linear-gradient(135deg, #8b5cf6, #f43f5e);
     box-shadow: 0 12px 28px rgba(139,92,246,0.4), 0 0 18px rgba(244,63,94,0.3);
     border: 1px solid #93c5fd;
@@ -111,49 +110,25 @@ h1, h2, h3 {
     color: white; font-weight: 700; font-size: 1.2rem;
     border-radius: 26px; padding: 0.8rem; min-width: 220px; height: 52px;
     box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-    transition: all 0.3s ease; border: 1px solid transparent;
+    border: 1px solid transparent;
     cursor: pointer; text-align: center;
     display: flex; align-items: center; justify-content: center; gap: 12px;
 }
 
 .stButton>button:hover {
-    transform: scale(1.05);
     background: linear-gradient(135deg, #8b5cf6, #f43f5e);
     box-shadow: 0 12px 28px rgba(139,92,246,0.4), 0 0 18px rgba(244,63,94,0.3);
     border: 1px solid #93c5fd;
 }
 
-.stButton>button:active {
-    transform: scale(0.98);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-
-.stButton>button[key="login_button"], .stButton>button[key="logout_button"] {
-    animation: bounceIn 0.6s ease-in-out;
-}
-
-@keyframes bounceIn {
-    0% { transform: scale(0.3); opacity: 0; }
-    50% { transform: scale(1.2); opacity: 0.8; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
 .stButton>button.delete-button {
     background: linear-gradient(135deg, #b91c1c, #ef4444);
-    animation: shake 0.5s ease-in-out;
 }
 
 .stButton>button.delete-button:hover {
     background: linear-gradient(135deg, #dc2626, #f87171);
     box-shadow: 0 12px 28px rgba(220,38,38,0.4);
     border: 1px solid #fca5a5;
-}
-
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    50% { transform: translateX(5px); }
-    75% { transform: translateX(-3px); }
 }
 
 .overview-box {
