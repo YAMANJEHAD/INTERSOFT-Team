@@ -242,7 +242,7 @@ footer {
 }
 
 .task-attachment {
-    max-width: 200px; border-radius: 12px; margin-top: 0.5rem;
+    max-width: 200px; border-radius: 12px; margin правил: 0.5rem;
     border: 2px solid #60a5fa; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
@@ -265,169 +265,6 @@ footer {
 @keyframes slideInUp {
     from { transform: translateY(20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
-}
-
-/* Login Modal Styles */
-body.modal-open {
-    overflow: hidden;
-}
-
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(51, 51, 51, 0.85);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    transition: 0.4s;
-    z-index: 1000;
-}
-
-.modal-container {
-    display: flex;
-    max-width: 720px;
-    width: 90%;
-    border-radius: 10px;
-    overflow: hidden;
-    background: #fff;
-    transform: scale(1);
-    opacity: 1;
-    pointer-events: auto;
-    transition-duration: 0.6s;
-}
-
-.modal-title {
-    font-size: 26px;
-    margin: 0;
-    font-weight: 600;
-    color: #1e3a8a;
-    font-family: 'Nunito', sans-serif;
-}
-
-.modal-desc {
-    margin: 6px 0 30px 0;
-    color: #4b5563;
-    font-family: 'Nunito', sans-serif;
-}
-
-.modal-left {
-    padding: 60px 30px 20px;
-    background: #fff;
-    flex: 1.5;
-    transform: translateY(0);
-    opacity: 1;
-    transition-duration: 0.5s;
-}
-
-.modal-right {
-    flex: 2;
-    font-size: 0;
-    overflow: hidden;
-    transition: 0.3s;
-}
-
-.modal-right img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transform: scale(1);
-    transition-duration: 1.2s;
-}
-
-.modal-buttons {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-}
-
-.input-button {
-    padding: 8px 12px;
-    outline: none;
-    border: 0;
-    color: #fff;
-    border-radius: 4px;
-    background: #1e3a8a;
-    font-family: 'Nunito', sans-serif;
-    transition: 0.3s;
-    cursor: pointer;
-}
-
-.input-button:hover {
-    background: #3b82f6;
-}
-
-.input-label {
-    font-size: 11px;
-    text-transform: uppercase;
-    font-family: 'Nunito', sans-serif;
-    font-weight: 600;
-    letter-spacing: 0.7px;
-    color: #1e3a8a;
-    transition: 0.3s;
-}
-
-.input-block {
-    display: flex;
-    flex-direction: column;
-    padding: 10px 10px 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    margin-bottom: 20px;
-    transition: 0.3s;
-}
-
-.input-block input {
-    outline: 0;
-    border: 0;
-    padding: 4px 0 0;
-    font-size: 14px;
-    font-family: 'Nunito', sans-serif;
-}
-
-.input-block input::placeholder {
-    color: #ccc;
-    opacity: 1;
-}
-
-.input-block:focus-within {
-    border-color: #1e3a8a;
-}
-
-.input-block:focus-within .input-label {
-    color: #3b82f6;
-}
-
-.icon-button {
-    outline: 0;
-    position: absolute;
-    right: 10px;
-    top: 12px;
-    width: 32px;
-    height: 32px;
-    border: 0;
-    background: transparent;
-    padding: 0;
-    cursor: pointer;
-}
-
-.error-message {
-    color: #dc2626;
-    font-size: 14px;
-    margin-top: 10px;
-    font-family: 'Nunito', sans-serif;
-}
-
-@media(max-width: 750px) {
-    .modal-container {
-        width: 90%;
-    }
-    .modal-right {
-        display: none;
-    }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -497,39 +334,147 @@ def initialize_session():
 # --- Authentication ---
 def authenticate_user():
     if not st.session_state.logged_in:
-        # HTML for the login modal
+        # HTML for the new login modal
         login_html = """
-        <div class="modal">
-            <div class="modal-container">
-                <div class="modal-left">
-                    <h1 class="modal-title">Welcome to INTERSOFT!</h1>
-                    <p class="modal-desc">Please sign in to access the FLM Dashboard.</p>
-                    <div class="input-block">
-                        <label for="username" class="input-label">Username</label>
-                        <input type="text" name="username" id="username" placeholder="Username">
-                    </div>
-                    <div class="input-block">
-                        <label for="password" class="input-label">Password</label>
-                        <input type="password" name="password" id="password" placeholder="Password">
-                    </div>
-                    <div class="modal-buttons">
-                        <button class="input-button" onclick="submitLogin()">Login</button>
-                    </div>
-                    <div id="error-message" class="error-message"></div>
-                </div>
-                <div class="modal-right">
-                    <img src="https://images.unsplash.com/photo-1512486130939-2c4f79935e4f?ixlib=rb-0.3.5&auto=format&fit=crop&w=1000&q=80" alt="Login Image">
-                </div>
-                <button class="icon-button close-button" onclick="closeModal()">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">
-                        <path d="M 25 3 C 12.86158 3 3 12.86158 3 25 C 3 37.13842 12.86158 47 25 47 C 37.13842 47 47 37.13842 47 25 C 47 12.86158 37.13842 3 25 3 z M 25 5 C 36.05754 5 45 13.94246 45 25 C 45 36.05754 36.05754 45 25 45 C 13.94246 45 5 36.05754 5 25 C 5 13.94246 13.94246 5 25 5 z M 16.990234 15.990234 A 1.0001 1.0001 0 0 0 16.292969 17.707031 L 23.585938 25 L 16.292969 32.292969 A 1.0001 1.0001 0 1 0 17.707031 33.707031 L 25 26.414062 L 32.292969 33.707031 A 1.0001 1.0001 0 1 0 33.707031 32.292969 L 26.414062 25 L 33.707031 17.707031 A 1.0001 1.0001 0 0 0 32.980469 15.990234 A 1.0001 1.0001 0 0 0 32.292969 16.292969 L 25 23.585938 L 17.707031 16.292969 A 1.0001 1.0001 0 0 0 16.990234 15.990234 z"></path>
-                    </svg>
-                </button>
+        <style>
+            @import url('https://fonts.googleapis.com/css?family=Raleway:400,700');
+            *,*:before,*:after{box-sizing:border-box}
+            body{
+                min-height:100vh;
+                font-family: 'Raleway', sans-serif;
+                margin: 0;
+                background: #000;
+            }
+            .container{
+                position:absolute;
+                width:100%;
+                height:100%;
+                overflow:hidden;
+            }
+            .container:hover, .container:active{
+                .top, .bottom{
+                    &:before, &:after{
+                        margin-left: 200px;
+                        transform-origin: -200px 50%;
+                        transition-delay:0s;
+                    }
+                }
+                .center{
+                    opacity:1;
+                    transition-delay:0.2s;
+                }
+            }
+            .top, .bottom{
+                &:before, &:after{
+                    content:'';
+                    display:block;
+                    position:absolute;
+                    width:200vmax;
+                    height:200vmax;
+                    top:50%;left:50%;
+                    margin-top:-100vmax;
+                    transform-origin: 0 50%;
+                    transition:all 0.5s cubic-bezier(0.445, 0.05, 0, 1);
+                    z-index:10;
+                    opacity:0.65;
+                    transition-delay:0.2s;
+                }
+            }
+            .top{
+                &:before{transform:rotate(45deg);background:#e46569;}
+                &:after{transform:rotate(135deg);background:#ecaf81;}
+            }
+            .bottom{
+                &:before{transform:rotate(-45deg);background:#60b8d4;}
+                &:after{transform:rotate(-135deg);background:#3745b5;}
+            }
+            .center{
+                position:absolute;
+                width:400px;
+                height:400px;
+                top:50%;left:50%;
+                margin-left:-200px;
+                margin-top:-200px;
+                display:flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                padding:30px;
+                opacity:0;
+                transition:all 0.5s cubic-bezier(0.445, 0.05, 0, 1);
+                transition-delay:0s;
+                color:#333;
+                background: #fff;
+                border-radius: 10px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            }
+            .center h2{
+                margin: 0 0 20px 0;
+                font-size: 24px;
+                font-weight: 700;
+                color: #333;
+            }
+            .center input{
+                width:100%;
+                padding:15px;
+                margin:5px;
+                border-radius:1px;
+                border:1px solid #ccc;
+                font-family:inherit;
+                font-size: 16px;
+            }
+            .center input:focus{
+                outline: none;
+                border-color: #3745b5;
+            }
+            .login-button{
+                padding: 10px 20px;
+                margin-top: 10px;
+                background: #3745b5;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-family: 'Raleway', sans-serif;
+                font-size: 16px;
+                transition: background 0.3s ease;
+            }
+            .login-button:hover{
+                background: #60b8d4;
+            }
+            .close-button{
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: transparent;
+                border: none;
+                font-size: 20px;
+                cursor: pointer;
+                color: #333;
+            }
+            .error-message{
+                color: #e46569;
+                font-size: 14px;
+                margin-top: 10px;
+                text-align: center;
+            }
+        </style>
+        <div class="container" onclick="toggleAnimation()">
+            <div class="top"></div>
+            <div class="bottom"></div>
+            <div class="center">
+                <button class="close-button" onclick="closeModal()">✖</button>
+                <h2>Please Sign In</h2>
+                <input type="text" placeholder="Username" id="username">
+                <input type="password" placeholder="Password" id="password">
+                <button class="login-button" onclick="submitLogin()">Login</button>
+                <div id="error-message" class="error-message"></div>
             </div>
         </div>
         <script>
-            let isOpened = true;
-
+            function toggleAnimation() {
+                document.querySelector('.container').classList.toggle('active');
+            }
             function submitLogin() {
                 const username = document.getElementById('username').value;
                 const password = document.getElementById('password').value;
@@ -546,27 +491,28 @@ def authenticate_user():
                     value: { username: username.toLowerCase(), password: password }
                 }, '*');
             }
-
             function closeModal() {
-                document.querySelector('.modal').style.display = 'none';
+                document.querySelector('.container').style.display = 'none';
                 window.parent.postMessage({
                     type: 'streamlit:setComponentValue',
                     value: { action: 'close' }
                 }, '*');
             }
-
             document.onkeydown = function(evt) {
                 evt = evt || window.event;
                 if (evt.keyCode === 27) {
                     closeModal();
                 }
             };
-
             // Display error message if exists
             const errorMessage = "%s";
             if (errorMessage) {
                 document.getElementById('error-message').innerText = errorMessage;
             }
+            // Trigger animation on load
+            setTimeout(() => {
+                document.querySelector('.container').classList.add('active');
+            }, 100);
         </script>
         """ % st.session_state.get('login_error', '')
 
@@ -889,7 +835,7 @@ def render_admin_download_tasks():
 # --- Render Header ---
 def render_header():
     tz = pytz.timezone("Asia/Riyadh")
-    current_time = "09:21 AM"  # Fixed to match provided timestamp
+    current_time = "09:32 AM"  # Updated to match provided timestamp
     st.markdown(
         f"""
         <div class='top-header'>
@@ -1217,7 +1163,7 @@ def render_admin_panel():
                 if new_username.lower() in USERS:
                     st.error("⚠️ Username already exists!")
                 elif not all([new_username, new_password, new_name, new_email]):
-                    st.error("⚠️ All fields are are required!")
+                    st.error("⚠️ All fields are required!")
                 else:
                     USERS[new_username.lower()] = {"pass": new_password, "role": new_role}
                     USER_PROFILE[new_username.lower()] = {"name": new_name, "email": new_email, "picture": None}
@@ -1424,7 +1370,6 @@ if __name__ == "__main__":
 
     # Footer
     st.markdown(
-        f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now(pytz.timezone('Asia/Riyadh')).strftime('%A, %B %d, %Y')} - 09:21 AM (+03)</footer>",
+        f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now(pytz.timezone('Asia/Riyadh')).strftime('%A, %B %d, %Y')} - 09:32 AM (+03)</footer>",
         unsafe_allow_html=True
     )
-
