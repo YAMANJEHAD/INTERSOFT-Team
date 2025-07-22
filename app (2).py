@@ -24,8 +24,8 @@ USER_PROFILE = {
     "yaman": {"name": "Yaman", "picture": None},
     "hatem": {"name": "Hatem", "picture": None},
     "qusai": {"name": "Qusai", "picture": None},
-    "mahmoud": {"name": "Mahmoud", "picture": None}
-    "mohammad aleem": {"name": "Mohammad aleem", "picture": None}
+    "mahmoud": {"name": "Mahmoud", "picture": None},
+    "mohammad aleem": {"name": "Mohammad aleem", "picture": None},
     
 }
 EXPORT_FOLDER = "weekly_exports"
