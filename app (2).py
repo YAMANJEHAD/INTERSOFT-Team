@@ -46,6 +46,8 @@ st.markdown("""
 
 html, body, [class*="css"] {
     font-family: 'Inter', sans-serif;
+    background: radial-gradient(circle at top left, #0f172a, #1e293b);
+    color: #f8fafc;
     scroll-behavior: smooth;
 }
 
@@ -67,17 +69,19 @@ h1, h2, h3 {
 }
 
 .greeting {
-    font-size: 1.2rem; font-weight: 600;
+    font-size: 1.2rem; font-weight: 600; color: #fcd34d;
     text-align: right; line-height: 1.5;
 }
 
 .company {
-    font-size: 1.6rem; font-weight: 800; letter-spacing: 0.8px;
+    font-size: 1.6rem; font-weight: 800; color: #ffffff; letter-spacing: 0.8px;
 }
 
 .date-box {
-    font-size: 1.2rem; font-weight: 600; text-align: center;
+    font-size: 1.2rem; font-weight: 600; color: #f8fafc; text-align: center;
+    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
     padding: 1rem 2rem; border-radius: 24px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
     margin-bottom: 1.5rem; display: inline-block;
     animation: fadeIn 0.6s ease-in-out;
 }
@@ -88,25 +92,57 @@ h1, h2, h3 {
 }
 
 .stSelectbox {
-    font-weight: 700; font-size: 1.2rem;
+    background: linear-gradient(135deg, #6d28d9, #e11d48);
+    color: white; font-weight: 700; font-size: 1.2rem;
     border-radius: 26px; padding: 0.8rem; min-width: 220px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    border: 1px solid transparent;
+}
+
+.stSelectbox:hover {
+    background: linear-gradient(135deg, #8b5cf6, #f43f5e);
+    box-shadow: 0 12px 28px rgba(139,92,246,0.4), 0 0 18px rgba(244,63,94,0.3);
+    border: 1px solid #93c5fd;
 }
 
 .stButton>button {
-    font-weight: 700; font-size: 1.2rem;
+    background: linear-gradient(135deg, #6d28d9, #e11d48);
+    color: white; font-weight: 700; font-size: 1.2rem;
     border-radius: 26px; padding: 0.8rem; min-width: 220px; height: 52px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    border: 1px solid transparent;
     cursor: pointer; text-align: center;
     display: flex; align-items: center; justify-content: center; gap: 12px;
 }
 
+.stButton>button:hover {
+    background: linear-gradient(135deg, #8b5cf6, #f43f5e);
+    box-shadow: 0 12px 28px rgba(139,92,246,0.4), 0 0 18px rgba(244,63,94,0.3);
+    border: 1px solid #93c5fd;
+}
+
+.stButton>button.delete-button {
+    background: linear-gradient(135deg, #b91c1c, #ef4444);
+}
+
+.stButton>button.delete-button:hover {
+    background: linear-gradient(135deg, #dc2626, #f87171);
+    box-shadow: 0 12px 28px rgba(220,38,38,0.4);
+    border: 1px solid #fca5a5;
+}
+
 .overview-box {
+    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
     padding: 1.5rem; border-radius: 18px; text-align: center;
-    margin: 1rem 0; transition: transform 0.3s ease;
+    margin: 1rem 0; transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.3);
+    border: 1px solid #60a5fa;
     animation: zoomIn 0.6s ease-in-out;
 }
 
 .overview-box:hover {
     transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 14px 34px rgba(0,0,0,0.4);
 }
 
 @keyframes zoomIn {
@@ -115,25 +151,31 @@ h1, h2, h3 {
 }
 
 .overview-box span {
-    font-size: 1.8rem; font-weight: 800;
+    font-size: 1.8rem; font-weight: 800; color: #fcd34d;
     display: block;
 }
 
 .overview-box small {
-    font-size: 0.9rem;
+    font-size: 0.9rem; color: #e2e8f0;
 }
 
 .edit-section {
-    padding: 2.5rem; border-radius: 18px; margin-bottom: 2rem;
+    background: #1e293b; padding: 2.5rem; border-radius: 18px; margin-bottom: 2rem;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
     animation: fadeIn 0.5s ease-in-out;
 }
 
 .alert-box {
-    padding: 1rem; border-radius: 16px;
+    background: linear-gradient(135deg, #dc2626, #f87171);
+    padding: 1rem; border-radius: 16px; color: white;
     font-size: 1rem; font-weight: 600; max-width: 400px;
-    margin: 1rem 0;
+    margin: 1rem 0; box-shadow: 0 6px 14px rgba(0,0,0,0.25);
     opacity: 0.92; transition: opacity 0.5s ease-out, transform 0.5s ease-out;
     z-index: 1000; animation: slideInDown 0.5s ease-in-out;
+}
+
+.alert-box.reminder {
+    background: linear-gradient(135deg, #eab308, #facc15);
 }
 
 @keyframes slideInDown {
@@ -152,49 +194,59 @@ h1, h2, h3 {
 
 .stDataFrame table {
     width: 100%; border-collapse: collapse;
-    border-radius: 12px; overflow: hidden;
+    background: #1e293b; border-radius: 12px; overflow: hidden;
+}
+
+.stDataFrame tr:nth-child(odd) {
+    background-color: #2d3a55;
 }
 
 .stDataFrame tr:hover {
+    background-color: #3b4a6b;
     transition: background-color 0.3s ease;
 }
 
 .stDataFrame th {
-    font-weight: 700;
+    background-color: #4f81bd; color: white; font-weight: 700;
     padding: 12px; font-size: 1.2rem;
 }
 
 .stDataFrame td {
-    font-weight: 600; padding: 12px;
-    border-bottom: 1px solid transparent; font-size: 1.1rem;
+    font-weight: 600; color: #f8fafc; padding: 12px;
+    border-bottom: 1px solid #334155; font-size: 1.1rem;
 }
 
 footer {
-    text-align: center; padding: 3rem 0;
+    text-align: center; color: #94a3b8; padding: 3rem 0;
     font-size: 1.1rem; font-weight: 500;
     animation: fadeIn 1s ease-in-out;
 }
 
 .profile-picture {
     border-radius: 50%; width: 100px; height: 100px; object-fit: cover;
+    border: 2px solid #60a5fa; box-shadow: 0 6px 14px rgba(0,0,0,0.3);
 }
 
 .task-attachment {
     max-width: 200px; border-radius: 12px; margin-top: 0.5rem;
+    border: 2px solid #60a5fa; box-shadow: 0 6px 14px rgba(0,0,0,0.3);
 }
 
 .attachment-info {
-    font-size: 0.9rem; margin-top: 0.3rem;
+    font-size: 0.9rem; color: #94a3b8; margin-top: 0.3rem;
 }
 
 .chart-container {
-    padding: 1.5rem; border-radius: 18px;
+    background: #1e293b; padding: 1.5rem; border-radius: 18px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.4);
     margin-bottom: 2rem; transition: transform 0.3s ease;
+    border: 1px solid #60a5fa;
     animation: slideInUp 0.6s ease-in-out;
 }
 
 .chart-container:hover {
     transform: translateY(-5px);
+    box-shadow: 0 14px 34px rgba(0,0,0,0.5);
 }
 
 @keyframes slideInUp {
