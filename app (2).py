@@ -333,178 +333,152 @@ def initialize_session():
 
 # --- Authentication ---
 def authenticate_user():
-    if not st.session_state.get('logged_in', False):
+    if not st.session_state.get("logged_in"):
+        # --- CSS Styling with Font Awesome ---
         st.markdown("""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css');
 
-        html, body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(145deg, #0f172a, #1e293b);
-            background-size: 300% 300%;
-            animation: gradientFlow 12s ease infinite;
-            color: #f1f5f9;
+        html, body, [class*="css"] {
+            font-family: 'Poppins', sans-serif;
         }
 
-        @keyframes gradientFlow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        body {
+            background: #1abc9c;
         }
 
-        .page-container {
-            display03:29
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .branding {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #93c5fd;
-            font-size: 32px;
-            font-weight: 800;
-            letter-spacing: 5px;
-            text-transform: uppercase;
-            text-shadow: 0 0 15px rgba(59, 130, 246, 0.7);
-            text-align: center;
-        }
-
-        .branding span {
-            font-size: 14px;
-            font-weight: 400;
-            letter-spacing: 2px;
-            display: block;
-            margin-top: 5px;
-            opacity: 0.9;
-        }
-
-        .login-card {
+        .wrapper {
+            max-width: 500px;
             width: 100%;
-            max-width: 400px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 24px;
-            padding: 40px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            animation: fadeIn 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #fff;
+            border-radius: 5px;
+            box-shadow: 0px 4px 10px 1px rgba(0, 0, 0, 0.1);
+            margin: 5vh auto;
         }
 
-        @keyframes fadeIn {
-            0% { opacity: 0; transform: translateY(30px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-
-        .login-card h2 {
-            text-align: center;
+        .title {
+            height: 120px;
+            background: #16a085;
+            border-radius: 5px 5px 0 0;
+            color: #fff;
             font-size: 30px;
-            font-weight: 800;
-            color: #3b82f6;
-            margin-bottom: 2rem;
-            text-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
-        }
-
-        .login-card label {
-            font-size: 14px;
             font-weight: 600;
-            color: #e2e8f0;
-            margin-bottom: 8px;
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .login-card input {
-            width: 100%;
-            padding: 12px 16px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #f9fafb;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            margin-bottom: 20px;
+        .form-area {
+            padding: 25px 35px;
         }
 
-        .login-card input:focus {
-            outline: none;
-            border-color: #60a5fa;
-            box-shadow: 0 0 8px rgba(96, 165, 250, 0.5);
-        }
-
-        .login-card button {
-            width: 100%;
-            padding: 14px;
-            font-size: 16px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #3b82f6, #7c3aed);
-            border: none;
-            border-radius: 12px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
+        .row {
+            height: 60px;
+            margin-top: 15px;
             position: relative;
-            overflow: hidden;
         }
 
-        .login-card button::before {
-            content: '';
+        .row i {
             position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
+            width: 55px;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: 0.5s;
+            color: #fff;
+            font-size: 22px;
+            background: #16a085;
+            border-radius: 5px 0 0 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .login-card button:hover::before {
-            left: 100%;
+        .row input {
+            height: 100%;
+            width: 100%;
+            outline: none;
+            padding-left: 70px;
+            border-radius: 5px;
+            border: 1px solid lightgrey;
+            font-size: 18px;
+            transition: all 0.3s ease;
         }
 
-        .login-card button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+        .row input:focus {
+            border-color: #16a085;
+        }
+
+        .pass a, .signup-link a {
+            color: #16a085;
+            text-decoration: none;
+            font-size: 17px;
+        }
+
+        .pass {
+            margin-top: 12px;
+        }
+
+        .pass a:hover, .signup-link a:hover {
+            text-decoration: underline;
+        }
+
+        .button input {
+            margin-top: 20px;
+            color: #fff;
+            font-size: 20px;
+            font-weight: 500;
+            background: #16a085;
+            border: 1px solid #16a085;
+            border-radius: 5px;
+            height: 55px;
+            cursor: pointer;
+        }
+
+        .button input:hover {
+            background: #12876f;
+        }
+
+        .signup-link {
+            text-align: center;
+            margin-top: 35px;
+            font-size: 17px;
         }
 
         .error-msg {
-            color: #f87171;
-            font-size: 14px;
-            font-weight: 600;
             text-align: center;
-            margin-top: 16px;
-            padding: 10px;
-            border-radius: 8px;
-            background: rgba(248, 113, 113, 0.1);
+            color: red;
+            margin-top: 15px;
+            font-weight: bold;
         }
+
         </style>
         """, unsafe_allow_html=True)
 
-        st.markdown('<div class="page-container">', unsafe_allow_html=True)
-        st.markdown('<div class="branding">INTERSOFT<br><span>International Software Co.</span></div>', unsafe_allow_html=True)
-        st.markdown('<div class="login-card">', unsafe_allow_html=True)
+        st.markdown('<div class="wrapper">', unsafe_allow_html=True)
+        st.markdown('<div class="title"><span>Login Form</span></div>', unsafe_allow_html=True)
+        st.markdown('<div class="form-area">', unsafe_allow_html=True)
 
         with st.form("login_form"):
-            st.markdown("<h2>🔐 INTERSOFT Secure Login</h2>", unsafe_allow_html=True)
-            username = st.text_input("Username", key="username_input", placeholder="Enter your username")
-            password = st.text_input("Password", type="password", key="password_input", placeholder="Enter your password")
-            submitted = st.form_submit_button("Sign In")
+            st.markdown("""
+            <div class="row"><i class="fas fa-user"></i>
+            <input name="username_input" placeholder="Email or Username" required></div>
+            """, unsafe_allow_html=True)
+            username = st.text_input("Username", key="username_input", label_visibility="collapsed")
 
-            if submitted:
+            st.markdown("""
+            <div class="row"><i class="fas fa-lock"></i>
+            <input name="password_input" type="password" placeholder="Password" required></div>
+            """, unsafe_allow_html=True)
+            password = st.text_input("Password", type="password", key="password_input", label_visibility="collapsed")
+
+            st.markdown('<div class="pass"><a href="#">Forgot password?</a></div>', unsafe_allow_html=True)
+            login_button = st.form_submit_button("Login")
+
+            if login_button:
                 user = USERS.get(username.lower())
                 if user and user["pass"] == password:
                     st.session_state.logged_in = True
                     st.session_state.user_role = username.lower()
                     st.session_state.user_role_type = user["role"]
-                    st.session_state.login_log = st.session_state.get('login_log', [])
                     st.session_state.login_log.append({
                         "Username": username.lower(),
                         "Login Time": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d %H:%M:%S'),
@@ -518,8 +492,9 @@ def authenticate_user():
         if st.session_state.get("login_error"):
             st.markdown(f"<div class='error-msg'>{st.session_state.login_error}</div>", unsafe_allow_html=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)  # end login-card
-        st.markdown('</div>', unsafe_allow_html=True)  # end page-container
+        st.markdown('<div class="signup-link">Not a member? <a href="#">Signup now</a></div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
         st.stop()
 
 
