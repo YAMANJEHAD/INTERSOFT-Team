@@ -12,7 +12,7 @@ from PIL import Image
 import pytz
 import numpy as np
 
-# --- Constants ---
+# --- Constants 
 USERS = {
     "yaman": {"pass": "YAMAN1", "role": "Employee"},
     "hatem": {"pass": "HATEM2", "role": "Employee"},
