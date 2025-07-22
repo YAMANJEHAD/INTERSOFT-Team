@@ -666,27 +666,34 @@ def render_admin_download_tasks():
     if st.session_state.user_role_type == "Admin":
         st.markdown("<div class='card'><h2 class='card-title'>🛠 Admin: Download Tasks</h2>", unsafe_allow_html=True)
         df_all = pd.DataFrame(st.session_state.timesheet)
+        
         if not df_all.empty:
             with st.form("admin_download_form"):
                 employees = df_all['Employee'].unique().tolist()
                 selected = st.selectbox("Employee", employees)
-                if st.form_submit_button("🔍 Filter and Download"):
-                    emp_tasks = df_all[df_all['Employee'] == selected]
-                    if not emp_tasks.empty:
-                        data, file_name = export_to_excel(emp_tasks, f"{selected}_Tasks", f"{selected}_tasks.xlsx")
-                        if data:
-                            st.download_button(
-                                label=f"⬇️ Download {selected.capitalize()} Tasks",
-                                data=data,
-                                file_name=file_name,
-                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                key=f"admin_download_{selected}"
-                            )
+                submit_download = st.form_submit_button("🔍 Filter and Prepare Download")
+
+            if submit_download:
+                emp_tasks = df_all[df_all['Employee'] == selected]
+                if not emp_tasks.empty:
+                    data, file_name = export_to_excel(emp_tasks, f"{selected}_Tasks", f"{selected}_tasks.xlsx")
+                    
+                    if data and isinstance(file_name, str):
+                        st.download_button(
+                            label=f"⬇️ Download {selected.capitalize()} Tasks",
+                            data=data,
+                            file_name=file_name,
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            key=f"admin_download_{selected}"
+                        )
                     else:
-                        st.info(f"ℹ️ No tasks for {selected}.")
+                        st.error("❌ Failed to generate file.")
+                else:
+                    st.info(f"ℹ️ No tasks found for {selected}.")
         else:
             st.info("ℹ️ No tasks recorded.")
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 # --- Header ---
 def render_header():
