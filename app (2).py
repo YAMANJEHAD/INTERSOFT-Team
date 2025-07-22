@@ -15,7 +15,7 @@ import numpy as np
 # --- Constants ---
 USERS = {
     "yaman": {"pass": "YAMAN1", "role": "Admin"},
-    "hatem": {"pass": "HATEM2", "role": "Admin"},
+    "hatem": {"pass": "HATEM2", "role": "Supervisor"},
     "qusai": {"pass": "QUSAI4", "role": "Employee"},
 }
 USER_PROFILE = {
@@ -59,27 +59,27 @@ body {
 .main-container {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 1.5rem;
+    padding: 2rem;
 }
 
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 2rem;
+    padding: 1.5rem 2rem;
     background: #1c2526;
-    border-radius: 10px;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     transition: all 0.3s ease;
 }
 
 .header:hover {
-    box-shadow: 0 6px 14px rgba(0,0,0,0.4);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
 }
 
 .company-logo {
-    font-size: 1.6rem;
+    font-size: 1.8rem;
     font-weight: 700;
     color: #4ade80;
     letter-spacing: 0.5px;
@@ -87,7 +87,7 @@ body {
 
 .user-info {
     text-align: right;
-    font-size: 0.95rem;
+    font-size: 1rem;
     color: #94a3b8;
 }
 
@@ -98,23 +98,23 @@ body {
 
 .nav-bar {
     display: flex;
-    gap: 0.8rem;
+    gap: 1rem;
     justify-content: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
     flex-wrap: wrap;
     background: #1c2526;
-    padding: 1rem;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 .nav-button {
     background: #2d3748;
     color: #e2e8f0;
-    padding: 0.7rem 1.2rem;
-    border-radius: 8px;
+    padding: 0.8rem 1.5rem;
+    border-radius: 10px;
     font-weight: 500;
-    font-size: 0.9rem;
+    font-size: 1rem;
     border: none;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -131,32 +131,33 @@ body {
 
 .card {
     background: #1c2526;
-    padding: 1.5rem;
-    border-radius: 10px;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 14px rgba(0,0,0,0.4);
+    transform: translateY(-4px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
 }
 
 .card-title {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     font-weight: 600;
     color: #4ade80;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .stat-card {
     text-align: center;
-    padding: 1rem;
+    padding: 1.2rem;
     background: #2d3748;
-    border-radius: 8px;
+    border-radius: 10px;
     color: #e2e8f0;
     transition: all 0.3s ease;
+    margin-bottom: 1rem;
 }
 
 .stat-card:hover {
@@ -165,20 +166,20 @@ body {
 }
 
 .stat-card span {
-    font-size: 1.8rem;
+    font-size: 2rem;
     font-weight: 700;
     color: #fcd34d;
     display: block;
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.5rem;
 }
 
 .alert {
     background: #7f1d1d;
     color: #f8fafc;
-    padding: 0.8rem;
-    border-radius: 8px;
-    margin-bottom: 0.8rem;
-    font-size: 0.85rem;
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
     font-weight: 500;
     animation: slideIn 0.5s ease;
 }
@@ -195,8 +196,8 @@ body {
 .stButton>button {
     background: #2d3748;
     color: #e2e8f0;
-    border-radius: 8px;
-    padding: 0.7rem 1.2rem;
+    border-radius: 10px;
+    padding: 0.8rem 1.5rem;
     font-weight: 500;
     border: none;
     transition: all 0.3s ease;
@@ -220,8 +221,8 @@ body {
 .stSelectbox, .stTextInput, .stTextArea, .stDateInput {
     background: #2d3748;
     color: #e2e8f0;
-    border-radius: 8px;
-    padding: 0.5rem;
+    border-radius: 10px;
+    padding: 0.6rem;
     border: 1px solid #4b5563;
 }
 
@@ -231,7 +232,7 @@ body {
 
 .stDataFrame table {
     background: #1c2526;
-    border-radius: 8px;
+    border-radius: 10px;
     color: #e2e8f0;
     border-collapse: collapse;
 }
@@ -240,36 +241,36 @@ body {
     background: #2d3748;
     color: #e2e8f0;
     font-weight: 600;
-    padding: 0.8rem;
+    padding: 1rem;
 }
 
 .stDataFrame td {
     border-bottom: 1px solid #4b5563;
-    padding: 0.8rem;
+    padding: 1rem;
 }
 
 .chart-container {
-    padding: 1rem;
+    padding: 1.5rem;
     background: #1c2526;
-    border-radius: 10px;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 .profile-picture {
     border-radius: 50%;
-    width: 70px;
-    height: 70px;
+    width: 80px;
+    height: 80px;
     object-fit: cover;
-    border: 2px solid #4ade80;
-    margin-bottom: 1rem;
+    border: 3px solid #4ade80;
+    margin-bottom: 1.5rem;
 }
 
 footer {
     text-align: center;
     color: #94a3b8;
-    padding: 1.5rem 0;
-    font-size: 0.85rem;
+    padding: 2rem 0;
+    font-size: 0.9rem;
     margin-top: 2rem;
 }
 
@@ -280,7 +281,7 @@ footer {
 
 .section-divider {
     border-top: 1px solid #4b5563;
-    margin: 1.5rem 0;
+    margin: 2rem 0;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -481,9 +482,17 @@ def render_analytics(display_df):
             st.plotly_chart(fig_priority, use_container_width=True)
             st.markdown("</div>", unsafe_allow_html=True)
         st.dataframe(today_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'), use_container_width=True)
-        data, file_name = export_to_excel(today_df, f"Tasks_{today_str}", f"tasks_{today_str}.xlsx")
-        if data:
-            st.download_button(f"⬇️ Download Today's Tasks", data, file_name, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        with st.form("today_download_form"):
+            if st.form_submit_button("⬇️ Download Today's Tasks"):
+                data, file_name = export_to_excel(today_df, f"Tasks_{today_str}", f"tasks_{today_str}.xlsx")
+                if data:
+                    st.download_button(
+                        label="⬇️ Download Now",
+                        data=data,
+                        file_name=file_name,
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        key=f"download_today_{today_str}"
+                    )
     else:
         st.info("ℹ️ No tasks for today.")
     
@@ -525,9 +534,17 @@ def render_analytics(display_df):
                 st.plotly_chart(fig_priority, use_container_width=True)
                 st.markdown("</div>", unsafe_allow_html=True)
             st.dataframe(filtered_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'), use_container_width=True)
-            data, file_name = export_to_excel(filtered_df, f"Tasks_{selected_date if selected_date != 'All' else 'All'}", f"tasks_{selected_date if selected_date != 'All' else 'all'}.xlsx")
-            if data:
-                st.download_button(f"⬇️ Download Tasks", data, file_name, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            with st.form("all_download_form"):
+                if st.form_submit_button("⬇️ Download Tasks"):
+                    data, file_name = export_to_excel(filtered_df, f"Tasks_{selected_date if selected_date != 'All' else 'All'}", f"tasks_{selected_date if selected_date != 'All' else 'all'}.xlsx")
+                    if data:
+                        st.download_button(
+                            label="⬇️ Download Now",
+                            data=data,
+                            file_name=file_name,
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            key=f"download_all_{selected_date}"
+                        )
         else:
             st.info("ℹ️ No tasks for selected date.")
     else:
@@ -571,13 +588,13 @@ def render_settings():
     with st.form("profile_form"):
         st.markdown("<h3>👤 Profile</h3>", unsafe_allow_html=True)
         if profile["picture"]:
-            st.image(profile["picture"], width=70, caption="Profile Picture")
+            st.image(profile["picture"], width=80, caption="Profile Picture")
         name = st.text_input("Name", profile["name"])
         picture = st.file_uploader("Profile Picture", type=["png", "jpg", "jpeg"])
         if st.form_submit_button("💾 Save"):
             USER_PROFILE[user]["name"] = name
             if picture:
-                img = Image.open(picture).resize((70, 70))
+                img = Image.open(picture).resize((80, 80))
                 USER_PROFILE[user]["picture"] = img
             save_data()
             st.success("✅ Profile updated!")
@@ -608,27 +625,38 @@ def render_download_tasks():
     
     if not df_user.empty:
         tz = pytz.timezone("Asia/Riyadh")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            start = st.date_input("Start Date", datetime.now(tz) - timedelta(days=7))
-        with col2:
-            end = st.date_input("End Date", datetime.now(tz))
-        with col3:
-            category = st.selectbox("Category", ["All"] + CATEGORIES)
-        priority = st.selectbox("Priority", ["All"] + TASK_PRIORITIES)
-        
-        filtered_df = df_user
-        if category != "All":
-            filtered_df = filtered_df[filtered_df['Category'] == category]
-        if priority != "All":
-            filtered_df = filtered_df[filtered_df['Priority'] == priority]
-        filtered_df = filtered_df[(filtered_df['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end.strftime('%Y-%m-%d'))]
-        
-        st.dataframe(filtered_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'), use_container_width=True)
-        file_name = f"{user}_tasks_{start.strftime('%Y%m%d')}_{end.strftime('%Y%m%d')}.xlsx"
-        data, file_name = export_to_excel(filtered_df, f"{user}_Tasks", file_name)
-        if data:
-            st.download_button("⬇️ Download", data, file_name, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        with st.form("download_tasks_form"):
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                start = st.date_input("Start Date", datetime.now(tz) - timedelta(days=7))
+            with col2:
+                end = st.date_input("End Date", datetime.now(tz))
+            with col3:
+                category = st.selectbox("Category", ["All"] + CATEGORIES)
+            priority = st.selectbox("Priority", ["All"] + TASK_PRIORITIES)
+            
+            if st.form_submit_button("🔍 Filter and Download"):
+                filtered_df = df_user
+                if category != "All":
+                    filtered_df = filtered_df[filtered_df['Category'] == category]
+                if priority != "All":
+                    filtered_df = filtered_df[filtered_df['Priority'] == priority]
+                filtered_df = filtered_df[(filtered_df['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end.strftime('%Y-%m-%d'))]
+                
+                st.dataframe(filtered_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'), use_container_width=True)
+                if not filtered_df.empty:
+                    file_name = f"{user}_tasks_{start.strftime('%Y%m%d')}_{end.strftime('%Y%m%d')}.xlsx"
+                    data, file_name = export_to_excel(filtered_df, f"{user}_Tasks", file_name)
+                    if data:
+                        st.download_button(
+                            label="⬇️ Download Now",
+                            data=data,
+                            file_name=file_name,
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            key=f"download_tasks_{user}"
+                        )
+                else:
+                    st.info("ℹ️ No tasks match the filters.")
     else:
         st.info("ℹ️ No tasks available.")
     st.markdown("</div>", unsafe_allow_html=True)
@@ -639,15 +667,23 @@ def render_admin_download_tasks():
         st.markdown("<div class='card'><h2 class='card-title'>🛠 Admin: Download Tasks</h2>", unsafe_allow_html=True)
         df_all = pd.DataFrame(st.session_state.timesheet)
         if not df_all.empty:
-            employees = df_all['Employee'].unique().tolist()
-            selected = st.selectbox("Employee", employees)
-            emp_tasks = df_all[df_all['Employee'] == selected]
-            if not emp_tasks.empty:
-                data, file_name = export_to_excel(emp_tasks, f"{selected}_Tasks", f"{selected}_tasks.xlsx")
-                if data:
-                    st.download_button(f"⬇️ Download {selected.capitalize()} Tasks", data, file_name, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-            else:
-                st.info(f"ℹ️ No tasks for {selected}.")
+            with st.form("admin_download_form"):
+                employees = df_all['Employee'].unique().tolist()
+                selected = st.selectbox("Employee", employees)
+                if st.form_submit_button("⬇️ Download"):
+                    emp_tasks = df_all[df_all['Employee'] == selected]
+                    if not emp_tasks.empty:
+                        data, file_name = export_to_excel(emp_tasks, f"{selected}_Tasks", f"{selected}_tasks.xlsx")
+                        if data:
+                            st.download_button(
+                                label=f"⬇️ Download {selected.capitalize()} Tasks",
+                                data=data,
+                                file_name=file_name,
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                key=f"admin_download_{selected}"
+                            )
+                    else:
+                        st.info(f"ℹ️ No tasks for {selected}.")
         else:
             st.info("ℹ️ No tasks recorded.")
         st.markdown("</div>", unsafe_allow_html=True)
@@ -777,7 +813,7 @@ def render_add_task():
                 st.rerun()
             else:
                 st.error("⚠️ Description required!")
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # --- Edit/Delete Task ---
 def render_edit_delete_task(display_df):
@@ -870,17 +906,19 @@ def render_employee_work():
     df_all = pd.DataFrame(st.session_state.timesheet)
     if not df_all.empty:
         tz = pytz.timezone("Asia/Riyadh")
-        col1, col2 = st.columns(2)
-        with col1:
-            user = st.selectbox("Employee", ["All"] + df_all['Employee'].unique().tolist())
-        with col2:
-            start = st.date_input("Start Date", datetime.now(tz) - timedelta(days=7))
-            end = st.date_input("End Date", datetime.now(tz))
-        filtered_df = df_all
-        if user != "All":
-            filtered_df = filtered_df[filtered_df['Employee'] == user]
-        filtered_df = filtered_df[(filtered_df['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end.strftime('%Y-%m-%d'))]
-        st.dataframe(filtered_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'), use_container_width=True)
+        with st.form("employee_work_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                user = st.selectbox("Employee", ["All"] + df_all['Employee'].unique().tolist())
+            with col2:
+                start = st.date_input("Start Date", datetime.now(tz) - timedelta(days=7))
+                end = st.date_input("End Date", datetime.now(tz))
+            if st.form_submit_button("🔍 Filter"):
+                filtered_df = df_all
+                if user != "All":
+                    filtered_df = filtered_df[filtered_df['Employee'] == user]
+                filtered_df = filtered_df[(filtered_df['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end.strftime('%Y-%m-%d'))]
+                st.dataframe(filtered_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'), use_container_width=True)
     else:
         st.info("ℹ️ No tasks recorded.")
     st.markdown("</div>", unsafe_allow_html=True)
@@ -947,14 +985,22 @@ def render_admin_panel():
                     start = st.date_input("Start Date", datetime.now(tz) - timedelta(days=7))
                 with col3:
                     end = st.date_input("End Date", datetime.now(tz))
-                filtered_df = df_all
-                if user != "All":
-                    filtered_df = filtered_df[filtered_df['Employee'] == user]
-                filtered_df = filtered_df[(filtered_df['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end.strftime('%Y-%m-%d'))]
-                st.dataframe(filtered_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'), use_container_width=True)
-                data, file_name = export_to_excel(filtered_df, "Filtered_Tasks", f"tasks_{start.strftime('%Y%m%d')}_{end.strftime('%Y%m%d')}.xlsx")
-                if data:
-                    st.download_button("⬇️ Download", data, file_name, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                if st.form_submit_button("🔍 Filter"):
+                    filtered_df = df_all
+                    if user != "All":
+                        filtered_df = filtered_df[filtered_df['Employee'] == user]
+                    filtered_df = filtered_df[(filtered_df['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end.strftime('%Y-%m-%d'))]
+                    st.dataframe(filtered_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'), use_container_width=True)
+                    if not filtered_df.empty:
+                        data, file_name = export_to_excel(filtered_df, "Filtered_Tasks", f"tasks_{start.strftime('%Y%m%d')}_{end.strftime('%Y%m%d')}.xlsx")
+                        if data:
+                            st.download_button(
+                                label="⬇️ Download Filtered Tasks",
+                                data=data,
+                                file_name=file_name,
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                key=f"admin_task_download_{start.strftime('%Y%m%d')}"
+                            )
                 
                 st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
                 st.markdown("<h3>✏️ Edit Task</h3>", unsafe_allow_html=True)
@@ -966,7 +1012,13 @@ def render_admin_panel():
                     st.markdown(f"<p>File: {task['Attachment']['name']}</p>", unsafe_allow_html=True)
                     if task['Attachment']['type'].startswith("image/"):
                         st.image(base64.b64decode(task['Attachment']['data']), width=150)
-                    st.download_button("⬇️ Download", base64.b64decode(task['Attachment']['data']), task['Attachment']['name'], task['Attachment']['type'])
+                    st.download_button(
+                        label="⬇️ Download Attachment",
+                        data=base64.b64decode(task['Attachment']['data']),
+                        file_name=task['Attachment']['name'],
+                        mime=task['Attachment']['type'],
+                        key=f"admin_attachment_{task['TaskID']}"
+                    )
                 
                 col1, col2 = st.columns(2)
                 with col1:
@@ -1018,7 +1070,7 @@ def render_admin_panel():
                         save_data()
                         st.success("✅ Task updated!")
                         st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # --- Main App ---
 if __name__ == "__main__":
