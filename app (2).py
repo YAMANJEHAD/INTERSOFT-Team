@@ -622,11 +622,17 @@ def export_to_excel(df, sheet_name, file_name):
             workbook = writer.book
             worksheet = writer.sheets[sheet_name]
             header_format = workbook.add_format({
-                'bold': True, 'font_color': 'white', 'bg_color': '#4f81bd',
-                'font_size: 12, 'align': 'center', 'valign': 'vcenter'
+                'bold': True,
+                'font_color': 'white',
+                'bg_color': '#4f81bd',
+                'font_size': 12,
+                'align': 'center',
+                'valign': 'vcenter'
             })
             cell_format = workbook.add_format({
-                'font_color': '#000000', 'align': 'left', 'valign': 'vcenter'
+                'font_color': '#000000',
+                'align': 'left',
+                'valign': 'vcenter'
             })
             for col_num, col in enumerate(df_clean.columns):
                 worksheet.write(0, col_num, col, header_format)
@@ -889,7 +895,7 @@ def render_admin_download_tasks():
 # --- Render Header ---
 def render_header():
     tz = pytz.timezone("Asia/Riyadh")
-    current_time = "09:59 AM"  # Updated to match provided timestamp
+    current_time = "10:05 AM"  # Updated to match provided timestamp
     st.markdown(
         f"""
         <div class='top-header'>
@@ -1424,7 +1430,7 @@ if __name__ == "__main__":
 
     # Footer
     st.markdown(
-        f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now(pytz.timezone('Asia/Riyadh')).strftime('%A, %B %d, %Y')} - 09:59 AM (+03)</footer>",
+        f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now(pytz.timezone('Asia/Riyadh')).strftime('%A, %B %d, %Y')} - 10:05 AM (+03)</footer>",
         unsafe_allow_html=True
     )
 ```
