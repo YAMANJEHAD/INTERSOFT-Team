@@ -381,70 +381,72 @@ def authenticate_user():
             font-size: 14px;
         }
 
+        .login-container input:focus {
+            outline: 2px solid #60a5fa;
+        }
 
+        .login-container button {
+            width: 100%;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            background: linear-gradient(to right, #6366f1, #3b82f6);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s ease;
+        }
 
+        .login-container button:hover {
+            background: linear-gradient(to right, #818cf8, #60a5fa);
+            transform: translateY(-2px);
+        }
 
+        .error-msg {
+            color: #f87171;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 10px;
+        }
 
-        # Handle login data from JavaScript
-        login_data = st.query_params.get("login_data", [""])[0]
-        if login_data:
-            try:
-                print(f"Received login data: {login_data}")  # Server-side debug
-                login_info = json.loads(login_data)
-                print(f"Parsed login data: {login_info}")  # Server-side debug
-                if isinstance(login_info, dict):
-                    if login_info.get("action") == "close":
-                        print("Login cancelled by user")  # Server-side debug
-                        st.session_state.login_error = "Login cancelled."
-                        st.query_params.clear()
-                        st.rerun()
-                    username = login_info.get("username")
-                    password = login_info.get("password")
-                    if username and password:
-                        user = USERS.get(username.lower())
-                        if user and user["pass"] == password:
-                            print(f"Login successful for user: {username.lower()}")  # Server-side debug
-                            st.session_state.logged_in = True
-                            st.session_state.user_role = username.lower()
-                            st.session_state.user_role_type = user["role"]
-                            st.session_state.login_log.append({
-                                "Username": username.lower(),
-                                "Login Time": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d %H:%M:%S'),
-                                "Role": user["role"]
-                            })
-                            save_data()
-                            st.session_state.selected_tab = "Dashboard"
-                            st.session_state.login_error = ""
-                            st.query_params.clear()
-                            print("Login state updated, redirecting to Dashboard")  # Server-side debug
-                            st.rerun()
-                        else:
-                            print(f"Invalid credentials for user: {username.lower()}")  # Server-side debug
-                            st.session_state.login_error = "❌ Invalid username or password"
-                            st.query_params.clear()
-                            st.rerun()
-                    else:
-                        print("Missing username or password in login data")  # Server-side debug
-                        st.session_state.login_error = "⚠️ Please enter both username and password"
-                        st.query_params.clear()
-                        st.rerun()
-                else:
-                    print("Invalid login data format")  # Server-side debug
-                    st.session_state.login_error = "⚠️ Invalid login data"
-                    st.query_params.clear()
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
+        st.markdown('<div class="login-container">', unsafe_allow_html=True)
+
+        with st.form("login_form"):
+            st.markdown("<h2>🔐 INTERSOFT Login</h2>", unsafe_allow_html=True)
+            username = st.text_input("Username", key="username_input", placeholder="Enter username")
+            password = st.text_input("Password", type="password", key="password_input", placeholder="Enter password")
+            submitted = st.form_submit_button("Sign In")
+
+            if submitted:
+                user = USERS.get(username.lower())
+                if user and user["pass"] == password:
+                    st.session_state.logged_in = True
+                    st.session_state.user_role = username.lower()
+                    st.session_state.user_role_type = user["role"]
+                    st.session_state.login_log.append({
+                        "Username": username.lower(),
+                        "Login Time": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d %H:%M:%S'),
+                        "Role": user["role"]
+                    })
+                    save_data()
                     st.rerun()
-            except json.JSONDecodeError as e:
-                print(f"JSON decode error: {e}")  # Server-side debug
-                st.session_state.login_error = "⚠️ Error processing login data. Please try again."
-                st.query_params.clear()
-                st.rerun()
-            except Exception as e:
-                print(f"Unexpected error in authentication: {e}")  # Server-side debug
-                st.session_state.login_error = f"⚠️ Authentication error: {e}"
-                st.query_params.clear()
-                st.rerun()
+                else:
+                    st.session_state.login_error = "❌ Invalid username or password"
 
+        if st.session_state.get("login_error"):
+            st.markdown(f"<div class='error-msg'>{st.session_state.login_error}</div>", unsafe_allow_html=True)
+
+        st.markdown("</div>", unsafe_allow_html=True)
         st.stop()
+
 
 # --- Excel Export Function ---
 def export_to_excel(df, sheet_name, file_name):
