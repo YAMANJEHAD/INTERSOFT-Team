@@ -14,14 +14,19 @@ import numpy as np
 
 # --- Constants ---
 USERS = {
-    "yaman": {"pass": "YAMAN1", "role": "Admin"},
-    "hatem": {"pass": "HATEM2", "role": "Supervisor"},
+    "yaman": {"pass": "YAMAN1", "role": "Employee"},
+    "hatem": {"pass": "HATEM2", "role": "Employee"},
     "qusai": {"pass": "QUSAI4", "role": "Employee"},
+    "mahmoud": {"pass": "mahmoud4", "role": "Employee"},
+    "mohammad aleem": {"pass": "moh00", "role": "Admin"},
 }
 USER_PROFILE = {
     "yaman": {"name": "Yaman", "picture": None},
     "hatem": {"name": "Hatem", "picture": None},
     "qusai": {"name": "Qusai", "picture": None},
+    "mahmoud": {"name": "Mahmoud", "picture": None}
+    "mohammad aleem": {"name": "Mohammad aleem", "picture": None}
+    
 }
 EXPORT_FOLDER = "weekly_exports"
 DATA_FILE = "data.json"
