@@ -653,7 +653,7 @@ def render_download_tasks():
                             data=data,
                             file_name=file_name,
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                            key=f"download_tasks_{user}"
+                            key=f"download_tasks_{user}_{start.strftime('%Y%m%d')}"
                         )
                 else:
                     st.info("ℹ️ No tasks match the filters.")
@@ -670,7 +670,7 @@ def render_admin_download_tasks():
             with st.form("admin_download_form"):
                 employees = df_all['Employee'].unique().tolist()
                 selected = st.selectbox("Employee", employees)
-                if st.form_submit_button("⬇️ Download"):
+                if st.form_submit_button("🔍 Filter and Download"):
                     emp_tasks = df_all[df_all['Employee'] == selected]
                     if not emp_tasks.empty:
                         data, file_name = export_to_excel(emp_tasks, f"{selected}_Tasks", f"{selected}_tasks.xlsx")
@@ -828,7 +828,13 @@ def render_edit_delete_task(display_df):
             st.markdown(f"<p>File: {task['Attachment']['name']}</p>", unsafe_allow_html=True)
             if task['Attachment']['type'].startswith("image/"):
                 st.image(base64.b64decode(task['Attachment']['data']), width=150)
-            st.download_button("⬇️ Download", base64.b64decode(task['Attachment']['data']), task['Attachment']['name'], task['Attachment']['type'])
+            st.download_button(
+                label="⬇️ Download Attachment",
+                data=base64.b64decode(task['Attachment']['data']),
+                file_name=task['Attachment']['name'],
+                mime=task['Attachment']['type'],
+                key=f"edit_attachment_{task['TaskID']}"
+            )
         
         with st.form("edit_form"):
             col1, col2 = st.columns(2)
@@ -887,7 +893,7 @@ def render_edit_delete_task(display_df):
         st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
         with st.form("delete_form"):
             st.warning("⚠️ This action is permanent!")
-            if st.checkbox("Confirm Delete") and st.form_submit_button("🗑 Delete", type="primary"):
+            if st.form_submit_button("🗑 Delete", type="primary"):
                 if task["Employee"] == st.session_state.user_role or st.session_state.user_role_type == "Admin":
                     st.session_state.timesheet = [t for t in st.session_state.timesheet if t["TaskID"] != selected_id]
                     st.session_state.reminders = [r for r in st.session_state.reminders if r["task_id"] != selected_id]
@@ -953,7 +959,7 @@ def render_admin_panel():
             st.markdown("<h3>🔄 Change Role</h3>", unsafe_allow_html=True)
             user = st.selectbox("User", [u for u in USERS.keys() if u != st.session_state.user_role])
             new_role = st.selectbox("New Role", ROLES)
-            if st.checkbox("Confirm Role Change") and st.form_submit_button("🔄 Change"):
+            if st.form_submit_button("🔄 Change"):
                 USERS[user]["role"] = new_role
                 save_data()
                 st.success(f"✅ Role for {user} changed!")
@@ -963,7 +969,7 @@ def render_admin_panel():
         with st.form("delete_user_form"):
             st.markdown("<h3>🗑 Delete User</h3>", unsafe_allow_html=True)
             user = st.selectbox("User to Delete", [u for u in USERS.keys() if u != st.session_state.user_role])
-            if st.checkbox("Confirm Delete") and st.form_submit_button("🗑 Delete", type="primary"):
+            if st.form_submit_button("🗑 Delete", type="primary"):
                 del USERS[user]
                 del USER_PROFILE[user]
                 st.session_state.timesheet = [t for t in st.session_state.timesheet if t["Employee"] != user]
