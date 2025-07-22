@@ -1427,4 +1427,4 @@ if __name__ == "__main__":
         f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now(pytz.timezone('Asia/Riyadh')).strftime('%A, %B %d, %Y')} - 09:21 AM (+03)</footer>",
         unsafe_allow_html=True
     )
-```
+
