@@ -41,11 +41,7 @@ TASK_COLUMNS = [
 ]
 
 # --- Page Config ---
-st.set_page_config(
-    page_title="⚡ INTERSOFT Dashboard | FLM",
-    layout="wide",
-    page_icon="🚀"
-)
+st.set_page_config(page_title="Login | INTERSOFT", page_icon="⚡", layout="wide")
 
 # --- Embed CSS ---
 st.markdown("""
@@ -55,26 +51,6 @@ st.markdown("""
 * {
     font-family: 'Inter', sans-serif;
     box-sizing: border-box;
-}
-
-body {
-    background: #0a1122;
-    color: #e2e8f0;
-    margin: 0;
-    padding: 0;
-    position: relative;
-    overflow-x: hidden;
-}
-
-body::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, rgba(74,222,128,0.05) 0%, rgba(34,197,94,0.05) 100%);
-    z-index: -1;
 }
 
 .main-container {
@@ -166,47 +142,12 @@ body::before {
     box-shadow: 0 6px 16px rgba(0,0,0,0.4);
 }
 
-.card.login-card {
-    max-width: 400px;
-    margin: 6rem auto;
-    padding: 1.5rem;
-    background: #1c2526;
-    border-radius: 16px;
-    box-shadow: 0 8px 24px rgba(74,222,128,0.2);
-    animation: fadeIn 0.8s ease;
-}
-
 .card-title {
     font-size: 1.4rem;
     font-weight: 600;
     color: #4ade80;
     margin-bottom: 1rem;
     text-align: center;
-}
-
-.login-logo {
-    display: block;
-    margin: 0 auto 0.5rem;
-    font-size: 2.5rem;
-    color: #4ade80;
-}
-
-.login-phrase {
-    font-size: 0.9rem;
-    font-style: italic;
-    color: #94a3b8;
-    text-align: center;
-    margin-bottom: 1.5rem;
-}
-
-.company-header {
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: #4ade80;
-    position: absolute;
-    top: 1.5rem;
-    left: 1.5rem;
-    letter-spacing: 0.5px;
 }
 
 .stat-card {
@@ -252,11 +193,6 @@ body::before {
     to { transform: translateY(0); opacity: 1; }
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
 .stButton>button {
     background: linear-gradient(135deg, #2d3748 0%, #1c2526 100%);
     color: #e2e8f0;
@@ -286,27 +222,6 @@ body::before {
     color: #f8fafc;
     box-shadow: 0 4px 12px rgba(153,27,27,0.5);
     transform: translateY(-2px);
-}
-
-.stButton>button.login-button {
-    display: block;
-    margin: 1.5rem auto;
-    width: 180px;
-    text-align: center;
-    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
-    color: #1c2526;
-    font-weight: 600;
-    border: none;
-    border-radius: 10px;
-    padding: 0.7rem;
-    box-shadow: 0 4px 12px rgba(74,222,128,0.4);
-    transition: all 0.3s ease;
-}
-
-.stButton>button.login-button:hover {
-    background: linear-gradient(135deg, #22c55e 0%, #4ade80 100%);
-    box-shadow: 0 6px 16px rgba(74,222,128,0.6);
-    transform: scale(1.05);
 }
 
 .stTextInput input {
@@ -374,6 +289,121 @@ footer {
 </style>
 """, unsafe_allow_html=True)
 
+# --- Authentication ---
+def authenticate_user():
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = False
+        st.session_state.user_role = None
+        st.session_state.user_role_type = None
+
+    if not st.session_state.logged_in:
+        st.markdown("""
+        <style>
+        body {
+            background: radial-gradient(circle at top left, #0f172a, #1e293b);
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+        }
+        .login-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 5rem;
+            padding: 3rem;
+            background-color: #1e293b;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+        .login-left {
+            flex: 1;
+            padding-right: 2rem;
+            color: #4ade80;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        .login-left small {
+            display: block;
+            font-size: 1rem;
+            color: #94a3b8;
+            margin-top: 1rem;
+        }
+        .login-right {
+            flex: 1;
+            background-color: #111827;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+        .login-right .title {
+            text-align: center;
+            color: #f8fafc;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+        }
+        .stTextInput > div > input {
+            background: #1e293b;
+            color: #f8fafc;
+            border-radius: 8px;
+            padding: 0.8rem;
+            border: 1px solid #4b5563;
+        }
+        .stTextInput > div > input:focus {
+            border-color: #4ade80;
+            box-shadow: 0 0 8px rgba(74,222,128,0.3);
+        }
+        .stButton>button.login-button {
+            display: block;
+            margin: 2rem auto 0 auto;
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            color: #1c2526;
+            font-weight: bold;
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(74,222,128,0.4);
+        }
+        .stButton>button.login-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(74,222,128,0.6);
+        }
+        </style>
+        <div class="login-container">
+            <div class="login-left">
+                ⚡ INTERSOFT<br>
+                <small>وقتك. عملك. نجاحك.</small>
+            </div>
+            <div class="login-right">
+                <div class="title">🔐 Login</div>
+        """, unsafe_allow_html=True)
+
+        username = st.text_input("Username", placeholder="Enter your username")
+        password = st.text_input("Password", type="password", placeholder="Enter your password")
+
+        if st.button("Login", key="login_button", type="primary"):
+            user = USERS.get(username.lower())
+            if user and user["pass"] == password:
+                st.session_state.logged_in = True
+                st.session_state.user_role = username.lower()
+                st.session_state.user_role_type = user["role"]
+                st.session_state.login_log.append({
+                    "Username": username.lower(),
+                    "Login Time": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d %H:%M:%S'),
+                    "Role": user["role"]
+                })
+                save_data()
+                st.rerun()
+            else:
+                st.error("❌ Invalid credentials")
+
+        st.markdown("""
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.stop()
+
 # --- Persistent Storage ---
 def save_data():
     try:
@@ -436,36 +466,6 @@ def initialize_session():
         st.session_state.reminders = []
         st.session_state.selected_tab = "Dashboard"
         st.session_state.selected_date = datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d')
-
-# --- Authentication ---
-def authenticate_user():
-    if not st.session_state.logged_in:
-        st.markdown("""
-            <div class='company-header'>⚡ INTERSOFT International Software Company</div>
-            <div class='card login-card'>
-                <div class='login-logo'>⚡</div>
-                <h2 class='card-title'>Welcome Back</h2>
-                <div class='login-phrase'>Your time is your work</div>
-        """, unsafe_allow_html=True)
-        username = st.text_input("Username", placeholder="Enter your username")
-        password = st.text_input("Password", type="password", placeholder="Enter your password")
-        if st.button("Login", key="login_button", type="primary", help="Click to login"):
-            user = USERS.get(username.lower())
-            if user and user["pass"] == password:
-                st.session_state.logged_in = True
-                st.session_state.user_role = username.lower()
-                st.session_state.user_role_type = user["role"]
-                st.session_state.login_log.append({
-                    "Username": username.lower(),
-                    "Login Time": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d %H:%M:%S'),
-                    "Role": user["role"]
-                })
-                save_data()
-                st.rerun()
-            else:
-                st.error("❌ Invalid credentials")
-        st.markdown("</div>", unsafe_allow_html=True)
-        st.stop()
 
 # --- Excel Export Function ---
 def export_to_excel(df, sheet_name, file_name):
