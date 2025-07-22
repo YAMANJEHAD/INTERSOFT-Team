@@ -26,7 +26,6 @@ USER_PROFILE = {
     "qusai": {"name": "Qusai", "picture": None},
     "mahmoud": {"name": "Mahmoud", "picture": None},
     "mohammad aleem": {"name": "Mohammad aleem", "picture": None},
-    
 }
 EXPORT_FOLDER = "weekly_exports"
 DATA_FILE = "data.json"
@@ -118,24 +117,26 @@ body {
 }
 
 .nav-button {
-    background: #2d3748;
+    background: linear-gradient(135deg, #2d3748 0%, #1c2526 100%);
     color: #e2e8f0;
-    padding: 0.8rem 1.5rem;
-    border-radius: 10px;
-    font-weight: 500;
+    padding: 0.8rem 1.8rem;
+    border-radius: 12px;
+    font-weight: 600;
     font-size: 1rem;
-    border: none;
+    border: 1px solid #4b5563;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
 .nav-button:hover, .nav-button.active {
-    background: #4ade80;
+    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
     color: #1c2526;
-    box-shadow: 0 4px 12px rgba(74,222,128,0.4);
+    box-shadow: 0 4px 12px rgba(74,222,128,0.5);
+    transform: translateY(-2px);
 }
 
 .card {
@@ -145,6 +146,12 @@ body {
     margin-bottom: 2rem;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card.login-card {
+    max-width: 500px;
+    margin: 2rem auto;
+    padding: 1.5rem;
 }
 
 .card:hover {
@@ -203,28 +210,41 @@ body {
 }
 
 .stButton>button {
-    background: #2d3748;
+    background: linear-gradient(135deg, #2d3748 0%, #1c2526 100%);
     color: #e2e8f0;
-    border-radius: 10px;
-    padding: 0.8rem 1.5rem;
-    font-weight: 500;
-    border: none;
+    border-radius: 12px;
+    padding: 0.8rem 1.8rem;
+    font-weight: 600;
+    font-size: 1rem;
+    border: 1px solid #4b5563;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
 .stButton>button:hover {
-    background: #4ade80;
+    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
     color: #1c2526;
-    box-shadow: 0 4px 12px rgba(74,222,128,0.4);
+    box-shadow: 0 4px 12px rgba(74,222,128,0.5);
+    transform: translateY(-2px);
 }
 
 .stButton>button.delete-button {
-    background: #7f1d1d;
+    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+    border: 1px solid #7f1d1d;
 }
 
 .stButton>button.delete-button:hover {
-    background: #991b1b;
+    background: linear-gradient(135deg, #991b1b 0%, #b91c1c 100%);
     color: #f8fafc;
+    box-shadow: 0 4px 12px rgba(153,27,27,0.5);
+    transform: translateY(-2px);
+}
+
+.stButton>button.login-button {
+    display: block;
+    margin: 1rem auto;
+    width: 200px;
+    text-align: center;
 }
 
 .stSelectbox, .stTextInput, .stTextArea, .stDateInput {
@@ -322,7 +342,6 @@ def load_data():
                 timesheet = data.get("timesheet", [])
                 valid_timesheet = []
                 for task in timesheet:
-                    # Ensure required fields exist and are valid
                     if (isinstance(task, dict) and
                         all(key in task for key in ["TaskID", "Employee", "Date", "Submitted"]) and
                         isinstance(task["Date"], str) and
@@ -362,28 +381,24 @@ def initialize_session():
 # --- Authentication ---
 def authenticate_user():
     if not st.session_state.logged_in:
-        st.markdown("<div class='card'><h2 class='card-title'>🔐 Login</h2>", unsafe_allow_html=True)
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-        with col2:
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("Login", use_container_width=True):
-                user = USERS.get(username.lower())
-                if user and user["pass"] == password:
-                    st.session_state.logged_in = True
-                    st.session_state.user_role = username.lower()
-                    st.session_state.user_role_type = user["role"]
-                    st.session_state.login_log.append({
-                        "Username": username.lower(),
-                        "Login Time": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d %H:%M:%S'),
-                        "Role": user["role"]
-                    })
-                    save_data()
-                    st.rerun()
-                else:
-                    st.error("❌ Invalid credentials")
+        st.markdown("<div class='card login-card'><h2 class='card-title'>🔐 Login</h2>", unsafe_allow_html=True)
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        if st.button("Login", key="login_button", type="primary", help="Click to login"):
+            user = USERS.get(username.lower())
+            if user and user["pass"] == password:
+                st.session_state.logged_in = True
+                st.session_state.user_role = username.lower()
+                st.session_state.user_role_type = user["role"]
+                st.session_state.login_log.append({
+                    "Username": username.lower(),
+                    "Login Time": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d %H:%M:%S'),
+                    "Role": user["role"]
+                })
+                save_data()
+                st.rerun()
+            else:
+                st.error("❌ Invalid credentials")
         st.markdown("</div>", unsafe_allow_html=True)
         st.stop()
 
