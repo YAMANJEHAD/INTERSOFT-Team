@@ -333,132 +333,187 @@ def initialize_session():
 
 # --- Authentication ---
 def authenticate_user():
-    if not st.session_state.logged_in:
+    if not st.session_state.get('logged_in', False):
         st.markdown("""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
         html, body {
-            height: 100%;
             margin: 0;
-            font-family: 'Outfit', sans-serif;
-            background: linear-gradient(135deg, #1f2937, #111827);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
+            padding: 0;
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(145deg, #0f172a, #1e293b);
+            background-size: 300% 300%;
+            animation: gradientFlow 12s ease infinite;
+            color: #f1f5f9;
         }
 
-        @keyframes gradientBG {
-            0% {background-position: 0% 50%;}
-            50% {background-position: 100% 50%;}
-            100% {background-position: 0% 50%;}
+        @keyframes gradientFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         .page-container {
             display: flex;
-            align-items: center;
             justify-content: center;
-            height: 90vh;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
             position: relative;
             overflow: hidden;
         }
 
         .branding {
-            position: absolute;
-            left: 50px;
+            position: fixed;
+            left: 30px;
             top: 50%;
-            transform: translateY(-50%);
-            color: #60a5fa;
-            font-size: 24px;
+            transform: translateY(-50%) rotate(-90deg);
+            color: #93c5fd;
+            font-size: 28px;
             font-weight: 800;
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            letter-spacing: 3px;
-            opacity: 0.8;
-            text-shadow: 0 0 8px #3b82f6;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            text-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+            opacity: 0.9;
+        }
+
+        .branding span {
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: 2px;
+            opacity: 0.7;
         }
 
         .login-card {
-            width: 360px;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 20px;
-            padding: 35px;
-            box-shadow: 0 16px 40px rgba(0,0,0,0.4);
-            backdrop-filter: blur(20px);
-            color: #f1f5f9;
-            animation: slideIn 1s ease;
+            width: 100%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(15px);
+            animation: fadeIn 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
 
-        @keyframes slideIn {
-            0% {opacity: 0; transform: translateY(-20px);}
-            100% {opacity: 1; transform: translateY(0);}
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
+            animation: pulse 8s ease infinite;
+            pointer-events: none;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.2); opacity: 0.1; }
+            100% { transform: scale(1); opacity: 0.3; }
         }
 
         .login-card h2 {
             text-align: center;
-            margin-bottom: 1.8rem;
-            font-size: 26px;
+            font-size: 30px;
+            font-weight: 800;
             color: #3b82f6;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
         }
 
         .login-card label {
-            font-weight: 600;
             font-size: 14px;
-            margin-bottom: 0.2rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 8px;
             display: block;
         }
 
         .login-card input {
             width: 100%;
-            padding: 10px 14px;
+            padding: 12px 16px;
             border-radius: 12px;
-            background: rgba(255,255,255,0.07);
-            border: none;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             color: #f9fafb;
-            margin-bottom: 18px;
-            font-size: 14px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
         }
 
         .login-card input:focus {
-            outline: 2px solid #60a5fa;
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 8px rgba(96, 165, 250, 0.5);
         }
 
         .login-card button {
             width: 100%;
-            padding: 12px;
-            font-size: 15px;
+            padding: 14px;
+            font-size: 16px;
             font-weight: 700;
-            background: linear-gradient(135deg, #6366f1, #3b82f6);
+            background: linear-gradient(135deg, #3b82f6, #7c3aed);
             border: none;
             border-radius: 12px;
             color: white;
             cursor: pointer;
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-card button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .login-card button:hover::before {
+            left: 100%;
         }
 
         .login-card button:hover {
-            background: linear-gradient(135deg, #818cf8, #60a5fa);
-            transform: scale(1.03);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
         }
 
         .error-msg {
             color: #f87171;
-            font-weight: bold;
-            text-align: center;
-            margin-top: 14px;
             font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 16px;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(248, 113, 113, 0.1);
         }
         </style>
         """, unsafe_allow_html=True)
 
         st.markdown('<div class="page-container">', unsafe_allow_html=True)
-        st.markdown('<div class="branding">INTERSOFT<br><span style="font-size:11px; font-weight:400;">International Software Co.</span></div>', unsafe_allow_html=True)
+        st.markdown('<div class="branding">INTERSOFT<br><span>International Software Co.</span></div>', unsafe_allow_html=True)
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
 
         with st.form("login_form"):
-            st.markdown("<h2>🔐 INTERSOFT Login</h2>", unsafe_allow_html=True)
-            username = st.text_input("Username", key="username_input", placeholder="Enter username")
-            password = st.text_input("Password", type="password", key="password_input", placeholder="Enter password")
+            st.markdown("<h2>🔐 INTERSOFT Secure Login</h2>", unsafe_allow_html=True)
+            username = st.text_input("Username", key="username_input", placeholder="Enter your username")
+            password = st.text_input("Password", type="password", key="password_input", placeholder="Enter your password")
             submitted = st.form_submit_button("Sign In")
 
             if submitted:
@@ -467,6 +522,7 @@ def authenticate_user():
                     st.session_state.logged_in = True
                     st.session_state.user_role = username.lower()
                     st.session_state.user_role_type = user["role"]
+                    st.session_state.login_log = st.session_state.get('login_log', [])
                     st.session_state.login_log.append({
                         "Username": username.lower(),
                         "Login Time": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d %H:%M:%S'),
