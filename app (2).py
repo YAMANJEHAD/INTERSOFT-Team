@@ -1,4 +1,3 @@
-
 import streamlit as st
 import base64
 import pandas as pd
@@ -12,7 +11,6 @@ import json
 from PIL import Image
 import pytz
 import numpy as np
-import streamlit.components.v1 as components
 
 # --- Constants ---
 USERS = {
@@ -45,7 +43,6 @@ st.set_page_config(
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap');
 
 html, body, [class*="css"] {
     font-family: 'Inter', sans-serif;
@@ -242,7 +239,7 @@ footer {
 }
 
 .task-attachment {
-    max-width: 200px; border-radius: 12px; margin: 0.5rem;
+    max-width: 200px; border-radius: 12px; margin-top: 0.5rem;
     border: 2px solid #60a5fa; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
@@ -324,7 +321,6 @@ def initialize_session():
         st.session_state.login_log = []
         st.session_state.reminders = []
         st.session_state.selected_tab = "Dashboard"
-        st.session_state.login_error = ""
     if "reminders" not in st.session_state:
         st.session_state.reminders = []
     if "selected_tab" not in st.session_state:
@@ -333,231 +329,33 @@ def initialize_session():
 
 # --- Authentication ---
 def authenticate_user():
-    if not st.session_state.get('logged_in', False):
-        st.markdown("""
-        <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
-        @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css');
-
-        html, body, [class*="css"] {
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            background: linear-gradient(145deg, #1abc9c, #16a085);
-            background-size: 300% 300%;
-            animation: gradientFlow 10s ease infinite;
-        }
-
-        @keyframes gradientFlow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        .wrapper {
-            max-width: 450px;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            margin: 80px auto 20px;
-            animation: fadeIn 1s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            0% { opacity: 0; transform: translateY(20px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-
-        .branding {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #ffffff;
-            font-size: 32px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            text-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-            text-align: center;
-        }
-
-        .branding span {
-            font-size: 14px;
-            font-weight: 400;
-            display: block;
-            margin-top: 5px;
-            opacity: 0.8;
-        }
-
-        .title {
-            height: 100px;
-            background: rgba(22, 160, 133, 0.8);
-            border-radius: 12px 12px 0 0;
-            color: #fff;
-            font-size: 28px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-        }
-
-        .form-area {
-            padding: 30px;
-        }
-
-        .row {
-            height: 55px;
-            margin-top: 15px;
-            position: relative;
-        }
-
-        .row i {
-            position: absolute;
-            width: 50px;
-            height: 100%;
-            color: #fff;
-            font-size: 20px;
-            background: #16a085;
-            border-radius: 8px 0 0 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .row input {
-            height: 100%;
-            width: 100%;
-            outline: none;
-            padding-left: 60px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            background: rgba(255, 255, 255, 0.05);
-            color: #fff;
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-
-        .row input:focus {
-            border-color: #16a085;
-            box-shadow: 0 0 8px rgba(22, 160, 133, 0.4);
-        }
-
-        .row input::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .pass a, .signup-link a {
-            color: #16a085;
-            text-decoration: none;
-            font-size: 15px;
-        }
-
-        .pass {
-            margin-top: 10px;
-        }
-
-        .pass a:hover, .signup-link a:hover {
-            text-decoration: underline;
-        }
-
-        .button input {
-            margin-top: 20px;
-            color: #fff;
-            font-size: 18px;
-            font-weight: 500;
-            background: #16a085;
-            border: none;
-            border-radius: 8px;
-            height: 50px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            width: 100%;
-        }
-
-        .button input:hover {
-            background: #12876f;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .signup-link {
-            text-align: center;
-            margin-top: 25px;
-            font-size: 15px;
-            color: #fff;
-        }
-
-        .error-msg {
-            text-align: center;
-            color: #ff6b6b;
-            margin-top: 15px;
-            font-weight: 500;
-            font-size: 14px;
-            background: rgba(255, 107, 107, 0.1);
-            padding: 10px;
-            border-radius: 8px;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-
-        st.markdown('<div class="branding">INTERSOFT<br><span>International Software Co.</span></div>', unsafe_allow_html=True)
-        st.markdown('<div class="wrapper">', unsafe_allow_html=True)
-        st.markdown('<div class="title"><span>🔐 Secure Login</span></div>', unsafe_allow_html=True)
-        st.markdown('<div class="form-area">', unsafe_allow_html=True)
-
-        with st.form("login_form"):
-            st.markdown("""
-            <div class="row"><i class="fas fa-user"></i>
-            <input name="username_input" placeholder="Email or Username" required></div>
-            """, unsafe_allow_html=True)
-            username = st.text_input("Username", key="username_input", label_visibility="collapsed")
-
-            st.markdown("""
-            <div class="row"><i class="fas fa-lock"></i>
-            <input name="password_input" type="password" placeholder="Password" required></div>
-            """, unsafe_allow_html=True)
-            password = st.text_input("Password", type="password", key="password_input", label_visibility="collapsed")
-
-            st.markdown('<div class="pass"><a href="#">Forgot password?</a></div>', unsafe_allow_html=True)
-            login_button = st.form_submit_button("Login")
-
-            if login_button:
-                user = USERS.get(username.lower())
-                if user and user["pass"] == password:
-                    st.session_state.logged_in = True
-                    st.session_state.user_role = username.lower()
-                    st.session_state.user_role_type = user["role"]
-                    st.session_state.login_log = st.session_state.get('login_log', [])
-                    st.session_state.login_log.append({
-                        "Username": username.lower(),
-                        "Login Time": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d %H:%M:%S'),
-                        "Role": user["role"]
-                    })
-                    save_data()
-                    st.rerun()
-                else:
-                    st.session_state.login_error = "❌ Invalid username or password"
-
-        if st.session_state.get("login_error"):
-            st.markdown(f"<div class='error-msg'>{st.session_state.login_error}</div>", unsafe_allow_html=True)
-
-        st.markdown('<div class="signup-link">Not a member? <a href="#">Signup now</a></div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+    if not st.session_state.logged_in:
+        st.title("🔐 Login to INTERSOFT Dashboard")
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        if st.button("Login"):
+            user = USERS.get(username.lower())
+            if user and user["pass"] == password:
+                st.session_state.logged_in = True
+                st.session_state.user_role = username.lower()
+                st.session_state.user_role_type = user["role"]
+                st.session_state.login_log.append({
+                    "Username": username.lower(),
+                    "Login Time": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d %H:%M:%S'),
+                    "Role": user["role"]
+                })
+                save_data()
+                st.session_state.selected_tab = "Dashboard"
+                st.rerun()
+            else:
+                st.error("❌ Invalid username or password")
         st.stop()
-
 
 # --- Excel Export Function ---
 def export_to_excel(df, sheet_name, file_name):
     output = BytesIO()
     try:
+        # Clean data: Remove TaskID and Attachment columns, replace NaN/INF
         df_clean = df.drop(columns=['TaskID', 'Attachment'], errors='ignore')
         df_clean = df_clean.replace([np.nan, np.inf, -np.inf], '')
         with pd.ExcelWriter(output, engine="xlsxwriter", engine_kwargs={'options': {'nan_inf_to_errors': True}}) as writer:
@@ -565,17 +363,11 @@ def export_to_excel(df, sheet_name, file_name):
             workbook = writer.book
             worksheet = writer.sheets[sheet_name]
             header_format = workbook.add_format({
-                'bold': True,
-                'font_color': 'white',
-                'bg_color': '#4f81bd',
-                'font_size': 12,
-                'align': 'center',
-                'valign': 'vcenter'
+                'bold': True, 'font_color': 'white', 'bg_color': '#4f81bd',
+                'font_size': 12, 'align': 'center', 'valign': 'vcenter'
             })
             cell_format = workbook.add_format({
-                'font_color': '#000000',
-                'align': 'left',
-                'valign': 'vcenter'
+                'font_color': '#000000', 'align': 'left', 'valign': 'vcenter'
             })
             for col_num, col in enumerate(df_clean.columns):
                 worksheet.write(0, col_num, col, header_format)
@@ -602,6 +394,7 @@ def auto_export_weekly():
             df_export = pd.DataFrame(st.session_state.timesheet)
             if not df_export.empty:
                 try:
+                    # Clean data for CSV export
                     df_export = df_export.drop(columns=['TaskID', 'Attachment'], errors='ignore')
                     df_export = df_export.replace([np.nan, np.inf, -np.inf], '')
                     df_export.to_csv(filename, index=False)
@@ -629,6 +422,7 @@ def render_analytics(display_df):
         st.markdown("### 📈 Task Analytics")
         col1, col2 = st.columns(2)
         with col1:
+            # Histogram: Tasks Over Time
             fig_hist = px.histogram(
                 display_df,
                 x="Date",
@@ -655,6 +449,7 @@ def render_analytics(display_df):
             st.markdown("</div>", unsafe_allow_html=True)
 
         with col2:
+            # Pie Chart: Category Distribution
             fig_pie = px.pie(
                 display_df,
                 names="Category",
@@ -675,6 +470,7 @@ def render_analytics(display_df):
             st.plotly_chart(fig_pie, use_container_width=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
+        # Bar Chart: Priority Levels
         fig_bar = px.bar(
             display_df,
             x="Priority",
@@ -697,9 +493,11 @@ def render_analytics(display_df):
         st.plotly_chart(fig_bar, use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
+        # Task Table
         st.markdown("### 📋 Task Table")
         st.dataframe(display_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'))
 
+        # Download Tasks
         st.markdown("### 📥 Download Tasks")
         data, file_name = export_to_excel(display_df, "Tasks", "tasks_export.xlsx")
         if data:
@@ -752,9 +550,11 @@ def render_settings():
         user = st.session_state.user_role
         current_profile = USER_PROFILE.get(user, {"name": "", "email": "", "picture": None})
         
+        # Display Profile Picture
         if current_profile["picture"]:
             st.image(current_profile["picture"], width=100, caption="Profile Picture", output_format="PNG")
         
+        # Edit Profile
         with st.form("profile_form"):
             name = st.text_input("Name", value=current_profile["name"], key="profile_name")
             email = st.text_input("Email", value=current_profile["email"], key="profile_email")
@@ -771,6 +571,7 @@ def render_settings():
                 st.success("✅ Profile updated successfully!")
                 st.rerun()
 
+        # Change Password
         st.subheader("🔑 Change Password")
         with st.form("password_form"):
             current_password = st.text_input("Current Password", type="password", key="current_password")
@@ -838,7 +639,7 @@ def render_admin_download_tasks():
 # --- Render Header ---
 def render_header():
     tz = pytz.timezone("Asia/Riyadh")
-    current_time = "10:05 AM"  # Updated to match provided timestamp
+    current_time = datetime.now(tz).strftime('%I:%M %p')
     st.markdown(
         f"""
         <div class='top-header'>
@@ -851,6 +652,7 @@ def render_header():
         unsafe_allow_html=True
     )
 
+    # Navigation Buttons
     st.markdown("<div class='nav-buttons'>", unsafe_allow_html=True)
     tabs = [
         ("Dashboard", "🏠 Dashboard"),
@@ -929,6 +731,7 @@ def render_alerts(df_user, df_all):
             if user.lower() not in users or not any(df_all[df_all['Employee'] == user.lower()]['Date'] == today_str):
                 st.sidebar.markdown(f"<div class='alert-box'>🔔 Alert: <b>{user.capitalize()}</b> has not submitted a task today!</div>", unsafe_allow_html=True)
 
+    # Render Reminders
     try:
         reminders = st.session_state.reminders
     except AttributeError:
@@ -994,7 +797,7 @@ def render_add_task():
                     "Attachment": None
                 }
                 if attachment:
-                    if attachment.size > 5 * 1024 * 1024:
+                    if attachment.size > 5 * 1024 * 1024:  # Limit to 5MB
                         st.error("⚠️ File size exceeds 5MB limit!")
                     else:
                         task["Attachment"] = {
@@ -1028,6 +831,7 @@ def render_edit_delete_task(display_df):
         selected_id = task_dict[selected_label]
         selected_task = display_df[display_df["TaskID"] == selected_id].iloc[0]
 
+        # Display Attachment
         if isinstance(selected_task.get("Attachment"), dict):
             st.markdown("### 📎 Current Attachment")
             attachment = selected_task["Attachment"]
@@ -1042,6 +846,7 @@ def render_edit_delete_task(display_df):
                 key=f"download_attachment_{selected_id}"
             )
 
+        # Edit Form
         with st.form("edit_form"):
             col1, col2 = st.columns(2)
             with col1:
@@ -1077,7 +882,7 @@ def render_edit_delete_task(display_df):
                                 "Attachment": t.get("Attachment")
                             }
                             if attachment:
-                                if attachment.size > 5 * 1024 * 1024:
+                                if attachment.size > 5 * 1024 * 1024:  # Limit to 5MB
                                     st.error("⚠️ File size exceeds 5MB limit!")
                                     st.stop()
                                 else:
@@ -1101,6 +906,7 @@ def render_edit_delete_task(display_df):
                 else:
                     st.error("⚠️ Description cannot be empty!")
 
+        # Delete Form (Admin Only)
         if st.session_state.user_role_type == "Admin":
             with st.form("delete_form"):
                 st.warning("⚠️ This action cannot be undone!")
@@ -1125,6 +931,7 @@ def render_employee_work():
     st.header("👥 Employee Work")
     df_all = pd.DataFrame(st.session_state.timesheet)
     if not df_all.empty and 'Employee' in df_all.columns:
+        # Filter Tasks
         st.markdown("### 📅 View Employee Tasks")
         col1, col2 = st.columns(2)
         with col1:
@@ -1148,9 +955,11 @@ def render_admin_panel():
         st.header("🛠 Admin Panel")
         df_all = pd.DataFrame(st.session_state.timesheet)
         
+        # User Management
         st.markdown("### 👤 Manage Users")
         st.markdown("<div class='edit-section'>", unsafe_allow_html=True)
         
+        # Add New User
         st.subheader("Add New User")
         with st.form("add_user_form"):
             col1, col2 = st.columns(2)
@@ -1174,6 +983,7 @@ def render_admin_panel():
                     st.success(f"✅ User {new_username} added successfully!")
                     st.rerun()
 
+        # Delete User
         st.subheader("Delete User")
         with st.form("delete_user_form"):
             users = [u for u in USERS.keys() if u != st.session_state.user_role]
@@ -1194,6 +1004,7 @@ def render_admin_panel():
         
         st.markdown("</div>", unsafe_allow_html=True)
 
+        # Filter Tasks
         if not df_all.empty and 'Employee' in df_all.columns:
             st.markdown("### 📅 View and Filter Tasks")
             col1, col2 = st.columns(2)
@@ -1209,6 +1020,7 @@ def render_admin_panel():
             filtered_df = filtered_df[(filtered_df['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end.strftime('%Y-%m-%d'))]
             st.dataframe(filtered_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'))
 
+            # Edit Any Task
             st.markdown("### ✏️ Edit Any Task")
             st.markdown("<div class='edit-section'>", unsafe_allow_html=True)
             task_dict = {f"{row['Description'][:30]}... ({row['Date']} | {row['Category']} | {row['Status']} | {row['Employee'].capitalize()})": row["TaskID"] for _, row in df_all.iterrows()}
@@ -1216,6 +1028,7 @@ def render_admin_panel():
             selected_id = task_dict[selected_label]
             selected_task = df_all[df_all["TaskID"] == selected_id].iloc[0]
 
+            # Display Attachment
             if isinstance(selected_task.get("Attachment"), dict):
                 st.markdown("### 📎 Current Attachment")
                 attachment = selected_task["Attachment"]
@@ -1265,7 +1078,7 @@ def render_admin_panel():
                                     "Attachment": t.get("Attachment")
                                 }
                                 if attachment:
-                                    if attachment.size > 5 * 1024 * 1024:
+                                    if attachment.size > 5 * 1024 * 1024:  # Limit to 5MB
                                         st.error("⚠️ File size exceeds 5MB limit!")
                                         st.stop()
                                     else:
@@ -1290,9 +1103,11 @@ def render_admin_panel():
                         st.error("⚠️ Description cannot be empty!")
             st.markdown("</div>", unsafe_allow_html=True)
 
+            # Login Activity Log
             st.markdown("### 📜 Login Activity Log")
             st.dataframe(pd.DataFrame(st.session_state.login_log))
 
+            # Employee Statistics
             st.markdown("### 📊 Employee Statistics")
             stats_df = df_all.groupby('Employee').agg({
                 'TaskID': 'count',
@@ -1301,15 +1116,11 @@ def render_admin_panel():
             stats_df['Completion Rate'] = (stats_df['Completed Tasks'] / stats_df['Total Tasks'] * 100).round(2)
             st.dataframe(stats_df)
 
+            # Export All Tasks
             st.markdown("### 📥 Export All Tasks")
             data, file_name = export_to_excel(df_all, "All_Tasks", "all_tasks_export.xlsx")
             if data:
-                st.download_button(
-                    label="📥 Download All Tasks",
-                    data=data,
-                    file_name=file_name,
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
+                st.download_button("📥 Download All Tasks", data=data, file_name=file_name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
             else:
                 st.error("⚠️ Failed to generate Excel file.")
         else:
@@ -1373,6 +1184,6 @@ if __name__ == "__main__":
 
     # Footer
     st.markdown(
-        f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now(pytz.timezone('Asia/Riyadh')).strftime('%A, %B %d, %Y')} - 10:05 AM (+03)</footer>",
+        f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now(pytz.timezone('Asia/Riyadh')).strftime('%A, %B %d, %Y - %I:%M %p')}</footer>",
         unsafe_allow_html=True
     )
