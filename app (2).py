@@ -373,7 +373,7 @@ def authenticate_user():
         <div class="login-container">
             <div class="login-left">
                 ⚡ INTERSOFT<br>
-                <small>وقتك. عملك. نجاحك.</small>
+                <small>Your time. Your job. Your success.</small>
             </div>
             <div class="login-right">
                 <div class="title">🔐 Login</div>
