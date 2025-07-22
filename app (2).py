@@ -42,87 +42,196 @@ st.set_page_config(
 # --- Embed CSS ---
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
 
-html, body, [class*="css"] {
+* {
     font-family: 'Inter', sans-serif;
-    background-color: #121212;
-    color: #E0E0E0;
-    scroll-behavior: smooth;
+    box-sizing: border-box;
 }
 
-h1, h2, h3 {
-    font-weight: 700;
-    margin-bottom: 1rem;
+body {
+    background: #0f172a;
+    color: #e2e8f0;
+    margin: 0;
+    padding: 0;
 }
 
-.section {
-    background-color: #1F1F1F;
-    border-radius: 12px;
+.main-container {
+    max-width: 1400px;
+    margin: 0 auto;
     padding: 2rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
 }
 
-.header-container {
+.header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #2A2A2A;
     padding: 1.5rem 2rem;
+    background: #1e293b;
     border-radius: 12px;
     margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
-.header-title {
+.company-logo {
     font-size: 1.8rem;
     font-weight: 700;
-    color: #90CAF9;
+    color: #60a5fa;
 }
 
-.header-user {
+.user-info {
+    text-align: right;
     font-size: 1rem;
-    font-weight: 600;
-    color: #B0BEC5;
+    color: #94a3b8;
 }
 
-.button, .stButton>button {
-    background: linear-gradient(135deg, #3949AB, #5C6BC0);
-    color: white;
+.user-info b {
+    color: #f8fafc;
+    font-weight: 600;
+}
+
+.nav-bar {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.nav-button {
+    background: #1e3a8a;
+    color: #f8fafc;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.nav-button:hover, .nav-button.active {
+    background: #3b82f6;
+    box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+}
+
+.card {
+    background: #1e293b;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+}
+
+.card-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #60a5fa;
+    margin-bottom: 1rem;
+}
+
+.stat-card {
+    text-align: center;
+    padding: 1rem;
+    background: #1e3a8a;
+    border-radius: 8px;
+    color: #f8fafc;
+}
+
+.stat-card span {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fcd34d;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.alert {
+    background: #b91c1c;
+    color: #f8fafc;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.alert.reminder {
+    background: #eab308;
+}
+
+.stButton>button {
+    background: #1e3a8a;
+    color: #f8fafc;
+    border-radius: 8px;
+    padding: 0.8rem 1.5rem;
     font-weight: 600;
     border: none;
-    border-radius: 10px;
-    padding: 0.6rem 1.5rem;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    transition: background 0.3s ease;
+    transition: all 0.3s ease;
 }
 
-.button:hover, .stButton>button:hover {
-    background: linear-gradient(135deg, #5C6BC0, #7986CB);
+.stButton>button:hover {
+    background: #3b82f6;
+    box-shadow: 0 4px 12px rgba(59,130,246,0.3);
 }
 
-.stSelectbox, .stTextInput>div>input, .stTextArea>div>textarea {
-    background-color: #2A2A2A !important;
-    color: #E0E0E0 !important;
-    border-radius: 10px !important;
-    border: 1px solid #424242 !important;
-    padding: 0.5rem !important;
+.stButton>button.delete-button {
+    background: #b91c1c;
 }
 
-.stDataFrame {
+.stButton>button.delete-button:hover {
+    background: #dc2626;
+}
+
+.stSelectbox, .stTextInput, .stTextArea, .stDateInput {
+    background: #334155;
+    color: #f8fafc;
+    border-radius: 8px;
+    padding: 0.5rem;
+}
+
+.stDataFrame table {
+    background: #1e293b;
+    border-radius: 8px;
+    color: #f8fafc;
+}
+
+.stDataFrame th {
+    background: #1e3a8a;
+    color: #f8fafc;
+    font-weight: 600;
+}
+
+.stDataFrame td {
+    border-bottom: 1px solid #334155;
+}
+
+.chart-container {
+    padding: 1rem;
+    background: #1e293b;
     border-radius: 12px;
-    overflow: hidden;
-    background-color: #1E1E1E;
+    margin-bottom: 1.5rem;
+}
+
+.profile-picture {
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border: 2px solid #60a5fa;
 }
 
 footer {
     text-align: center;
-    padding: 2rem;
-    color: #90A4AE;
+    color: #94a3b8;
+    padding: 2rem 0;
     font-size: 0.9rem;
 }
 </style>
-
 """, unsafe_allow_html=True)
 
 # --- Persistent Storage ---
