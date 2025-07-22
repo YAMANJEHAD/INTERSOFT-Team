@@ -336,89 +336,110 @@ def authenticate_user():
     if not st.session_state.logged_in:
         st.markdown("""
         <style>
-        .login-box {
-            background: linear-gradient(145deg, #1e293b, #111827);
-            border: 1px solid #3b82f6;
-            border-radius: 18px;
-            box-shadow: 0 12px 24px rgba(0,0,0,0.4);
-            padding: 2rem 2.5rem;
-            width: 100%;
-            max-width: 360px;
-            margin: 6rem auto;
-            animation: fadeInMove 1s ease;
-            color: #f8fafc;
+        @import url('https://fonts.googleapis.com/css2?family=Asap:wght@400;700&display=swap');
+
+        body {
+            background-color: #f45b69;
+            font-family: 'Asap', sans-serif;
         }
 
-        @keyframes fadeInMove {
-            0% {opacity: 0; transform: translateY(-30px);}
-            100% {opacity: 1; transform: translateY(0);}
+        .login-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 40px 30px 30px 30px;
+            border-radius: 10px;
+            box-shadow: 5px 10px 20px rgba(2, 128, 144, 0.2);
+            width: 360px;
+            text-align: center;
+            z-index: 1;
+        }
+
+        .login-box input[type="text"],
+        .login-box input[type="password"] {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border: none;
+            font-size: 16px;
+            background: #fff;
+            color: #333;
+            font-family: 'Asap', sans-serif;
+        }
+
+        .login-box button {
+            background-color: #f45b69;
+            color: white;
+            border: none;
+            padding: 10px 0;
+            width: 100%;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .login-box button:hover {
+            background-color: #e13a50;
         }
 
         .login-title {
             font-size: 1.5rem;
-            font-weight: 800;
-            color: #facc15;
-            margin-bottom: 1.5rem;
-            text-align: center;
-            animation: pulse 2s infinite;
-        }
-
-        .stTextInput>div>div>input {
-            background: #0f172a;
-            color: #f8fafc;
-            border: 1px solid #3b82f6;
-            border-radius: 10px;
-            padding: 10px;
-        }
-
-        .stTextInput>label {
-            font-weight: 600;
-            color: #93c5fd;
-            font-size: 0.9rem;
-        }
-
-        .login-button button {
-            width: 100%;
-            background: linear-gradient(135deg, #3b82f6, #9333ea);
-            color: white;
-            border: none;
-            padding: 0.6rem;
-            border-radius: 12px;
-            font-size: 1rem;
             font-weight: 700;
-            margin-top: 1rem;
-            box-shadow: 0 0 18px rgba(59,130,246,0.6);
-            transition: all 0.3s ease;
-        }
-
-        .login-button button:hover {
-            transform: scale(1.03);
-            background: linear-gradient(135deg, #6366f1, #a855f7);
-            box-shadow: 0 0 24px rgba(168,85,247,0.6);
+            color: #f45b69;
+            margin-bottom: 1.5rem;
         }
 
         .error-msg {
             color: #f87171;
-            text-align: center;
             font-weight: 600;
             margin-top: 1rem;
             font-size: 0.9rem;
         }
 
-        @keyframes pulse {
-            0%, 100% {opacity: 1;}
-            50% {opacity: 0.7;}
+        .wavy-bg::before,
+        .wavy-bg::after {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 40% 45% 35% 40%;
+            z-index: 0;
+            animation: waves 20s linear infinite;
+        }
+
+        .wavy-bg::before {
+            background-color: rgba(69, 105, 144, 0.15);
+            bottom: -130%;
+            left: 40%;
+        }
+
+        .wavy-bg::after {
+            background-color: rgba(2, 128, 144, 0.2);
+            bottom: -125%;
+            left: 35%;
+        }
+
+        @keyframes waves {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
         </style>
         """, unsafe_allow_html=True)
 
+        st.markdown('<div class="wavy-bg"></div>', unsafe_allow_html=True)
         st.markdown('<div class="login-box">', unsafe_allow_html=True)
         st.markdown('<div class="login-title">🚀 INTERSOFT Login</div>', unsafe_allow_html=True)
 
         with st.form("login_form"):
-            username = st.text_input("👤 Username")
-            password = st.text_input("🔒 Password", type="password")
-            submitted = st.form_submit_button("🔓 Log In", use_container_width=True)
+            username = st.text_input("", placeholder="Username")
+            password = st.text_input("", placeholder="Password", type="password")
+            submitted = st.form_submit_button("Login")
 
             if submitted:
                 user = USERS.get(username.lower())
@@ -439,8 +460,9 @@ def authenticate_user():
         if st.session_state.get("login_error"):
             st.markdown(f"<div class='error-msg'>{st.session_state.login_error}</div>", unsafe_allow_html=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
         st.stop()
+
 
 
         # Handle login data from JavaScript
