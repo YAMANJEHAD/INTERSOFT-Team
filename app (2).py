@@ -622,16 +622,14 @@ def render_download_tasks():
     user = st.session_state.user_role
     df_user = pd.DataFrame(st.session_state.timesheet)
     df_user = df_user[df_user['Employee'] == user] if not df_user.empty else pd.DataFrame()
-
+    
     if not df_user.empty:
         tz = pytz.timezone("Asia/Riyadh")
-
-        # وضع متغيرات خارج الفورم لعرض زر التحميل لاحقًا
         filtered_df = pd.DataFrame()
         trigger_download = False
         file_name = None
         excel_data = None
-
+        
         with st.form("download_tasks_form"):
             col1, col2, col3 = st.columns(3)
             with col1:
@@ -641,9 +639,9 @@ def render_download_tasks():
             with col3:
                 category = st.selectbox("Category", ["All"] + CATEGORIES)
             priority = st.selectbox("Priority", ["All"] + TASK_PRIORITIES)
-
+            
             submitted = st.form_submit_button("🔍 Filter and Download")
-
+        
         if submitted:
             filtered_df = df_user
             if category != "All":
@@ -651,7 +649,7 @@ def render_download_tasks():
             if priority != "All":
                 filtered_df = filtered_df[filtered_df['Priority'] == priority]
             filtered_df = filtered_df[(filtered_df['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end.strftime('%Y-%m-%d'))]
-
+            
             if not filtered_df.empty:
                 st.dataframe(filtered_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'), use_container_width=True)
                 file_name = f"{user}_tasks_{start.strftime('%Y%m%d')}_{end.strftime('%Y%m%d')}.xlsx"
@@ -659,7 +657,7 @@ def render_download_tasks():
                 trigger_download = True
             else:
                 st.info("ℹ️ No tasks match the filters.")
-
+        
         if trigger_download and excel_data:
             st.download_button(
                 label="⬇️ Download Now",
@@ -670,9 +668,7 @@ def render_download_tasks():
             )
     else:
         st.info("ℹ️ No tasks available.")
-
     st.markdown("</div>", unsafe_allow_html=True)
-
 
 # --- Admin Download Tasks ---
 def render_admin_download_tasks():
@@ -685,7 +681,7 @@ def render_admin_download_tasks():
                 employees = df_all['Employee'].unique().tolist()
                 selected = st.selectbox("Employee", employees)
                 submit_download = st.form_submit_button("🔍 Filter and Prepare Download")
-
+            
             if submit_download:
                 emp_tasks = df_all[df_all['Employee'] == selected]
                 if not emp_tasks.empty:
@@ -706,7 +702,6 @@ def render_admin_download_tasks():
         else:
             st.info("ℹ️ No tasks recorded.")
         st.markdown("</div>", unsafe_allow_html=True)
-
 
 # --- Header ---
 def render_header():
@@ -953,7 +948,7 @@ def render_employee_work():
 def render_admin_panel():
     if st.session_state.user_role_type == "Admin":
         st.markdown("<div class='card'><h2 class='card-title'>🛠 Admin Panel</h2>", unsafe_allow_html=True)
-
+        
         # --- Add User ---
         with st.form("add_user_form"):
             st.markdown("<h3>👤 Add User</h3>", unsafe_allow_html=True)
@@ -975,7 +970,7 @@ def render_admin_panel():
                     st.rerun()
                 else:
                     st.error("⚠️ All fields required!")
-
+        
         # --- Change Role ---
         st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
         with st.form("change_role_form"):
@@ -987,7 +982,7 @@ def render_admin_panel():
                 save_data()
                 st.success(f"✅ Role for {user} changed!")
                 st.rerun()
-
+        
         # --- Delete User ---
         st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
         with st.form("delete_user_form"):
@@ -1001,7 +996,7 @@ def render_admin_panel():
                 save_data()
                 st.warning(f"🗑 User {user} deleted!")
                 st.rerun()
-
+        
         # --- Task Filter ---
         st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
         df_all = pd.DataFrame(st.session_state.timesheet)
@@ -1010,7 +1005,7 @@ def render_admin_panel():
             tz = pytz.timezone("Asia/Riyadh")
             filtered_df = pd.DataFrame()
             data, file_name = None, None
-
+            
             with st.form("admin_task_form"):
                 col1, col2, col3 = st.columns(3)
                 with col1:
@@ -1019,9 +1014,9 @@ def render_admin_panel():
                     start = st.date_input("Start Date", datetime.now(tz) - timedelta(days=7))
                 with col3:
                     end = st.date_input("End Date", datetime.now(tz))
-
+                
                 submitted = st.form_submit_button("🔍 Filter")
-
+            
             if submitted:
                 filtered_df = df_all
                 if user != "All":
@@ -1030,7 +1025,7 @@ def render_admin_panel():
                 st.dataframe(filtered_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'), use_container_width=True)
                 if not filtered_df.empty:
                     data, file_name = export_to_excel(filtered_df, "Filtered_Tasks", f"tasks_{start.strftime('%Y%m%d')}_{end.strftime('%Y%m%d')}.xlsx")
-
+            
             if data and file_name:
                 st.download_button(
                     label="⬇️ Download Filtered Tasks",
@@ -1039,7 +1034,7 @@ def render_admin_panel():
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     key=f"admin_task_download_{start.strftime('%Y%m%d')}"
                 )
-
+        
         # --- Edit Task ---
         if not df_all.empty:
             st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
@@ -1047,7 +1042,7 @@ def render_admin_panel():
             task_dict = {f"{row['Description'][:20]}... ({row['Date']} | {row['Category']})": row["TaskID"] for _, row in df_all.iterrows()}
             selected_id = st.selectbox("Select Task", list(task_dict.keys()))
             task = df_all[df_all["TaskID"] == task_dict[selected_id]].iloc[0]
-
+            
             if isinstance(task.get("Attachment"), dict):
                 st.markdown(f"<p>File: {task['Attachment']['name']}</p>", unsafe_allow_html=True)
                 if task['Attachment']['type'].startswith("image/"):
@@ -1059,60 +1054,90 @@ def render_admin_panel():
                     mime=task['Attachment']['type'],
                     key=f"admin_attachment_{task['TaskID']}"
                 )
-
-            col1, col2 = st.columns(2)
-            with col1:
-                shift = st.selectbox("Shift", SHIFTS, index=SHIFTS.index(task["Shift"]))
-                date = st.date_input("Date", datetime.strptime(task["Date"], '%Y-%m-%d'))
-                dept = st.selectbox("Department", DEPARTMENTS, index=DEPARTMENTS.index(task["Department"]))
-            with col2:
-                category = st.selectbox("Category", CATEGORIES, index=CATEGORIES.index(task["Category"]))
-                status = st.selectbox("Status", TASK_STATUSES, index=TASK_STATUSES.index(task["Status"]))
-                priority = st.selectbox("Priority", TASK_PRIORITIES, index=TASK_PRIORITIES.index(task["Priority"]))
-            desc = st.text_area("Description", task["Description"], height=100)
-            attachment = st.file_uploader("New Attachment", type=["png", "jpg", "jpeg", "pdf", "xlsx"])
-            set_reminder = st.checkbox("Set Reminder") if status == "⏳ Not Started" else False
-            reminder_date = st.date_input("Reminder Due Date", datetime.now(tz) + timedelta(days=1)) if set_reminder else None
-
-            if st.button("💾 Save"):
-                if desc.strip():
-                    for i, t in enumerate(st.session_state.timesheet):
-                        if t["TaskID"] == task["TaskID"]:
-                            st.session_state.timesheet[i] = {
-                                "TaskID": task["TaskID"],
-                                "Employee": task["Employee"],
-                                "Date": date.strftime('%Y-%m-%d'),
-                                "Day": calendar.day_name[date.weekday()],
-                                "Shift": shift,
-                                "Department": dept,
-                                "Category": category,
-                                "Status": status,
-                                "Priority": priority,
-                                "Description": desc,
-                                "Submitted": datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S'),
-                                "Attachment": t.get("Attachment")
-                            }
-                            if attachment and attachment.size <= 5 * 1024 * 1024:
-                                st.session_state.timesheet[i]["Attachment"] = {
-                                    "name": attachment.name,
-                                    "data": base64.b64encode(attachment.read()).decode('utf-8'),
-                                    "type": attachment.type
+            
+            with st.form("admin_edit_task_form"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    shift = st.selectbox("Shift", SHIFTS, index=SHIFTS.index(task["Shift"]))
+                    date = st.date_input("Date", datetime.strptime(task["Date"], '%Y-%m-%d'))
+                    dept = st.selectbox("Department", DEPARTMENTS, index=DEPARTMENTS.index(task["Department"]))
+                with col2:
+                    category = st.selectbox("Category", CATEGORIES, index=CATEGORIES.index(task["Category"]))
+                    status = st.selectbox("Status", TASK_STATUSES, index=TASK_STATUSES.index(task["Status"]))
+                    priority = st.selectbox("Priority", TASK_PRIORITIES, index=TASK_PRIORITIES.index(task["Priority"]))
+                desc = st.text_area("Description", task["Description"], height=100)
+                attachment = st.file_uploader("New Attachment", type=["png", "jpg", "jpeg", "pdf", "xlsx"])
+                set_reminder = st.checkbox("Set Reminder") if status == "⏳ Not Started" else False
+                reminder_date = st.date_input("Reminder Due Date", datetime.now(tz) + timedelta(days=1)) if set_reminder else None
+                
+                if st.form_submit_button("💾 Save"):
+                    if desc.strip():
+                        for i, t in enumerate(st.session_state.timesheet):
+                            if t["TaskID"] == task["TaskID"]:
+                                st.session_state.timesheet[i] = {
+                                    "TaskID": task["TaskID"],
+                                    "Employee": task["Employee"],
+                                    "Date": date.strftime('%Y-%m-%d'),
+                                    "Day": calendar.day_name[date.weekday()],
+                                    "Shift": shift,
+                                    "Department": dept,
+                                    "Category": category,
+                                    "Status": status,
+                                    "Priority": priority,
+                                    "Description": desc,
+                                    "Submitted": datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S'),
+                                    "Attachment": t.get("Attachment")
                                 }
-                            if set_reminder and status == "⏳ Not Started":
-                                st.session_state.reminders = [r for r in st.session_state.reminders if r["task_id"] != task["TaskID"]]
-                                st.session_state.reminders.append({
-                                    "user": task["Employee"],
-                                    "task_id": task["TaskID"],
-                                    "task_desc": desc,
-                                    "date": datetime.now(tz).strftime('%Y-%m-%d'),
-                                    "due_date": reminder_date.strftime('%Y-%m-%d')
-                                })
-                    save_data()
-                    st.success("✅ Task updated!")
-                    st.rerun()
-
+                                if attachment and attachment.size <= 5 * 1024 * 1024:
+                                    st.session_state.timesheet[i]["Attachment"] = {
+                                        "name": attachment.name,
+                                        "data": base64.b64encode(attachment.read()).decode('utf-8'),
+                                        "type": attachment.type
+                                    }
+                                if set_reminder and status == "⏳ Not Started":
+                                    st.session_state.reminders = [r for r in st.session_state.reminders if r["task_id"] != task["TaskID"]]
+                                    st.session_state.reminders.append({
+                                        "user": task["Employee"],
+                                        "task_id": task["TaskID"],
+                                        "task_desc": desc,
+                                        "date": datetime.now(tz).strftime('%Y-%m-%d'),
+                                        "due_date": reminder_date.strftime('%Y-%m-%d')
+                                    })
+                        save_data()
+                        st.success("✅ Task updated!")
+                        st.rerun()
+                    else:
+                        st.error("⚠️ Description required!")
+        
+        # --- Delete All Data ---
+        st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+        with st.form("delete_all_data_form"):
+            st.markdown("<h3>🗑 Delete All Data</h3>", unsafe_allow_html=True)
+            st.warning("⚠️ This action is permanent and will delete all tasks, reminders, and login logs!")
+            if st.form_submit_button("🗑 حذف جميع البيانات", type="primary"):
+                st.session_state.timesheet = []
+                st.session_state.reminders = []
+                st.session_state.login_log = []
+                save_data()
+                st.warning("🗑 All data deleted!")
+                st.rerun()
+        
+        # --- Delete Data for Specific Day ---
+        st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+        with st.form("delete_day_data_form"):
+            st.markdown("<h3>🗑 Delete Data for Specific Day</h3>", unsafe_allow_html=True)
+            tz = pytz.timezone("Asia/Riyadh")
+            delete_date = st.date_input("Select Date to Delete", datetime.now(tz))
+            st.warning("⚠️ This action is permanent and will delete all tasks and reminders for the selected date!")
+            if st.form_submit_button("🗑 حذف بيانات اليوم", type="primary"):
+                delete_date_str = delete_date.strftime('%Y-%m-%d')
+                st.session_state.timesheet = [t for t in st.session_state.timesheet if t["Date"] != delete_date_str]
+                st.session_state.reminders = [r for r in st.session_state.reminders if r["date"] != delete_date_str]
+                save_data()
+                st.warning(f"🗑 Data for {delete_date_str} deleted!")
+                st.rerun()
+        
         st.markdown("</div>", unsafe_allow_html=True)
-
 
 # --- Main App ---
 if __name__ == "__main__":
