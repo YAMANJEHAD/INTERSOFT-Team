@@ -299,84 +299,98 @@ def authenticate_user():
     if not st.session_state.logged_in:
         st.markdown("""
         <style>
-        body {
-            background: radial-gradient(circle at top left, #0f172a, #1e293b);
-            color: #f8fafc;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        html, body, [class*="css"] {
             font-family: 'Inter', sans-serif;
+            background: linear-gradient(to bottom right, #0f172a, #1e293b);
+            color: #f8fafc;
         }
-        .login-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 5rem;
+
+        .login-wrapper {
+            max-width: 800px;
+            margin: 5rem auto;
+            background: #1e293b;
             padding: 3rem;
-            background-color: #1e293b;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: row;
+            gap: 2rem;
         }
-        .login-left {
+
+        .login-info {
             flex: 1;
-            padding-right: 2rem;
             color: #4ade80;
             font-size: 2rem;
             font-weight: 700;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-right: 1rem;
         }
-        .login-left small {
-            display: block;
-            font-size: 1rem;
+
+        .login-info small {
+            font-size: 0.9rem;
             color: #94a3b8;
             margin-top: 1rem;
+            font-weight: 400;
         }
-        .login-right {
+
+        .login-form {
             flex: 1;
-            background-color: #111827;
-            padding: 2.5rem;
-            border-radius: 12px;
-            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+            background: #111827;
+            padding: 2rem;
+            border-radius: 16px;
         }
-        .login-right .title {
+
+        .login-form h3 {
             text-align: center;
             color: #f8fafc;
             font-size: 1.5rem;
-            font-weight: 600;
             margin-bottom: 2rem;
         }
-        .stTextInput > div > input {
-            background: #1e293b;
+
+        .stTextInput>div>input {
+            background-color: #1f2937;
             color: #f8fafc;
-            border-radius: 8px;
-            padding: 0.8rem;
+            padding: 0.7rem 1rem;
+            border-radius: 10px;
             border: 1px solid #4b5563;
         }
-        .stTextInput > div > input:focus {
-            border-color: #4ade80;
-            box-shadow: 0 0 8px rgba(74,222,128,0.3);
+
+        .stTextInput>div>input:focus {
+            outline: none;
+            border: 1px solid #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.4);
         }
+
         .stButton>button.login-button {
-            display: block;
-            margin: 2rem auto 0 auto;
-            background: linear-gradient(135deg, #4ade80, #22c55e);
-            color: #1c2526;
-            font-weight: bold;
-            padding: 0.8rem 2rem;
+            background: linear-gradient(to right, #22c55e, #16a34a);
             border: none;
+            padding: 0.8rem 1.5rem;
             border-radius: 10px;
             font-size: 1rem;
+            font-weight: bold;
+            color: #fff;
+            width: 100%;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 10px rgba(74,222,128,0.4);
+            margin-top: 1.5rem;
         }
+
         .stButton>button.login-button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 16px rgba(74,222,128,0.6);
+            transform: scale(1.03);
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
         }
         </style>
-        <div class="login-container">
-            <div class="login-left">
-                ⚡ INTERSOFT<br>
+
+        <div class="login-wrapper">
+            <div class="login-info">
+                INTERSOFT 🚀
                 <small>Your time. Your job. Your success.</small>
             </div>
-            <div class="login-right">
-                <div class="title">🔐 Login</div>
+            <div class="login-form">
+                <h3>🔐 Sign In</h3>
         """, unsafe_allow_html=True)
 
         username = st.text_input("Username", placeholder="Enter your username")
