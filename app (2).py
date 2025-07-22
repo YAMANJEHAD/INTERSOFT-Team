@@ -336,122 +336,51 @@ def authenticate_user():
     if not st.session_state.logged_in:
         st.markdown("""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap');
 
-        html, body {
-            background: linear-gradient(145deg, #0f2027, #203a43, #2c5364);
-            height: 100%;
-            font-family: 'Poppins', sans-serif;
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(120deg, #1f2937, #111827);
         }
 
-        .glass-box {
-            width: 350px;
-            height: 420px;
+        .login-container {
+            max-width: 420px;
             margin: 6rem auto;
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(15px);
-            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(14px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 40px 30px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-            position: relative;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+            color: #f9fafb;
+            animation: fadeIn 1s ease-in-out;
         }
 
-        .glass-box h3 {
-            color: #ffffff;
+        .login-container h2 {
             text-align: center;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+            font-size: 26px;
+            color: #3b82f6;
+        }
+
+        .login-container label {
             font-weight: 600;
-            font-size: 24px;
-            margin-bottom: 30px;
+            margin-bottom: 0.4rem;
+            display: block;
         }
 
-        .glass-box label {
-            color: #f0f0f0;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .glass-box input {
+        .login-container input {
             width: 100%;
-            padding: 12px 16px;
-            margin-top: 6px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.07);
+            border: none;
+            color: white;
             margin-bottom: 20px;
-            border-radius: 10px;
-            border: none;
-            outline: none;
             font-size: 14px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            transition: all 0.3s ease;
         }
 
-        .glass-box input:focus {
-            background: rgba(255,255,255,0.2);
-            box-shadow: 0 0 0 2px #90cdf4;
-        }
-
-        .glass-box button {
-            width: 100%;
-            padding: 12px 0;
-            background: linear-gradient(135deg, #6a11cb, #2575fc);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.3s ease;
-        }
-
-        .glass-box button:hover {
-            background: linear-gradient(135deg, #5f0fca, #1e60dc);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-
-        .error-msg {
-            color: #f87171;
-            font-weight: 600;
-            text-align: center;
-            margin-top: 10px;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-
-        st.markdown('<div class="glass-box">', unsafe_allow_html=True)
-
-        with st.form("login_form"):
-            st.markdown("<h3>🔐 Secure Login</h3>", unsafe_allow_html=True)
-
-            st.markdown('<label for="username">Username</label>', unsafe_allow_html=True)
-            username = st.text_input("Username", key="glass_username", label_visibility="collapsed", placeholder="Enter your username")
-
-            st.markdown('<label for="password">Password</label>', unsafe_allow_html=True)
-            password = st.text_input("Password", type="password", key="glass_password", label_visibility="collapsed", placeholder="Enter your password")
-
-            submitted = st.form_submit_button("Log In")
-
-            if submitted:
-                user = USERS.get(username.lower())
-                if user and user["pass"] == password:
-                    st.session_state.logged_in = True
-                    st.session_state.user_role = username.lower()
-                    st.session_state.user_role_type = user["role"]
-                    st.session_state.login_log.append({
-                        "Username": username.lower(),
-                        "Login Time": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d %H:%M:%S'),
-                        "Role": user["role"]
-                    })
-                    save_data()
-                    st.rerun()
-                else:
-                    st.session_state.login_error = "❌ Invalid username or password"
-
-        if st.session_state.get("login_error"):
-            st.markdown(f"<div class='error-msg'>{st.session_state.login_error}</div>", unsafe_allow_html=True)
-
-        st.markdown("</div>", unsafe_allow_html=True)
-        st.stop()
 
 
 
