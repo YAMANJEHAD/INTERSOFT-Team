@@ -336,99 +336,108 @@ def authenticate_user():
     if not st.session_state.logged_in:
         st.markdown("""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap');
 
         html, body {
-            font-family: 'Outfit', sans-serif;
-            background: linear-gradient(135deg, #0f172a, #1e293b);
             height: 100%;
+            margin: 0;
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #1f2937, #111827);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% {background-position: 0% 50%;}
+            50% {background-position: 100% 50%;}
+            100% {background-position: 0% 50%;}
         }
 
         .page-container {
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             height: 90vh;
-            padding: 2rem;
             position: relative;
+            overflow: hidden;
         }
 
         .branding {
             position: absolute;
-            left: 40px;
+            left: 50px;
             top: 50%;
             transform: translateY(-50%);
+            color: #60a5fa;
+            font-size: 24px;
+            font-weight: 800;
             writing-mode: vertical-rl;
             text-orientation: mixed;
-            font-size: 22px;
-            font-weight: 700;
-            color: #60a5fa;
-            letter-spacing: 2px;
-            opacity: 0.7;
-            transition: opacity 0.5s ease-in-out;
+            letter-spacing: 3px;
+            opacity: 0.8;
+            text-shadow: 0 0 8px #3b82f6;
         }
 
-        .branding:hover {
-            opacity: 1;
+        .login-card {
+            width: 360px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+            backdrop-filter: blur(20px);
+            color: #f1f5f9;
+            animation: slideIn 1s ease;
         }
 
-        .login-container {
-            width: 340px;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(14px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 18px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-            color: #f9fafb;
-            animation: slideFade 1s ease-in-out;
+        @keyframes slideIn {
+            0% {opacity: 0; transform: translateY(-20px);}
+            100% {opacity: 1; transform: translateY(0);}
         }
 
-        .login-container h2 {
+        .login-card h2 {
             text-align: center;
-            margin-bottom: 1.5rem;
-            font-weight: 700;
-            font-size: 22px;
+            margin-bottom: 1.8rem;
+            font-size: 26px;
             color: #3b82f6;
         }
 
-        .login-container label {
+        .login-card label {
             font-weight: 600;
-            font-size: 13px;
-            margin-bottom: 0.3rem;
+            font-size: 14px;
+            margin-bottom: 0.2rem;
             display: block;
         }
 
-        .login-container input {
+        .login-card input {
             width: 100%;
-            padding: 10px 12px;
-            border-radius: 10px;
-            background: rgba(255,255,255,0.08);
+            padding: 10px 14px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.07);
             border: none;
-            color: white;
-            margin-bottom: 16px;
-            font-size: 13px;
+            color: #f9fafb;
+            margin-bottom: 18px;
+            font-size: 14px;
         }
 
-        .login-container input:focus {
+        .login-card input:focus {
             outline: 2px solid #60a5fa;
         }
 
-        .login-container button {
+        .login-card button {
             width: 100%;
             padding: 12px;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 700;
-            background: linear-gradient(to right, #6366f1, #3b82f6);
+            background: linear-gradient(135deg, #6366f1, #3b82f6);
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             color: white;
             cursor: pointer;
-            transition: transform 0.25s ease, background 0.3s ease;
+            transition: all 0.3s ease;
         }
 
-        .login-container button:hover {
-            background: linear-gradient(to right, #818cf8, #60a5fa);
+        .login-card button:hover {
+            background: linear-gradient(135deg, #818cf8, #60a5fa);
             transform: scale(1.03);
         }
 
@@ -436,23 +445,16 @@ def authenticate_user():
             color: #f87171;
             font-weight: bold;
             text-align: center;
-            margin-top: 10px;
-            font-size: 13px;
-        }
-
-        @keyframes slideFade {
-            0% { opacity: 0; transform: translateY(-20px) scale(0.95); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
+            margin-top: 14px;
+            font-size: 14px;
         }
         </style>
         """, unsafe_allow_html=True)
 
-        # Center container
         st.markdown('<div class="page-container">', unsafe_allow_html=True)
-        st.markdown('<div class="branding">INTERSOFT<br><span style="font-size:12px;">International Software Company</span></div>', unsafe_allow_html=True)
-        st.markdown('<div class="login-container">', unsafe_allow_html=True)
+        st.markdown('<div class="branding">INTERSOFT<br><span style="font-size:11px; font-weight:400;">International Software Co.</span></div>', unsafe_allow_html=True)
+        st.markdown('<div class="login-card">', unsafe_allow_html=True)
 
-        # Login form
         with st.form("login_form"):
             st.markdown("<h2>🔐 INTERSOFT Login</h2>", unsafe_allow_html=True)
             username = st.text_input("Username", key="username_input", placeholder="Enter username")
@@ -478,9 +480,10 @@ def authenticate_user():
         if st.session_state.get("login_error"):
             st.markdown(f"<div class='error-msg'>{st.session_state.login_error}</div>", unsafe_allow_html=True)
 
-        st.markdown("</div>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)  # end page-container
+        st.markdown('</div>', unsafe_allow_html=True)  # end login-card
+        st.markdown('</div>', unsafe_allow_html=True)  # end page-container
         st.stop()
+
 
 
 
