@@ -299,99 +299,121 @@ def authenticate_user():
     if not st.session_state.logged_in:
         st.markdown("""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
         html, body, [class*="css"] {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(to bottom right, #0f172a, #1e293b);
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
             color: #f8fafc;
         }
 
-        .login-wrapper {
-            max-width: 800px;
-            margin: 5rem auto;
-            background: #1e293b;
-            padding: 3rem;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        .login-main {
             display: flex;
             flex-direction: row;
-            gap: 2rem;
+            justify-content: center;
+            align-items: stretch;
+            height: 90vh;
+            margin-top: 2rem;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
         }
 
-        .login-info {
+        .login-left {
             flex: 1;
+            background: url('https://images.unsplash.com/photo-1605902711622-cfb43c44367e') no-repeat center;
+            background-size: cover;
+            position: relative;
+        }
+
+        .login-left::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+        }
+
+        .login-left-content {
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            transform: translateY(-50%);
+            z-index: 2;
             color: #4ade80;
-            font-size: 2rem;
+        }
+
+        .login-left-content h1 {
+            font-size: 2.5rem;
             font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .login-left-content p {
+            font-size: 1rem;
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+
+        .login-right {
+            flex: 1;
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 4rem 3rem;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding-right: 1rem;
         }
 
-        .login-info small {
-            font-size: 0.9rem;
-            color: #94a3b8;
-            margin-top: 1rem;
-            font-weight: 400;
-        }
-
-        .login-form {
-            flex: 1;
-            background: #111827;
-            padding: 2rem;
-            border-radius: 16px;
-        }
-
-        .login-form h3 {
-            text-align: center;
-            color: #f8fafc;
-            font-size: 1.5rem;
+        .login-right h2 {
+            color: #ffffff;
+            font-size: 2rem;
             margin-bottom: 2rem;
+            text-align: center;
         }
 
         .stTextInput>div>input {
             background-color: #1f2937;
             color: #f8fafc;
-            padding: 0.7rem 1rem;
+            border: 1px solid #475569;
             border-radius: 10px;
-            border: 1px solid #4b5563;
+            padding: 0.75rem 1rem;
         }
 
         .stTextInput>div>input:focus {
-            outline: none;
-            border: 1px solid #22c55e;
-            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.4);
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3);
         }
 
         .stButton>button.login-button {
-            background: linear-gradient(to right, #22c55e, #16a34a);
+            background: linear-gradient(90deg, #22c55e, #16a34a);
+            color: white;
             border: none;
-            padding: 0.8rem 1.5rem;
             border-radius: 10px;
             font-size: 1rem;
-            font-weight: bold;
-            color: #fff;
-            width: 100%;
-            transition: all 0.3s ease;
+            font-weight: 600;
+            padding: 0.8rem;
             margin-top: 1.5rem;
+            transition: all 0.3s ease;
+            width: 100%;
         }
 
         .stButton>button.login-button:hover {
-            transform: scale(1.03);
-            box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
         }
         </style>
 
-        <div class="login-wrapper">
-            <div class="login-info">
-                INTERSOFT 🚀
-                <small>Your time. Your job. Your success.</small>
+        <div class="login-main">
+            <div class="login-left">
+                <div class="login-left-content">
+                    <h1>INTERSOFT 🚀</h1>
+                    <p>Work smarter. Track faster. Empower your team.<br>Where productivity meets elegance.</p>
+                </div>
             </div>
-            <div class="login-form">
-                <h3>🔐 Sign In</h3>
+            <div class="login-right">
+                <h2>🔐 Welcome Back</h2>
         """, unsafe_allow_html=True)
+
 
         username = st.text_input("Username", placeholder="Enter your username")
         password = st.text_input("Password", type="password", placeholder="Enter your password")
