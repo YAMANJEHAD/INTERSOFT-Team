@@ -622,9 +622,16 @@ def render_download_tasks():
     user = st.session_state.user_role
     df_user = pd.DataFrame(st.session_state.timesheet)
     df_user = df_user[df_user['Employee'] == user] if not df_user.empty else pd.DataFrame()
-    
+
     if not df_user.empty:
         tz = pytz.timezone("Asia/Riyadh")
+
+        # وضع متغيرات خارج الفورم لعرض زر التحميل لاحقًا
+        filtered_df = pd.DataFrame()
+        trigger_download = False
+        file_name = None
+        excel_data = None
+
         with st.form("download_tasks_form"):
             col1, col2, col3 = st.columns(3)
             with col1:
@@ -634,32 +641,38 @@ def render_download_tasks():
             with col3:
                 category = st.selectbox("Category", ["All"] + CATEGORIES)
             priority = st.selectbox("Priority", ["All"] + TASK_PRIORITIES)
-            
-            if st.form_submit_button("🔍 Filter and Download"):
-                filtered_df = df_user
-                if category != "All":
-                    filtered_df = filtered_df[filtered_df['Category'] == category]
-                if priority != "All":
-                    filtered_df = filtered_df[filtered_df['Priority'] == priority]
-                filtered_df = filtered_df[(filtered_df['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end.strftime('%Y-%m-%d'))]
-                
+
+            submitted = st.form_submit_button("🔍 Filter and Download")
+
+        if submitted:
+            filtered_df = df_user
+            if category != "All":
+                filtered_df = filtered_df[filtered_df['Category'] == category]
+            if priority != "All":
+                filtered_df = filtered_df[filtered_df['Priority'] == priority]
+            filtered_df = filtered_df[(filtered_df['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end.strftime('%Y-%m-%d'))]
+
+            if not filtered_df.empty:
                 st.dataframe(filtered_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'), use_container_width=True)
-                if not filtered_df.empty:
-                    file_name = f"{user}_tasks_{start.strftime('%Y%m%d')}_{end.strftime('%Y%m%d')}.xlsx"
-                    data, file_name = export_to_excel(filtered_df, f"{user}_Tasks", file_name)
-                    if data:
-                        st.download_button(
-                            label="⬇️ Download Now",
-                            data=data,
-                            file_name=file_name,
-                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                            key=f"download_tasks_{user}_{start.strftime('%Y%m%d')}"
-                        )
-                else:
-                    st.info("ℹ️ No tasks match the filters.")
+                file_name = f"{user}_tasks_{start.strftime('%Y%m%d')}_{end.strftime('%Y%m%d')}.xlsx"
+                excel_data, file_name = export_to_excel(filtered_df, f"{user}_Tasks", file_name)
+                trigger_download = True
+            else:
+                st.info("ℹ️ No tasks match the filters.")
+
+        if trigger_download and excel_data:
+            st.download_button(
+                label="⬇️ Download Now",
+                data=excel_data,
+                file_name=file_name,
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                key=f"download_tasks_{user}_{start.strftime('%Y%m%d')}"
+            )
     else:
         st.info("ℹ️ No tasks available.")
+
     st.markdown("</div>", unsafe_allow_html=True)
+
 
 # --- Admin Download Tasks ---
 def render_admin_download_tasks():
