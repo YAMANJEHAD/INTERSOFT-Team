@@ -1193,7 +1193,7 @@ def render_admin_panel():
                 st.error("⚠️ Failed to generate Excel file.")
 
 # --- Main App Logic ---
-if _name_ == "_main_":
+if __name__ == "__main__":
     initialize_session()
     authenticate_user()
 
