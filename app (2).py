@@ -338,47 +338,76 @@ def authenticate_user():
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap');
 
-        body {
+        html, body {
             font-family: 'Outfit', sans-serif;
-            background: linear-gradient(120deg, #1f2937, #111827);
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            height: 100%;
+        }
+
+        .page-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 90vh;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .branding {
+            position: absolute;
+            left: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            font-size: 22px;
+            font-weight: 700;
+            color: #60a5fa;
+            letter-spacing: 2px;
+            opacity: 0.7;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .branding:hover {
+            opacity: 1;
         }
 
         .login-container {
-            max-width: 420px;
-            margin: 6rem auto;
+            width: 340px;
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(14px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+            border-radius: 18px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
             color: #f9fafb;
-            animation: fadeIn 1s ease-in-out;
+            animation: slideFade 1s ease-in-out;
         }
 
         .login-container h2 {
             text-align: center;
             margin-bottom: 1.5rem;
             font-weight: 700;
-            font-size: 26px;
+            font-size: 22px;
             color: #3b82f6;
         }
 
         .login-container label {
             font-weight: 600;
-            margin-bottom: 0.4rem;
+            font-size: 13px;
+            margin-bottom: 0.3rem;
             display: block;
         }
 
         .login-container input {
             width: 100%;
-            padding: 12px 14px;
-            border-radius: 12px;
-            background: rgba(255,255,255,0.07);
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.08);
             border: none;
             color: white;
-            margin-bottom: 20px;
-            font-size: 14px;
+            margin-bottom: 16px;
+            font-size: 13px;
         }
 
         .login-container input:focus {
@@ -388,19 +417,19 @@ def authenticate_user():
         .login-container button {
             width: 100%;
             padding: 12px;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
             background: linear-gradient(to right, #6366f1, #3b82f6);
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             color: white;
             cursor: pointer;
-            transition: 0.3s ease;
+            transition: transform 0.25s ease, background 0.3s ease;
         }
 
         .login-container button:hover {
             background: linear-gradient(to right, #818cf8, #60a5fa);
-            transform: translateY(-2px);
+            transform: scale(1.03);
         }
 
         .error-msg {
@@ -408,17 +437,22 @@ def authenticate_user():
             font-weight: bold;
             text-align: center;
             margin-top: 10px;
+            font-size: 13px;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes slideFade {
+            0% { opacity: 0; transform: translateY(-20px) scale(0.95); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
         }
         </style>
         """, unsafe_allow_html=True)
 
+        # Center container
+        st.markdown('<div class="page-container">', unsafe_allow_html=True)
+        st.markdown('<div class="branding">INTERSOFT<br><span style="font-size:12px;">International Software Company</span></div>', unsafe_allow_html=True)
         st.markdown('<div class="login-container">', unsafe_allow_html=True)
 
+        # Login form
         with st.form("login_form"):
             st.markdown("<h2>🔐 INTERSOFT Login</h2>", unsafe_allow_html=True)
             username = st.text_input("Username", key="username_input", placeholder="Enter username")
@@ -445,7 +479,9 @@ def authenticate_user():
             st.markdown(f"<div class='error-msg'>{st.session_state.login_error}</div>", unsafe_allow_html=True)
 
         st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)  # end page-container
         st.stop()
+
 
 
 # --- Excel Export Function ---
