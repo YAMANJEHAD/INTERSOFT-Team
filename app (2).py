@@ -58,19 +58,13 @@ html, body, [class*="css"] {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-20px); }
+    from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
 .greeting {
     font-size: 1.1rem; font-weight: 600; color: #fcd34d;
     text-align: right; line-height: 1.4;
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
 }
 
 .company {
@@ -92,66 +86,50 @@ html, body, [class*="css"] {
 }
 
 .stSelectbox {
-    background: linear-gradient(135deg, #6d28d9, #e11d48);
+    background: linear-gradient(135deg, #4a1e7a, #8b1a3c);
     color: white; font-weight: 700; font-size: 1.2rem;
     border-radius: 26px; padding: 0.8rem; min-width: 220px;
-    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
-    transition: all 0.4s ease; border: 1px solid transparent;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    transition: all 0.3s ease; border: 1px solid transparent;
 }
 
 .stSelectbox:hover {
-    transform: scale(1.15);
-    background: linear-gradient(135deg, #8b5cf6, #f43f5e);
-    box-shadow: 0 16px 36px rgba(139,92,246,0.5), 0 0 20px rgba(244,63,94,0.4);
-    border: 1px solid #93c5fd;
+    transform: scale(1.05);
+    background: linear-gradient(135deg, #5e2e9a, #a61e4d);
+    box-shadow: 0 10px 24px rgba(94,46,154,0.4), 0 0 15px rgba(166,30,77,0.3);
+    border: 1px solid #7ea5d9;
 }
 
 .stButton>button {
-    background: linear-gradient(135deg, #6d28d9, #e11d48);
+    background: linear-gradient(135deg, #4a1e7a, #8b1a3c);
     color: white; font-weight: 700; font-size: 1.2rem;
     border-radius: 26px; padding: 0.8rem; min-width: 220px; height: 52px;
-    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
-    transition: all 0.4s ease; border: 1px solid transparent;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    transition: all 0.3s ease; border: 1px solid transparent;
     cursor: pointer; text-align: center;
     display: flex; align-items: center; justify-content: center; gap: 12px;
-    animation: bounceIn 0.8s ease-in-out;
-}
-
-@keyframes bounceIn {
-    0% { transform: scale(0.85); opacity: 0; }
-    50% { transform: scale(1.2); opacity: 0.7; }
-    100% { transform: scale(1); opacity: 1; }
 }
 
 .stButton>button:hover {
-    transform: scale(1.15);
-    background: linear-gradient(135deg, #8b5cf6, #f43f5e);
-    box-shadow: 0 16px 36px rgba(139,92,246,0.5), 0 0 20px rgba(244,63,94,0.4);
-    border: 1px solid #93c5fd;
+    transform: scale(1.05);
+    background: linear-gradient(135deg, #5e2e9a, #a61e4d);
+    box-shadow: 0 10px 24px rgba(94,46,154,0.4), 0 0 15px rgba(166,30,77,0.3);
+    border: 1px solid #7ea5d9;
 }
 
 .stButton>button:active {
-    transform: scale(0.92);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    transform: scale(0.98);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .stButton>button.delete-button {
-    background: linear-gradient(135deg, #b91c1c, #ef4444);
+    background: linear-gradient(135deg, #7a1e1e, #b91c1c);
 }
 
 .stButton>button.delete-button:hover {
-    animation: shake 0.7s ease-in-out;
-    background: linear-gradient(135deg, #991b1b, #dc2626);
-    box-shadow: 0 16px 36px rgba(185,28,28,0.5);
-    border: 1px solid #fca5a5;
-}
-
-@keyframes shake {
-    0% { transform: translateX(0); }
-    25% { transform: translateX(-8px); }
-    50% { transform: translateX(8px); }
-    75% { transform: translateX(-8px); }
-    100% { transform: translateX(0); }
+    background: linear-gradient(135deg, #8b2e2e, #d32f2f);
+    box-shadow: 0 10px 24px rgba(139,46,46,0.4);
+    border: 1px solid #e57373;
 }
 
 .overview-box {
@@ -161,6 +139,111 @@ html, body, [class*="css"] {
     box-shadow: 0 8px 20px rgba(0,0,0,0.3);
     animation: zoomIn 0.6s ease-in-out;
 }
+
+.overview-box:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+}
+
+@keyframes zoomIn {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.overview-box span {
+    font-size: 1.5rem; font-weight: 800; color: #fcd34d;
+    display: block;
+}
+
+.overview-box small {
+    font-size: 0.8rem; color: #e2e8f0;
+}
+
+.edit-section {
+    background: #1e293b; padding: 2rem; border-radius: 16px; margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.alert-box {
+    background: linear-gradient(135deg, #dc2626, #f87171);
+    padding: 0.8rem; border-radius: 14px; color: white;
+    font-size: 0.9rem; font-weight: 600; max-width: 380px;
+    margin: 0.8rem 0; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    opacity: 0.92; transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    z-index: 1000; animation: slideInDown 0.5s ease-in-out;
+}
+
+.alert-box.reminder {
+    background: linear-gradient(135deg, #eab308, #facc15);
+}
+
+@keyframes slideInDown {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 0.92; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 0.92; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-20px); }
+}
+
+.alert-box.hide {
+    animation: fadeOut 0.5s ease-out forwards;
+}
+
+.stDataFrame table {
+    width: 100%; border-collapse: collapse;
+    background: #1e293b; border-radius: 12px; overflow: hidden;
+}
+
+.stDataFrame th {
+    background-color: #4f81bd; color: white; font-weight: 700;
+    padding: 10px; font-size: 1.1rem;
+}
+
+.stDataFrame td {
+    font-weight: 600; color: #f8fafc; padding: 10px;
+    border-bottom: 1px solid #334155; font-size: 1rem;
+}
+
+footer {
+    text-align: center; color: #94a3b8; padding: 2.5rem 0;
+    font-size: 1rem; font-weight: 500;
+    animation: fadeIn 1s ease-in-out;
+}
+
+.profile-picture {
+    border-radius: 50%; width: 100px; height: 100px; object-fit: cover;
+    border: 2px solid #60a5fa; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.task-attachment {
+    max-width: 200px; border-radius: 12px; margin-top: 0.5rem;
+    border: 2px solid #60a5fa; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.attachment-info {
+    font-size: 0.9rem; color: #94a3b8; margin-top: 0.3rem;
+}
+
+.chart-container {
+    background: #1e293b; padding: 1rem; border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    margin-bottom: 1.5rem; transition: transform 0.3s ease;
+    animation: slideInUp 0.6s ease-in-out;
+}
+
+.chart-container:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+}
+
+@keyframes slideInUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+</style>
 
 .overview-box:hover {
     transform: translateY(-5px) scale(1.02);
