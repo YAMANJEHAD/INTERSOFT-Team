@@ -14,7 +14,7 @@ import pytz
 import numpy as np
 import streamlit.components.v1 as components
 
-# --- Constants 
+# --- Constants ---
 USERS = {
     "yaman": {"pass": "YAMAN1", "role": "Admin"},
     "hatem": {"pass": "HATEM2", "role": "Supervisor"},
@@ -334,7 +334,7 @@ def initialize_session():
 # --- Authentication ---
 def authenticate_user():
     if not st.session_state.logged_in:
-        # Sanitize the error message to prevent JavaScript injection issues
+        # Sanitize the error message to prevent JavaScript injection
         import json
         error_message = json.dumps(st.session_state.get('login_error', ''))
         
@@ -443,7 +443,11 @@ def authenticate_user():
                 font-size: 16px;
                 transition: background 0.3s ease;
             }}
-            .login-button:hover{{
+            .login-button:disabled{{
+                background: #a0aec0;
+                cursor: not-allowed;
+            }}
+            .login-button:hover:not(:disabled){{
                 background: #60b8d4;
             }}
             .close-button{{
@@ -500,7 +504,7 @@ def authenticate_user():
                 <input type="text" placeholder="Username" id="username">
                 <input type="password" placeholder="Password" id="password">
                 <div id="caps-lock-warning" class="caps-lock-warning">Caps Lock is ON</div>
-                <button class="login-button" onclick="submitLogin()">Log In</button>
+                <button class="login-button" id="login-button" onclick="submitLogin()">Log In</button>
                 <div id="error-message" class="error-message">{error_message}</div>
             </div>
         </div>
@@ -511,7 +515,8 @@ def authenticate_user():
             }}
             function submitLogin() {{
                 console.log('Log In button clicked');
-                const username = document.getElementById('username').value;
+                const loginButton = document.getElementById('login-button');
+                const username = document.getElementById('username').value.trim();
                 const password = document.getElementById('password').value;
                 const errorDiv = document.getElementById('error-message');
                 
@@ -521,27 +526,63 @@ def authenticate_user():
                     return;
                 }}
 
-                console.log('Sending login data to Streamlit:', {{ username, password }});
-                window.parent.postMessage({{
-                    type: 'streamlit:setComponentValue',
-                    value: JSON.stringify({{ username: username.toLowerCase(), password }})
-                }}, '*');
+                loginButton.disabled = true;
+                errorDiv.innerText = '';
+                console.log('Sending login data:', {{ username, password }});
+                
+                const sendLoginData = () => {{
+                    try {{
+                        window.parent.postMessage({{
+                            type: 'streamlit:setComponentValue',
+                            value: JSON.stringify({{ username: username.toLowerCase(), password }})
+                        }}, '*');
+                        console.log('Login data sent to Streamlit');
+                    }} catch (e) {{
+                        console.error('Failed to send login data:', e);
+                        errorDiv.innerText = 'Error submitting login. Please try again.';
+                        loginButton.disabled = false;
+                    }}
+                }};
+
+                // Retry sending data up to 3 times with 500ms delay
+                let attempts = 0;
+                const maxAttempts = 3;
+                const retryInterval = setInterval(() => {{
+                    if (attempts < maxAttempts) {{
+                        sendLoginData();
+                        attempts++;
+                    }} else {{
+                        clearInterval(retryInterval);
+                        if (!errorDiv.innerText) {{
+                            loginButton.disabled = false;
+                        }}
+                    }}
+                }}, 500);
+
+                // Initial attempt
+                sendLoginData();
             }}
             function closeModal() {{
                 console.log('Close button clicked');
                 document.querySelector('.container').style.display = 'none';
-                window.parent.postMessage({{
-                    type: 'streamlit:setComponentValue',
-                    value: JSON.stringify({{ action: 'close' }})
-                }}, '*');
+                try {{
+                    window.parent.postMessage({{
+                        type: 'streamlit:setComponentValue',
+                        value: JSON.stringify({{ action: 'close' }})
+                    }}, '*');
+                    console.log('Close signal sent to Streamlit');
+                }} catch (e) {{
+                    console.error('Failed to send close signal:', e);
+                }}
             }}
             document.onkeydown = function(evt) {{
                 evt = evt || window.event;
-                if (evt.keyCode === 27) {{
+                const key = evt.key || evt.keyCode;
+                if (key === 'Escape' || key === 27) {{
                     console.log('Esc key pressed, closing modal');
                     closeModal();
                 }}
-                if (evt.keyCode === 13 && document.activeElement.id === 'password') {{
+                if ((key === 'Enter' || key === 13) && document.activeElement.id === 'password') {{
                     console.log('Enter key pressed in password field');
                     submitLogin();
                 }}
@@ -571,41 +612,58 @@ def authenticate_user():
         login_data = st.query_params.get("login_data", [""])[0]
         if login_data:
             try:
+                print(f"Received login data: {login_data}")  # Server-side debug
                 login_info = json.loads(login_data)
-                print(f"Received login data: {login_info}")  # Server-side debug
-                if isinstance(login_info, dict) and login_info.get("action") == "close":
-                    st.session_state.login_error = "Login cancelled."
-                    st.query_params.clear()
-                    st.rerun()
-                username = login_info.get("username")
-                password = login_info.get("password")
-                if username and password:
-                    user = USERS.get(username.lower())
-                    if user and user["pass"] == password:
-                        st.session_state.logged_in = True
-                        st.session_state.user_role = username.lower()
-                        st.session_state.user_role_type = user["role"]
-                        st.session_state.login_log.append({
-                            "Username": username.lower(),
-                            "Login Time": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d %H:%M:%S'),
-                            "Role": user["role"]
-                        })
-                        save_data()
-                        st.session_state.selected_tab = "Dashboard"
-                        st.session_state.login_error = ""
+                print(f"Parsed login data: {login_info}")  # Server-side debug
+                if isinstance(login_info, dict):
+                    if login_info.get("action") == "close":
+                        print("Login cancelled by user")  # Server-side debug
+                        st.session_state.login_error = "Login cancelled."
                         st.query_params.clear()
                         st.rerun()
+                    username = login_info.get("username")
+                    password = login_info.get("password")
+                    if username and password:
+                        user = USERS.get(username.lower())
+                        if user and user["pass"] == password:
+                            print(f"Login successful for user: {username.lower()}")  # Server-side debug
+                            st.session_state.logged_in = True
+                            st.session_state.user_role = username.lower()
+                            st.session_state.user_role_type = user["role"]
+                            st.session_state.login_log.append({
+                                "Username": username.lower(),
+                                "Login Time": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d %H:%M:%S'),
+                                "Role": user["role"]
+                            })
+                            save_data()
+                            st.session_state.selected_tab = "Dashboard"
+                            st.session_state.login_error = ""
+                            st.query_params.clear()
+                            print("Login state updated, redirecting to Dashboard")  # Server-side debug
+                            st.rerun()
+                        else:
+                            print(f"Invalid credentials for user: {username.lower()}")  # Server-side debug
+                            st.session_state.login_error = "❌ Invalid username or password"
+                            st.query_params.clear()
+                            st.rerun()
                     else:
-                        st.session_state.login_error = "❌ Invalid username or password"
+                        print("Missing username or password in login data")  # Server-side debug
+                        st.session_state.login_error = "⚠️ Please enter both username and password"
                         st.query_params.clear()
                         st.rerun()
                 else:
+                    print("Invalid login data format")  # Server-side debug
                     st.session_state.login_error = "⚠️ Invalid login data"
                     st.query_params.clear()
                     st.rerun()
             except json.JSONDecodeError as e:
                 print(f"JSON decode error: {e}")  # Server-side debug
-                st.session_state.login_error = "⚠️ Invalid login data"
+                st.session_state.login_error = "⚠️ Error processing login data. Please try again."
+                st.query_params.clear()
+                st.rerun()
+            except Exception as e:
+                print(f"Unexpected error in authentication: {e}")  # Server-side debug
+                st.session_state.login_error = f"⚠️ Authentication error: {e}"
                 st.query_params.clear()
                 st.rerun()
 
@@ -1433,4 +1491,3 @@ if __name__ == "__main__":
         f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now(pytz.timezone('Asia/Riyadh')).strftime('%A, %B %d, %Y')} - 10:05 AM (+03)</footer>",
         unsafe_allow_html=True
     )
-
