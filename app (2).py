@@ -58,10 +58,23 @@ st.markdown("""
 }
 
 body {
-    background: linear-gradient(135deg, #0a1122 0%, #1c2526 100%);
+    background: #0a1122;
     color: #e2e8f0;
     margin: 0;
     padding: 0;
+    position: relative;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(74,222,128,0.05) 0%, rgba(34,197,94,0.05) 100%);
+    z-index: -1;
 }
 
 .main-container {
@@ -148,42 +161,52 @@ body {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.card.login-card {
-    max-width: 500px;
-    margin: 4rem auto;
-    padding: 2rem;
-    box-shadow: 0 8px 24px rgba(74,222,128,0.2);
-    animation: fadeIn 0.5s ease;
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
 }
 
-.card.login-card:hover {
-    box-shadow: 0 12px 32px rgba(74,222,128,0.3);
-    transform: translateY(-4px);
+.card.login-card {
+    max-width: 400px;
+    margin: 6rem auto;
+    padding: 1.5rem;
+    background: #1c2526;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(74,222,128,0.2);
+    animation: fadeIn 0.8s ease;
 }
 
 .card-title {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 600;
     color: #4ade80;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     text-align: center;
 }
 
 .login-logo {
     display: block;
-    margin: 0 auto 1rem;
-    font-size: 2rem;
+    margin: 0 auto 0.5rem;
+    font-size: 2.5rem;
     color: #4ade80;
-    font-weight: 700;
+}
+
+.login-phrase {
+    font-size: 0.9rem;
+    font-style: italic;
+    color: #94a3b8;
+    text-align: center;
+    margin-bottom: 1.5rem;
 }
 
 .company-header {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     font-weight: 700;
     color: #4ade80;
     position: absolute;
-    top: 1rem;
-    left: 2rem;
+    top: 1.5rem;
+    left: 1.5rem;
+    letter-spacing: 0.5px;
 }
 
 .stat-card {
@@ -268,33 +291,36 @@ body {
 .stButton>button.login-button {
     display: block;
     margin: 1.5rem auto;
-    width: 200px;
+    width: 180px;
     text-align: center;
     background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
     color: #1c2526;
     font-weight: 600;
     border: none;
-    box-shadow: 0 4px 12px rgba(74,222,128,0.5);
+    border-radius: 10px;
+    padding: 0.7rem;
+    box-shadow: 0 4px 12px rgba(74,222,128,0.4);
+    transition: all 0.3s ease;
 }
 
 .stButton>button.login-button:hover {
     background: linear-gradient(135deg, #22c55e 0%, #4ade80 100%);
     box-shadow: 0 6px 16px rgba(74,222,128,0.6);
-    transform: translateY(-2px);
+    transform: scale(1.05);
 }
 
 .stTextInput input {
     background: #2d3748;
     color: #e2e8f0;
     border-radius: 10px;
-    padding: 0.8rem;
+    padding: 0.7rem;
     border: 1px solid #4b5563;
-    transition: border-color 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 .stTextInput input:focus {
     border-color: #4ade80;
-    box-shadow: 0 0 8px rgba(74,222,128,0.3);
+    box-shadow: 0 0 6px rgba(74,222,128,0.3);
 }
 
 .stDataFrame table {
@@ -418,7 +444,8 @@ def authenticate_user():
             <div class='company-header'>⚡ INTERSOFT International Software Company</div>
             <div class='card login-card'>
                 <div class='login-logo'>⚡</div>
-                <h2 class='card-title'>🔐 Login</h2>
+                <h2 class='card-title'>Welcome Back</h2>
+                <div class='login-phrase'>Your time is your work</div>
         """, unsafe_allow_html=True)
         username = st.text_input("Username", placeholder="Enter your username")
         password = st.text_input("Password", type="password", placeholder="Enter your password")
