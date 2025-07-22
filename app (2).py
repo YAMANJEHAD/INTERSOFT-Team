@@ -333,8 +333,7 @@ def initialize_session():
 
 # --- Authentication ---
 def authenticate_user():
-    if not st.session_state.get("logged_in"):
-        # --- CSS Styling with Font Awesome ---
+    if not st.session_state.get('logged_in', False):
         st.markdown("""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
@@ -342,51 +341,91 @@ def authenticate_user():
 
         html, body, [class*="css"] {
             font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: linear-gradient(145deg, #1abc9c, #16a085);
+            background-size: 300% 300%;
+            animation: gradientFlow 10s ease infinite;
         }
 
-        body {
-            background: #1abc9c;
+        @keyframes gradientFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         .wrapper {
-            max-width: 500px;
+            max-width: 450px;
             width: 100%;
-            background: #fff;
-            border-radius: 5px;
-            box-shadow: 0px 4px 10px 1px rgba(0, 0, 0, 0.1);
-            margin: 5vh auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            margin: 80px auto 20px;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .branding {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ffffff;
+            font-size: 32px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .branding span {
+            font-size: 14px;
+            font-weight: 400;
+            display: block;
+            margin-top: 5px;
+            opacity: 0.8;
         }
 
         .title {
-            height: 120px;
-            background: #16a085;
-            border-radius: 5px 5px 0 0;
+            height: 100px;
+            background: rgba(22, 160, 133, 0.8);
+            border-radius: 12px 12px 0 0;
             color: #fff;
-            font-size: 30px;
+            font-size: 28px;
             font-weight: 600;
             display: flex;
             align-items: center;
             justify-content: center;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
         }
 
         .form-area {
-            padding: 25px 35px;
+            padding: 30px;
         }
 
         .row {
-            height: 60px;
+            height: 55px;
             margin-top: 15px;
             position: relative;
         }
 
         .row i {
             position: absolute;
-            width: 55px;
+            width: 50px;
             height: 100%;
             color: #fff;
-            font-size: 22px;
+            font-size: 20px;
             background: #16a085;
-            border-radius: 5px 0 0 5px;
+            border-radius: 8px 0 0 8px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -396,25 +435,32 @@ def authenticate_user():
             height: 100%;
             width: 100%;
             outline: none;
-            padding-left: 70px;
-            border-radius: 5px;
-            border: 1px solid lightgrey;
-            font-size: 18px;
+            padding-left: 60px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 16px;
             transition: all 0.3s ease;
         }
 
         .row input:focus {
             border-color: #16a085;
+            box-shadow: 0 0 8px rgba(22, 160, 133, 0.4);
+        }
+
+        .row input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
         }
 
         .pass a, .signup-link a {
             color: #16a085;
             text-decoration: none;
-            font-size: 17px;
+            font-size: 15px;
         }
 
         .pass {
-            margin-top: 12px;
+            margin-top: 10px;
         }
 
         .pass a:hover, .signup-link a:hover {
@@ -424,37 +470,46 @@ def authenticate_user():
         .button input {
             margin-top: 20px;
             color: #fff;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 500;
             background: #16a085;
-            border: 1px solid #16a085;
-            border-radius: 5px;
-            height: 55px;
+            border: none;
+            border-radius: 8px;
+            height: 50px;
             cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
         }
 
         .button input:hover {
             background: #12876f;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
 
         .signup-link {
             text-align: center;
-            margin-top: 35px;
-            font-size: 17px;
+            margin-top: 25px;
+            font-size: 15px;
+            color: #fff;
         }
 
         .error-msg {
             text-align: center;
-            color: red;
+            color: #ff6b6b;
             margin-top: 15px;
-            font-weight: bold;
+            font-weight: 500;
+            font-size: 14px;
+            background: rgba(255, 107, 107, 0.1);
+            padding: 10px;
+            border-radius: 8px;
         }
-
         </style>
         """, unsafe_allow_html=True)
 
+        st.markdown('<div class="branding">INTERSOFT<br><span>International Software Co.</span></div>', unsafe_allow_html=True)
         st.markdown('<div class="wrapper">', unsafe_allow_html=True)
-        st.markdown('<div class="title"><span>Login Form</span></div>', unsafe_allow_html=True)
+        st.markdown('<div class="title"><span>🔐 Secure Login</span></div>', unsafe_allow_html=True)
         st.markdown('<div class="form-area">', unsafe_allow_html=True)
 
         with st.form("login_form"):
@@ -479,6 +534,7 @@ def authenticate_user():
                     st.session_state.logged_in = True
                     st.session_state.user_role = username.lower()
                     st.session_state.user_role_type = user["role"]
+                    st.session_state.login_log = st.session_state.get('login_log', [])
                     st.session_state.login_log.append({
                         "Username": username.lower(),
                         "Login Time": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d %H:%M:%S'),
@@ -496,7 +552,6 @@ def authenticate_user():
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         st.stop()
-
 
 
 # --- Excel Export Function ---
