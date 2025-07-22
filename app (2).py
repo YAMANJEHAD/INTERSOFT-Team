@@ -46,136 +46,220 @@ st.markdown("""
 
 html, body, [class*="css"] {
     font-family: 'Inter', sans-serif;
-    background-color: #f3f4f6;
-    color: #1f2937;
+    background: #E2E8F0; /* Soft gray-blue background */
+    color: #2D3748; /* Dark gray text */
+    scroll-behavior: smooth;
 }
 
 h1, h2, h3 {
     font-weight: 800;
     letter-spacing: 0.5px;
     margin-bottom: 1.5rem;
-    color: #111827;
+    color: #2D3748;
 }
 
 .top-header {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 1rem 2rem; margin: 1rem 0;
-    background-color: #e5e7eb;
-    border-radius: 12px;
+    padding: 0 3rem; margin: 2rem 0;
+    animation: fadeIn 1s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .greeting {
-    font-size: 1rem; font-weight: 600; color: #374151;
+    font-size: 1.2rem; font-weight: 600; color: #2D3748;
     text-align: right; line-height: 1.5;
 }
 
 .company {
-    font-size: 1.4rem; font-weight: 800; color: #1e3a8a;
+    font-size: 1.6rem; font-weight: 800; color: #2D3748; letter-spacing: 0.8px;
 }
 
 .date-box {
-    font-size: 1rem; font-weight: 600; color: #111827; text-align: center;
-    background-color: #dbeafe;
-    padding: 0.8rem 1.5rem; border-radius: 16px;
-    margin-bottom: 1rem; display: inline-block;
-    border: 1px solid #60a5fa;
+    font-size: 1.2rem; font-weight: 600; color: #2D3748; text-align: center;
+    background: #CBD5E0; /* Light gray for date box */
+    padding: 1rem 2rem; border-radius: 24px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    margin-bottom: 1.5rem; display: inline-block;
+    animation: fadeIn 0.6s ease-in-out;
 }
 
 .nav-buttons {
-    display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;
-    margin: 1rem 0; padding: 1rem;
+    display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: center;
+    margin: 2rem 0; padding: 1.5rem;
 }
 
 .stSelectbox {
-    background-color: #e0e7ff;
-    color: #1e3a8a; font-weight: 600; font-size: 1rem;
-    border-radius: 12px; padding: 0.5rem; min-width: 200px;
-    border: 1px solid #c7d2fe;
+    background: #2B6CB0; /* Calm teal */
+    color: #FFFFFF; font-weight: 700; font-size: 1.2rem;
+    border-radius: 26px; padding: 0.8rem; min-width: 220px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border: 1px solid #2D3748;
+}
+
+.stSelectbox:hover {
+    background: #2C7A7B; /* Slightly darker teal */
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
 }
 
 .stButton>button {
-    background: linear-gradient(135deg, #6d28d9, #e11d48);
-    color: white; font-weight: 700; font-size: 1rem;
-    border-radius: 16px; padding: 0.6rem 1.2rem;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    border: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    background: #2B6CB0; /* Calm teal */
+    color: #FFFFFF; font-weight: 700; font-size: 1.2rem;
+    border-radius: 26px; padding: 0.8rem; min-width: 220px; height: 52px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border: 1px solid #2D3748;
+    cursor: pointer; text-align: center;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
 .stButton>button:hover {
-    transform: scale(1.05);
-    background: linear-gradient(135deg, #8b5cf6, #f43f5e);
+    background: #2C7A7B; /* Slightly darker teal */
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
 }
 
 .stButton>button.delete-button {
-    background-color: #fca5a5;
-    color: #7f1d1d;
-    font-weight: 700;
-    border: 1px solid #ef4444;
+    background: #F56565; /* Muted coral for delete */
+    color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border: 1px solid #2D3748;
+}
+
+.stButton>button.delete-button:hover {
+    background: #E53E3E; /* Slightly darker coral */
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
 }
 
 .overview-box {
-    background-color: #f1f5f9;
-    padding: 1rem; border-radius: 12px;
-    margin: 0.5rem 0;
-    border: 1px solid #cbd5e1;
-    text-align: center;
+    background: #4FD1C5; /* Light teal for stats */
+    padding: 1.5rem; border-radius: 18px; text-align: center;
+    margin: 1rem 0; transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border: 1px solid #2D3748;
+    animation: zoomIn 0.6s ease-in-out;
+}
+
+.overview-box:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+
+@keyframes zoomIn {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
 }
 
 .overview-box span {
-    font-size: 1.5rem; font-weight: 800; color: #1e40af;
+    font-size: 1.8rem; font-weight: 800; color: #2D3748;
+    display: block;
 }
 
 .overview-box small {
-    font-size: 0.85rem; color: #6b7280;
+    font-size: 0.9rem; color: #4A5568; /* Slightly lighter gray for small text */
 }
 
 .edit-section {
-    background-color: #f9fafb;
-    padding: 1.5rem;
-    border-radius: 12px;
-    border: 1px solid #e5e7eb;
+    background: #EDF2F7; /* Neutral gray */
+    padding: 2.5rem; border-radius: 18px; margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    animation: fadeIn 0.5s ease-in-out;
 }
 
 .alert-box {
-    background-color: #fee2e2;
-    padding: 1rem; border-radius: 10px; color: #7f1d1d;
-    font-size: 0.95rem; font-weight: 600;
-    margin: 0.5rem 0; border: 1px solid #fca5a5;
+    background: #E53E3E; /* Muted red for alerts */
+    padding: 1rem; border-radius: 16px; color: #FFFFFF;
+    font-size: 1rem; font-weight: 600; max-width: 400px;
+    margin: 1rem 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    opacity: 0.92; transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+    z-index: 1000; animation: slideInDown 0.5s ease-in-out;
 }
 
 .alert-box.reminder {
-    background-color: #fef9c3;
-    color: #92400e;
-    border: 1px solid #fde68a;
+    background: #F6AD55; /* Soft orange for reminders */
+}
+
+@keyframes slideInDown {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 0.92; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 0.92; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-20px); }
+}
+
+.alert-box.hide {
+    animation: fadeOut 0.5s ease-out forwards;
 }
 
 .stDataFrame table {
-    background: white; border-radius: 10px;
-    overflow: hidden; border: 1px solid #e5e7eb;
+    width: 100%; border-collapse: collapse;
+    background: #EDF2F7; /* Neutral gray */
+    border-radius: 12px; overflow: hidden;
 }
 
 .stDataFrame tr:nth-child(odd) {
-    background-color: #f9fafb;
+    background: #E2E8F0; /* Slightly lighter gray */
+}
+
+.stDataFrame tr:hover {
+    background: #CBD5E0; /* Light gray on hover */
+    transition: background-color 0.3s ease;
 }
 
 .stDataFrame th {
-    background-color: #e0e7ff; color: #1e3a8a;
-    padding: 10px; font-weight: 700;
+    background: #A0AEC0; /* Medium gray for headers */
+    color: #2D3748; font-weight: 700;
+    padding: 12px; font-size: 1.2rem;
 }
 
 .stDataFrame td {
-    padding: 10px; color: #111827;
-    border-bottom: 1px solid #e5e7eb;
+    font-weight: 600; color: #2D3748; padding: 12px;
+    border-bottom: 1px solid #A0AEC0; font-size: 1.1rem;
 }
 
 footer {
-    text-align: center; color: #6b7280; padding: 2rem 0;
-    font-size: 0.95rem;
+    text-align: center; color: #4A5568; padding: 3rem 0;
+    font-size: 1.1rem; font-weight: 500;
+    animation: fadeIn 1s ease-in-out;
+}
+
+.profile-picture {
+    border-radius: 50%; width: 100px; height: 100px; object-fit: cover;
+    border: 2px solid #2D3748; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.task-attachment {
+    max-width: 200px; border-radius: 12px; margin-top: 0.5rem;
+    border: 2px solid #2D3748; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.attachment-info {
+    font-size: 0.9rem; color: #4A5568; margin-top: 0.3rem;
+}
+
+.chart-container {
+    background: #EDF2F7; /* Neutral gray */
+    padding: 1.5rem; border-radius: 18px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    margin-bottom: 2rem; transition: transform 0.3s ease;
+    border: 1px solid #2D3748;
+    animation: slideInUp 0.6s ease-in-out;
+}
+
+.chart-container:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+
+@keyframes slideInUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 }
 </style>
-
 """, unsafe_allow_html=True)
 
 # --- Persistent Storage ---
