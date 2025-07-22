@@ -31,6 +31,10 @@ DEPARTMENTS = ["FLM", "Tech Support", "CRM"]
 CATEGORIES = ["Job Orders", "CRM", "Meetings", "Paperwork"]
 SHIFTS = ["Morning", "Evening"]
 ROLES = ["Admin", "Supervisor", "Employee"]
+TASK_COLUMNS = [
+    "TaskID", "Employee", "Date", "Day", "Shift", "Department",
+    "Category", "Status", "Priority", "Description", "Submitted", "Attachment"
+]
 
 # --- Page Config ---
 st.set_page_config(
@@ -313,11 +317,19 @@ def load_data():
                 timesheet = data.get("timesheet", [])
                 valid_timesheet = []
                 for task in timesheet:
-                    try:
-                        pd.to_datetime(task["Submitted"], format='%Y-%m-%d %H:%M:%S')
-                        valid_timesheet.append(task)
-                    except (ValueError, TypeError):
-                        st.warning(f"Invalid timestamp in task {task.get('TaskID', 'Unknown')}")
+                    # Ensure required fields exist and are valid
+                    if (isinstance(task, dict) and
+                        all(key in task for key in ["TaskID", "Employee", "Date", "Submitted"]) and
+                        isinstance(task["Date"], str) and
+                        isinstance(task["Submitted"], str)):
+                        try:
+                            pd.to_datetime(task["Submitted"], format='%Y-%m-%d %H:%M:%S')
+                            pd.to_datetime(task["Date"], format='%Y-%m-%d')
+                            valid_timesheet.append(task)
+                        except (ValueError, TypeError):
+                            st.warning(f"Invalid timestamp in task {task.get('TaskID', 'Unknown')}")
+                    else:
+                        st.warning(f"Missing or invalid fields in task {task.get('TaskID', 'Unknown')}")
                 st.session_state.timesheet = valid_timesheet
                 st.session_state.reminders = data.get("reminders", [])
                 st.session_state.login_log = data.get("login_log", [])
@@ -452,55 +464,58 @@ def render_analytics(display_df):
     
     # Today's Work
     st.markdown("<h3>📅 Today's Work</h3>", unsafe_allow_html=True)
-    today_df = display_df[display_df['Date'] == today_str]
-    if not today_df.empty:
-        render_dashboard_stats(today_df, today_str)
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            fig_status = px.histogram(
-                today_df, x="Status", title="Task Status",
-                color="Status", template="plotly_dark",
-                height=300
-            )
-            st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
-            st.plotly_chart(fig_status, use_container_width=True)
-            st.markdown("</div>", unsafe_allow_html=True)
-        with col2:
-            fig_category = px.pie(
-                today_df, names="Category", title="Category Distribution",
-                template="plotly_dark", height=300
-            )
-            st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
-            st.plotly_chart(fig_category, use_container_width=True)
-            st.markdown("</div>", unsafe_allow_html=True)
-        with col3:
-            fig_priority = px.pie(
-                today_df, names="Priority", title="Priority Distribution",
-                template="plotly_dark", height=300
-            )
-            st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
-            st.plotly_chart(fig_priority, use_container_width=True)
-            st.markdown("</div>", unsafe_allow_html=True)
-        st.dataframe(today_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'), use_container_width=True)
-        with st.form("today_download_form"):
-            if st.form_submit_button("⬇️ Download Today's Tasks"):
-                data, file_name = export_to_excel(today_df, f"Tasks_{today_str}", f"tasks_{today_str}.xlsx")
-                if data:
-                    st.download_button(
-                        label="⬇️ Download Now",
-                        data=data,
-                        file_name=file_name,
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        key=f"download_today_{today_str}"
-                    )
+    if not display_df.empty and 'Date' in display_df.columns:
+        today_df = display_df[display_df['Date'] == today_str]
+        if not today_df.empty:
+            render_dashboard_stats(today_df, today_str)
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                fig_status = px.histogram(
+                    today_df, x="Status", title="Task Status",
+                    color="Status", template="plotly_dark",
+                    height=300
+                )
+                st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
+                st.plotly_chart(fig_status, use_container_width=True)
+                st.markdown("</div>", unsafe_allow_html=True)
+            with col2:
+                fig_category = px.pie(
+                    today_df, names="Category", title="Category Distribution",
+                    template="plotly_dark", height=300
+                )
+                st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
+                st.plotly_chart(fig_category, use_container_width=True)
+                st.markdown("</div>", unsafe_allow_html=True)
+            with col3:
+                fig_priority = px.pie(
+                    today_df, names="Priority", title="Priority Distribution",
+                    template="plotly_dark", height=300
+                )
+                st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
+                st.plotly_chart(fig_priority, use_container_width=True)
+                st.markdown("</div>", unsafe_allow_html=True)
+            st.dataframe(today_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'), use_container_width=True)
+            with st.form("today_download_form"):
+                if st.form_submit_button("⬇️ Download Today's Tasks"):
+                    data, file_name = export_to_excel(today_df, f"Tasks_{today_str}", f"tasks_{today_str}.xlsx")
+                    if data:
+                        st.download_button(
+                            label="⬇️ Download Now",
+                            data=data,
+                            file_name=file_name,
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            key=f"download_today_{today_str}"
+                        )
+        else:
+            st.info("ℹ️ No tasks for today.")
     else:
-        st.info("ℹ️ No tasks for today.")
+        st.info("ℹ️ No tasks available or data is missing required fields.")
     
     st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
     
     # All Work
     st.markdown("<h3>📚 All Work</h3>", unsafe_allow_html=True)
-    if not display_df.empty:
+    if not display_df.empty and 'Date' in display_df.columns:
         unique_dates = sorted(display_df['Date'].unique(), reverse=True)
         selected_date = st.selectbox("Filter by Date", ["All"] + unique_dates, key="date_filter")
         filtered_df = display_df if selected_date == "All" else display_df[display_df['Date'] == selected_date]
@@ -548,7 +563,7 @@ def render_analytics(display_df):
         else:
             st.info("ℹ️ No tasks for selected date.")
     else:
-        st.info("ℹ️ No tasks available.")
+        st.info("ℹ️ No tasks available or data is missing required fields.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # --- Render Uploaded Files ---
@@ -620,12 +635,12 @@ def render_settings():
 def render_download_tasks():
     st.markdown("<div class='card'><h2 class='card-title'>⬇️ Download Tasks</h2>", unsafe_allow_html=True)
     user = st.session_state.user_role
-    df_user = pd.DataFrame(st.session_state.timesheet)
-    df_user = df_user[df_user['Employee'] == user] if not df_user.empty else pd.DataFrame()
+    df_user = pd.DataFrame(st.session_state.timesheet, columns=TASK_COLUMNS)
+    df_user = df_user[df_user['Employee'] == user] if not df_user.empty else pd.DataFrame(columns=TASK_COLUMNS)
     
     if not df_user.empty:
         tz = pytz.timezone("Asia/Riyadh")
-        filtered_df = pd.DataFrame()
+        filtered_df = pd.DataFrame(columns=TASK_COLUMNS)
         trigger_download = False
         file_name = None
         excel_data = None
@@ -674,7 +689,7 @@ def render_download_tasks():
 def render_admin_download_tasks():
     if st.session_state.user_role_type == "Admin":
         st.markdown("<div class='card'><h2 class='card-title'>🛠 Admin: Download Tasks</h2>", unsafe_allow_html=True)
-        df_all = pd.DataFrame(st.session_state.timesheet)
+        df_all = pd.DataFrame(st.session_state.timesheet, columns=TASK_COLUMNS)
         
         if not df_all.empty:
             with st.form("admin_download_form"):
@@ -741,8 +756,8 @@ def render_sidebar_stats():
     tz = pytz.timezone("Asia/Riyadh")
     today_str = datetime.now(tz).strftime('%Y-%m-%d')
     st.sidebar.markdown(f"<h3>📊 Today's Stats ({today_str})</h3>", unsafe_allow_html=True)
-    df_all = pd.DataFrame(st.session_state.timesheet)
-    if not df_all.empty:
+    df_all = pd.DataFrame(st.session_state.timesheet, columns=TASK_COLUMNS)
+    if not df_all.empty and 'Date' in df_all.columns:
         today_df = df_all[df_all['Date'] == today_str]
         for employee in sorted(today_df['Employee'].unique()):
             emp_df = today_df[today_df['Employee'] == employee]
@@ -763,7 +778,7 @@ def render_alerts(df_user, df_all):
     tz = pytz.timezone("Asia/Riyadh")
     today_str = datetime.now(tz).strftime('%Y-%m-%d')
     if st.session_state.user_role_type != "Admin":
-        if df_user.empty or today_str not in df_user['Date'].values:
+        if df_user.empty or 'Date' not in df_user.columns or today_str not in df_user['Date'].values:
             st.sidebar.markdown("<div class='alert'>⚠️ No tasks submitted today!</div>", unsafe_allow_html=True)
         if st.session_state.user_role_type == "Supervisor":
             for user in USERS.keys():
@@ -833,7 +848,7 @@ def render_add_task():
 # --- Edit/Delete Task ---
 def render_edit_delete_task(display_df):
     st.markdown("<div class='card'><h2 class='card-title'>✏️ Edit/Delete Task</h2>", unsafe_allow_html=True)
-    if not display_df.empty:
+    if not display_df.empty and 'TaskID' in display_df.columns:
         task_dict = {f"{row['Description'][:20]}... ({row['Date']} | {row['Category']})": row["TaskID"] for _, row in display_df.iterrows()}
         selected_id = st.selectbox("Select Task", list(task_dict.keys()))
         selected_id = task_dict[selected_id]
@@ -924,8 +939,8 @@ def render_edit_delete_task(display_df):
 # --- Employee Work ---
 def render_employee_work():
     st.markdown("<div class='card'><h2 class='card-title'>👥 Employee Work</h2>", unsafe_allow_html=True)
-    df_all = pd.DataFrame(st.session_state.timesheet)
-    if not df_all.empty:
+    df_all = pd.DataFrame(st.session_state.timesheet, columns=TASK_COLUMNS)
+    if not df_all.empty and 'Date' in df_all.columns:
         tz = pytz.timezone("Asia/Riyadh")
         with st.form("employee_work_form"):
             col1, col2 = st.columns(2)
@@ -999,11 +1014,11 @@ def render_admin_panel():
         
         # --- Task Filter ---
         st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
-        df_all = pd.DataFrame(st.session_state.timesheet)
-        if not df_all.empty:
+        df_all = pd.DataFrame(st.session_state.timesheet, columns=TASK_COLUMNS)
+        if not df_all.empty and 'Date' in df_all.columns:
             st.markdown("<h3>📅 Task Management</h3>", unsafe_allow_html=True)
             tz = pytz.timezone("Asia/Riyadh")
-            filtered_df = pd.DataFrame()
+            filtered_df = pd.DataFrame(columns=TASK_COLUMNS)
             data, file_name = None, None
             
             with st.form("admin_task_form"):
@@ -1036,7 +1051,7 @@ def render_admin_panel():
                 )
         
         # --- Edit Task ---
-        if not df_all.empty:
+        if not df_all.empty and 'TaskID' in df_all.columns:
             st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
             st.markdown("<h3>✏️ Edit Task</h3>", unsafe_allow_html=True)
             task_dict = {f"{row['Description'][:20]}... ({row['Date']} | {row['Category']})": row["TaskID"] for _, row in df_all.iterrows()}
@@ -1156,8 +1171,8 @@ if __name__ == "__main__":
     
     if st.session_state.logged_in:
         st.markdown("<div class='main-container'>", unsafe_allow_html=True)
-        df_all = pd.DataFrame(st.session_state.timesheet)
-        df_user = df_all[df_all['Employee'] == st.session_state.user_role] if not df_all.empty else pd.DataFrame()
+        df_all = pd.DataFrame(st.session_state.timesheet, columns=TASK_COLUMNS)
+        df_user = df_all[df_all['Employee'] == st.session_state.user_role] if not df_all.empty else pd.DataFrame(columns=TASK_COLUMNS)
         render_alerts(df_user, df_all)
         render_sidebar_stats()
         display_df = df_user if st.session_state.user_role_type == "Employee" else df_all
