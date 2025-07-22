@@ -244,111 +244,6 @@ footer {
     to { transform: translateY(0); opacity: 1; }
 }
 </style>
-
-.overview-box:hover {
-    transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
-}
-
-@keyframes zoomIn {
-    from { transform: scale(0.95); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-}
-
-.overview-box span {
-    font-size: 1.5rem; font-weight: 800; color: #fcd34d;
-    display: block;
-}
-
-.overview-box small {
-    font-size: 0.8rem; color: #e2e8f0;
-}
-
-.edit-section {
-    background: #1e293b; padding: 2rem; border-radius: 16px; margin-bottom: 1.5rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    animation: fadeIn 0.5s ease-in-out;
-}
-
-.alert-box {
-    background: linear-gradient(135deg, #dc2626, #f87171);
-    padding: 0.8rem; border-radius: 14px; color: white;
-    font-size: 0.9rem; font-weight: 600; max-width: 380px;
-    margin: 0.8rem 0; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-    opacity: 0.92; transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-    z-index: 1000; animation: slideInDown 0.5s ease-in-out;
-}
-
-.alert-box.reminder {
-    background: linear-gradient(135deg, #eab308, #facc15);
-}
-
-@keyframes slideInDown {
-    from { transform: translateY(-20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 0.92; }
-}
-
-@keyframes fadeOut {
-    from { opacity: 0.92; transform: translateY(0); }
-    to { opacity: 0; transform: translateY(-20px); }
-}
-
-.alert-box.hide {
-    animation: fadeOut 0.5s ease-out forwards;
-}
-
-.stDataFrame table {
-    width: 100%; border-collapse: collapse;
-    background: #1e293b; border-radius: 12px; overflow: hidden;
-}
-
-.stDataFrame th {
-    background-color: #4f81bd; color: white; font-weight: 700;
-    padding: 10px; font-size: 1.1rem;
-}
-
-.stDataFrame td {
-    font-weight: 600; color: #f8fafc; padding: 10px;
-    border-bottom: 1px solid #334155; font-size: 1rem;
-}
-
-footer {
-    text-align: center; color: #94a3b8; padding: 2.5rem 0;
-    font-size: 1rem; font-weight: 500;
-    animation: fadeIn 1s ease-in-out;
-}
-
-.profile-picture {
-    border-radius: 50%; width: 100px; height: 100px; object-fit: cover;
-    border: 2px solid #60a5fa; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-.task-attachment {
-    max-width: 200px; border-radius: 12px; margin-top: 0.5rem;
-    border: 2px solid #60a5fa; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-.attachment-info {
-    font-size: 0.9rem; color: #94a3b8; margin-top: 0.3rem;
-}
-
-.chart-container {
-    background: #1e293b; padding: 1rem; border-radius: 16px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-    margin-bottom: 1.5rem; transition: transform 0.3s ease;
-    animation: slideInUp 0.6s ease-in-out;
-}
-
-.chart-container:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.5);
-}
-
-@keyframes slideInUp {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-</style>
 """, unsafe_allow_html=True)
 
 # --- Persistent Storage ---
@@ -985,7 +880,7 @@ def render_edit_delete_task(display_df):
                             if set_reminder and stat == "⏳ Not Started":
                                 st.session_state.reminders = [r for r in st.session_state.reminders if r["task_id"] != selected_id]
                                 st.session_state.reminders.append({
-                                    "user": st.session_state.user_role,
+                                    "user": selected_task["Employee"],
                                     "task_id": selected_id,
                                     "task_desc": desc,
                                     "date": datetime.now(tz).strftime('%Y-%m-%d'),
