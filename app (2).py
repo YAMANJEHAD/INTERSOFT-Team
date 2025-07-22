@@ -356,71 +356,53 @@ def authenticate_user():
         }
 
         .page-container {
+            display03:29
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             padding: 20px;
-            position: relative;
-            overflow: hidden;
         }
 
         .branding {
-            position: fixed;
-            left: 30px;
-            top: 50%;
-            transform: translateY(-50%) rotate(-90deg);
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             color: #93c5fd;
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 800;
-            letter-spacing: 4px;
+            letter-spacing: 5px;
             text-transform: uppercase;
-            text-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
-            opacity: 0.9;
+            text-shadow: 0 0 15px rgba(59, 130, 246, 0.7);
+            text-align: center;
         }
 
         .branding span {
-            font-size: 12px;
+            font-size: 14px;
             font-weight: 400;
             letter-spacing: 2px;
-            opacity: 0.7;
+            display: block;
+            margin-top: 5px;
+            opacity: 0.9;
         }
 
         .login-card {
             width: 100%;
             max-width: 400px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 24px;
             padding: 40px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
             backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             animation: fadeIn 1.2s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
         }
 
         @keyframes fadeIn {
             0% { opacity: 0; transform: translateY(30px); }
             100% { opacity: 1; transform: translateY(0); }
-        }
-
-        .login-card::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
-            animation: pulse 8s ease infinite;
-            pointer-events: none;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.3; }
-            50% { transform: scale(1.2); opacity: 0.1; }
-            100% { transform: scale(1); opacity: 0.3; }
         }
 
         .login-card h2 {
@@ -539,7 +521,6 @@ def authenticate_user():
         st.markdown('</div>', unsafe_allow_html=True)  # end login-card
         st.markdown('</div>', unsafe_allow_html=True)  # end page-container
         st.stop()
-
 
 
 
