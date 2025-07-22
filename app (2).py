@@ -334,38 +334,42 @@ def initialize_session():
 # --- Authentication ---
 def authenticate_user():
     if not st.session_state.logged_in:
+        # Sanitize the error message to prevent JavaScript injection issues
+        import json
+        error_message = json.dumps(st.session_state.get('login_error', ''))
+        
         # HTML for the new login modal
-        login_html = """
+        login_html = f"""
         <style>
             @import url('https://fonts.googleapis.com/css?family=Raleway:400,700');
-            *,*:before,*:after{box-sizing:border-box}
-            body{
+            *,*:before,*:after{{box-sizing:border-box}}
+            body{{
                 min-height:100vh;
                 font-family: 'Raleway', sans-serif;
                 margin: 0;
                 background: #000;
-            }
-            .container{
+            }}
+            .container{{
                 position:absolute;
                 width:100%;
                 height:100%;
                 overflow:hidden;
-            }
-            .container:hover, .container:active{
-                .top, .bottom{
-                    &:before, &:after{
+            }}
+            .container:hover, .container:active{{
+                .top, .bottom{{
+                    &:before, &:after{{
                         margin-left: 200px;
                         transform-origin: -200px 50%;
                         transition-delay:0s;
-                    }
-                }
-                .center{
+                    }}
+                }}
+                .center{{
                     opacity:1;
                     transition-delay:0.2s;
-                }
-            }
-            .top, .bottom{
-                &:before, &:after{
+                }}
+            }}
+            .top, .bottom{{
+                &:before, &:after{{
                     content:'';
                     display:block;
                     position:absolute;
@@ -378,17 +382,17 @@ def authenticate_user():
                     z-index:10;
                     opacity:0.65;
                     transition-delay:0.2s;
-                }
-            }
-            .top{
-                &:before{transform:rotate(45deg);background:#e46569;}
-                &:after{transform:rotate(135deg);background:#ecaf81;}
-            }
-            .bottom{
-                &:before{transform:rotate(-45deg);background:#60b8d4;}
-                &:after{transform:rotate(-135deg);background:#3745b5;}
-            }
-            .center{
+                }}
+            }}
+            .top{{
+                &:before{{transform:rotate(45deg);background:#e46569;}}
+                &:after{{transform:rotate(135deg);background:#ecaf81;}}
+            }}
+            .bottom{{
+                &:before{{transform:rotate(-45deg);background:#60b8d4;}}
+                &:after{{transform:rotate(-135deg);background:#3745b5;}}
+            }}
+            .center{{
                 position:absolute;
                 width:400px;
                 height:400px;
@@ -407,14 +411,14 @@ def authenticate_user():
                 background: #fff;
                 border-radius: 10px;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            }
-            .center h2{
+            }}
+            .center h2{{
                 margin: 0 0 20px 0;
                 font-size: 24px;
                 font-weight: 700;
                 color: #333;
-            }
-            .center input{
+            }}
+            .center input{{
                 width:100%;
                 padding:15px;
                 margin:5px;
@@ -422,12 +426,12 @@ def authenticate_user():
                 border:1px solid #ccc;
                 font-family:inherit;
                 font-size: 16px;
-            }
-            .center input:focus{
+            }}
+            .center input:focus{{
                 outline: none;
                 border-color: #3745b5;
-            }
-            .login-button{
+            }}
+            .login-button{{
                 padding: 10px 20px;
                 margin-top: 10px;
                 background: #3745b5;
@@ -438,11 +442,11 @@ def authenticate_user():
                 font-family: 'Raleway', sans-serif;
                 font-size: 16px;
                 transition: background 0.3s ease;
-            }
-            .login-button:hover{
+            }}
+            .login-button:hover{{
                 background: #60b8d4;
-            }
-            .close-button{
+            }}
+            .close-button{{
                 position: absolute;
                 top: 10px;
                 right: 10px;
@@ -451,13 +455,13 @@ def authenticate_user():
                 font-size: 20px;
                 cursor: pointer;
                 color: #333;
-            }
-            .error-message{
+            }}
+            .error-message{{
                 color: #e46569;
                 font-size: 14px;
                 margin-top: 10px;
                 text-align: center;
-            }
+            }}
         </style>
         <div class="container" onclick="toggleAnimation()">
             <div class="top"></div>
@@ -468,53 +472,48 @@ def authenticate_user():
                 <input type="text" placeholder="Username" id="username">
                 <input type="password" placeholder="Password" id="password">
                 <button class="login-button" onclick="submitLogin()">Login</button>
-                <div id="error-message" class="error-message"></div>
+                <div id="error-message" class="error-message">{error_message}</div>
             </div>
         </div>
         <script>
-            function toggleAnimation() {
+            function toggleAnimation() {{
                 document.querySelector('.container').classList.toggle('active');
-            }
-            function submitLogin() {
+            }}
+            function submitLogin() {{
                 const username = document.getElementById('username').value;
                 const password = document.getElementById('password').value;
                 const errorDiv = document.getElementById('error-message');
                 
-                if (!username || !password) {
+                if (!username || !password) {{
                     errorDiv.innerText = 'Please enter both username and password.';
                     return;
-                }
+                }}
 
                 // Send login data to Streamlit
-                window.parent.postMessage({
+                window.parent.postMessage({{
                     type: 'streamlit:setComponentValue',
-                    value: { username: username.toLowerCase(), password: password }
-                }, '*');
-            }
-            function closeModal() {
+                    value: {{ username: username.toLowerCase(), password: password }}
+                }}, '*');
+            }}
+            function closeModal() {{
                 document.querySelector('.container').style.display = 'none';
-                window.parent.postMessage({
+                window.parent.postMessage({{
                     type: 'streamlit:setComponentValue',
-                    value: { action: 'close' }
-                }, '*');
-            }
-            document.onkeydown = function(evt) {
+                    value: {{ action: 'close' }}
+                }}, '*');
+            }}
+            document.onkeydown = function(evt) {{
                 evt = evt || window.event;
-                if (evt.keyCode === 27) {
+                if (evt.keyCode === 27) {{
                     closeModal();
-                }
-            };
-            // Display error message if exists
-            const errorMessage = "%s";
-            if (errorMessage) {
-                document.getElementById('error-message').innerText = errorMessage;
-            }
+                }}
+            }};
             // Trigger animation on load
-            setTimeout(() => {
+            setTimeout(() => {{
                 document.querySelector('.container').classList.add('active');
-            }, 100);
+            }}, 100);
         </script>
-        """ % st.session_state.get('login_error', '')
+        """
 
         # Render the login modal
         components.html(login_html, height=600)
