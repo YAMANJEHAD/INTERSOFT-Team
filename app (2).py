@@ -46,8 +46,6 @@ st.markdown("""
 
 html, body, [class*="css"] {
     font-family: 'Inter', sans-serif;
-    background: #E2E8F0; /* Soft gray-blue background */
-    color: #2D3748; /* Dark gray text */
     scroll-behavior: smooth;
 }
 
@@ -55,7 +53,6 @@ h1, h2, h3 {
     font-weight: 800;
     letter-spacing: 0.5px;
     margin-bottom: 1.5rem;
-    color: #2D3748;
 }
 
 .top-header {
@@ -70,19 +67,17 @@ h1, h2, h3 {
 }
 
 .greeting {
-    font-size: 1.2rem; font-weight: 600; color: #2D3748;
+    font-size: 1.2rem; font-weight: 600;
     text-align: right; line-height: 1.5;
 }
 
 .company {
-    font-size: 1.6rem; font-weight: 800; color: #2D3748; letter-spacing: 0.8px;
+    font-size: 1.6rem; font-weight: 800; letter-spacing: 0.8px;
 }
 
 .date-box {
-    font-size: 1.2rem; font-weight: 600; color: #2D3748; text-align: center;
-    background: #CBD5E0; /* Light gray for date box */
+    font-size: 1.2rem; font-weight: 600; text-align: center;
     padding: 1rem 2rem; border-radius: 24px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     margin-bottom: 1.5rem; display: inline-block;
     animation: fadeIn 0.6s ease-in-out;
 }
@@ -93,58 +88,47 @@ h1, h2, h3 {
 }
 
 .stSelectbox {
-    background: #2B6CB0; /* Calm teal */
-    color: #FFFFFF; font-weight: 700; font-size: 1.2rem;
+    font-weight: 700; font-size: 1.2rem;
     border-radius: 26px; padding: 0.8rem; min-width: 220px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    border: 1px solid #2D3748;
-}
-
-.stSelectbox:hover {
-    background: #2C7A7B; /* Slightly darker teal */
-    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
 }
 
 .stButton>button {
-    background: #2B6CB0; /* Calm teal */
-    color: #FFFFFF; font-weight: 700; font-size: 1.2rem;
+    background: #FFD700; /* Vibrant yellow */
+    color: #1E3A8A; /* Dark blue text */
+    font-weight: 700; font-size: 1.2rem;
     border-radius: 26px; padding: 0.8rem; min-width: 220px; height: 52px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    border: 1px solid #2D3748;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    border: 1px solid #1E3A8A; /* Dark blue border */
     cursor: pointer; text-align: center;
     display: flex; align-items: center; justify-content: center; gap: 12px;
     transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
 .stButton>button:hover {
-    background: #2C7A7B; /* Slightly darker teal */
-    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    background: #FFC107; /* Slightly darker yellow on hover */
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
 }
 
 .stButton>button.delete-button {
-    background: #F56565; /* Muted coral for delete */
-    color: #FFFFFF;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    border: 1px solid #2D3748;
+    background: #FFB300; /* Darker yellow for delete button */
+    color: #1E3A8A;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    border: 1px solid #1E3A8A;
 }
 
 .stButton>button.delete-button:hover {
-    background: #E53E3E; /* Slightly darker coral */
-    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    background: #FFA000; /* Even darker yellow on hover */
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
 }
 
 .overview-box {
-    background: #4FD1C5; /* Light teal for stats */
     padding: 1.5rem; border-radius: 18px; text-align: center;
-    margin: 1rem 0; transition: transform 0.3s ease, box-shadow 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    border: 1px solid #2D3748;
+    margin: 1rem 0; transition: transform 0.3s ease;
     animation: zoomIn 0.6s ease-in-out;
 }
 
 .overview-box:hover {
     transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
 }
 
 @keyframes zoomIn {
@@ -153,32 +137,25 @@ h1, h2, h3 {
 }
 
 .overview-box span {
-    font-size: 1.8rem; font-weight: 800; color: #2D3748;
+    font-size: 1.8rem; font-weight: 800;
     display: block;
 }
 
 .overview-box small {
-    font-size: 0.9rem; color: #4A5568; /* Slightly lighter gray for small text */
+    font-size: 0.9rem;
 }
 
 .edit-section {
-    background: #EDF2F7; /* Neutral gray */
     padding: 2.5rem; border-radius: 18px; margin-bottom: 2rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     animation: fadeIn 0.5s ease-in-out;
 }
 
 .alert-box {
-    background: #E53E3E; /* Muted red for alerts */
-    padding: 1rem; border-radius: 16px; color: #FFFFFF;
+    padding: 1rem; border-radius: 16px;
     font-size: 1rem; font-weight: 600; max-width: 400px;
-    margin: 1rem 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    margin: 1rem 0;
     opacity: 0.92; transition: opacity 0.3s ease-out, transform 0.3s ease-out;
     z-index: 1000; animation: slideInDown 0.5s ease-in-out;
-}
-
-.alert-box.reminder {
-    background: #F6AD55; /* Soft orange for reminders */
 }
 
 @keyframes slideInDown {
@@ -197,62 +174,49 @@ h1, h2, h3 {
 
 .stDataFrame table {
     width: 100%; border-collapse: collapse;
-    background: #EDF2F7; /* Neutral gray */
     border-radius: 12px; overflow: hidden;
 }
 
-.stDataFrame tr:nth-child(odd) {
-    background: #E2E8F0; /* Slightly lighter gray */
-}
-
 .stDataFrame tr:hover {
-    background: #CBD5E0; /* Light gray on hover */
     transition: background-color 0.3s ease;
 }
 
 .stDataFrame th {
-    background: #A0AEC0; /* Medium gray for headers */
-    color: #2D3748; font-weight: 700;
+    font-weight: 700;
     padding: 12px; font-size: 1.2rem;
 }
 
 .stDataFrame td {
-    font-weight: 600; color: #2D3748; padding: 12px;
-    border-bottom: 1px solid #A0AEC0; font-size: 1.1rem;
+    font-weight: 600; padding: 12px;
+    border-bottom: 1px solid transparent; font-size: 1.1rem;
 }
 
 footer {
-    text-align: center; color: #4A5568; padding: 3rem 0;
+    text-align: center; padding: 3rem 0;
     font-size: 1.1rem; font-weight: 500;
     animation: fadeIn 1s ease-in-out;
 }
 
 .profile-picture {
     border-radius: 50%; width: 100px; height: 100px; object-fit: cover;
-    border: 2px solid #2D3748; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .task-attachment {
     max-width: 200px; border-radius: 12px; margin-top: 0.5rem;
-    border: 2px solid #2D3748; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .attachment-info {
-    font-size: 0.9rem; color: #4A5568; margin-top: 0.3rem;
+    font-size: 0.9rem; margin-top: 0.3rem;
 }
 
 .chart-container {
-    background: #EDF2F7; /* Neutral gray */
     padding: 1.5rem; border-radius: 18px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     margin-bottom: 2rem; transition: transform 0.3s ease;
-    border: 1px solid #2D3748;
     animation: slideInUp 0.6s ease-in-out;
 }
 
 .chart-container:hover {
     transform: translateY(-5px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
 }
 
 @keyframes slideInUp {
