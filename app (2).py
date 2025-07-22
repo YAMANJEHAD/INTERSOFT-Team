@@ -338,132 +338,98 @@ def authenticate_user():
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap');
 
-        .session {
-            display: flex;
-            max-width: 720px;
-            margin: 6rem auto;
-            background: #ffffff;
-            border-radius: 6px;
-            box-shadow: 0px 2px 6px -1px rgba(0,0,0,.12);
+        html, body {
+            background: linear-gradient(145deg, #0f2027, #203a43, #2c5364);
+            height: 100%;
             font-family: 'Poppins', sans-serif;
         }
-        .left {
-            width: 220px;
-            background-image: url("https://images.pexels.com/photos/114979/pexels-photo-114979.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940");
-            background-size: cover;
-            border-top-left-radius: 6px;
-            border-bottom-left-radius: 6px;
-        }
-        .log-in {
+
+        .glass-box {
+            width: 350px;
+            height: 420px;
+            margin: 6rem auto;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
             padding: 40px 30px;
-            width: 100%;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            position: relative;
         }
-        .log-in h4 {
-            font-size: 24px;
+
+        .glass-box h3 {
+            color: #ffffff;
+            text-align: center;
             font-weight: 600;
-            margin-bottom: 10px;
-            color: #222;
-        }
-        .log-in h4 span {
-            color: #000;
-            font-weight: 700;
-        }
-        .log-in p {
-            font-size: 14px;
-            color: #555;
+            font-size: 24px;
             margin-bottom: 30px;
         }
-        .floating-label {
-            position: relative;
-            margin-bottom: 25px;
-        }
-        .floating-label input {
-            width: 100%;
-            padding: 20px 12px 8px 44px;
-            font-size: 14px;
-            border: none;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-            background: #fff;
-            color: #000;
-            outline: none;
-        }
-        .floating-label label {
-            position: absolute;
-            top: 20px;
-            left: 44px;
-            font-size: 13px;
-            color: rgba(0,0,0,0.5);
-            transition: 0.2s;
-        }
-        .floating-label input:focus + label,
-        .floating-label input:not(:placeholder-shown) + label {
-            top: 5px;
-            font-size: 11px;
-            color: #000;
-        }
-        .floating-label .icon {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 56px;
-            width: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0.2;
-        }
-        .log-in button {
-            width: 100%;
-            border-radius: 24px;
-            background-color: rgb(182,157,230);
-            border: none;
-            color: #fff;
+
+        .glass-box label {
+            color: #f0f0f0;
             font-size: 14px;
             font-weight: 500;
-            padding: 14px;
-            cursor: pointer;
+        }
+
+        .glass-box input {
+            width: 100%;
+            padding: 12px 16px;
+            margin-top: 6px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border: none;
+            outline: none;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
             transition: all 0.3s ease;
         }
-        .log-in button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 2px 6px rgba(182,157,230, 0.5);
+
+        .glass-box input:focus {
+            background: rgba(255,255,255,0.2);
+            box-shadow: 0 0 0 2px #90cdf4;
         }
+
+        .glass-box button {
+            width: 100%;
+            padding: 12px 0;
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s ease;
+        }
+
+        .glass-box button:hover {
+            background: linear-gradient(135deg, #5f0fca, #1e60dc);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
         .error-msg {
             color: #f87171;
             font-weight: 600;
-            margin-top: 1rem;
-            font-size: 0.9rem;
             text-align: center;
+            margin-top: 10px;
         }
         </style>
         """, unsafe_allow_html=True)
 
-        st.markdown('<div class="session"><div class="left"></div>', unsafe_allow_html=True)
-        st.markdown('<div class="log-in">', unsafe_allow_html=True)
+        st.markdown('<div class="glass-box">', unsafe_allow_html=True)
 
         with st.form("login_form"):
-            st.markdown('<h4>We are <span>NUVA</span></h4>', unsafe_allow_html=True)
-            st.markdown('<p>Welcome back! Log in to your account to view today\'s clients:</p>', unsafe_allow_html=True)
+            st.markdown("<h3>🔐 Secure Login</h3>", unsafe_allow_html=True)
 
-            st.markdown("""
-            <div class="floating-label">
-                <input type="text" name="email" id="email" placeholder=" " required>
-                <label for="email">Email</label>
-                <div class="icon">📧</div>
-            </div>
-            """, unsafe_allow_html=True)
-            username = st.text_input("", key="email_hidden", label_visibility="collapsed")
+            st.markdown('<label for="username">Username</label>', unsafe_allow_html=True)
+            username = st.text_input("Username", key="glass_username", label_visibility="collapsed", placeholder="Enter your username")
 
-            st.markdown("""
-            <div class="floating-label">
-                <input type="password" name="password" id="password" placeholder=" " required>
-                <label for="password">Password</label>
-                <div class="icon">🔒</div>
-            </div>
-            """, unsafe_allow_html=True)
-            password = st.text_input("", type="password", key="password_hidden", label_visibility="collapsed")
+            st.markdown('<label for="password">Password</label>', unsafe_allow_html=True)
+            password = st.text_input("Password", type="password", key="glass_password", label_visibility="collapsed", placeholder="Enter your password")
 
-            submitted = st.form_submit_button("Log in")
+            submitted = st.form_submit_button("Log In")
 
             if submitted:
                 user = USERS.get(username.lower())
@@ -484,8 +450,9 @@ def authenticate_user():
         if st.session_state.get("login_error"):
             st.markdown(f"<div class='error-msg'>{st.session_state.login_error}</div>", unsafe_allow_html=True)
 
-        st.markdown("</div></div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
         st.stop()
+
 
 
 
