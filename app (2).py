@@ -334,279 +334,98 @@ def initialize_session():
 # --- Authentication ---
 def authenticate_user():
     if not st.session_state.logged_in:
-        # Sanitize the error message to prevent JavaScript injection
-        import json
-        error_message = json.dumps(st.session_state.get('login_error', ''))
-        
-        # HTML for the login modal
-        login_html = f"""
+        st.markdown("""
         <style>
-            @import url('https://fonts.googleapis.com/css?family=Raleway:400,700');
-            *,*:before,*:after{{box-sizing:border-box}}
-            body{{
-                min-height:100vh;
-                font-family: 'Raleway', sans-serif;
-                margin: 0;
-                background: #000;
-            }}
-            .container{{
-                position:absolute;
-                width:100%;
-                height:100%;
-                overflow:hidden;
-            }}
-            .container:hover, .container:active{{
-                .top, .bottom{{
-                    &:before, &:after{{
-                        margin-left: 200px;
-                        transform-origin: -200px 50%;
-                        transition-delay:0s;
-                    }}
-                }}
-                .center{{
-                    opacity:1;
-                    transition-delay:0.2s;
-                }}
-            }}
-            .top, .bottom{{
-                &:before, &:after{{
-                    content:'';
-                    display:block;
-                    position:absolute;
-                    width:200vmax;
-                    height:200vmax;
-                    top:50%;left:50%;
-                    margin-top:-100vmax;
-                    transform-origin: 0 50%;
-                    transition:all 0.5s cubic-bezier(0.445, 0.05, 0, 1);
-                    z-index:10;
-                    opacity:0.65;
-                    transition-delay:0.2s;
-                }}
-            }}
-            .top{{
-                &:before{{transform:rotate(45deg);background:#e46569;}}
-                &:after{{transform:rotate(135deg);background:#ecaf81;}}
-            }}
-            .bottom{{
-                &:before{{transform:rotate(-45deg);background:#60b8d4;}}
-                &:after{{transform:rotate(-135deg);background:#3745b5;}}
-            }}
-            .center{{
-                position:absolute;
-                width:400px;
-                height:400px;
-                top:50%;left:50%;
-                margin-left:-200px;
-                margin-top:-200px;
-                display:flex;
+            .login-container {
+                display: flex;
                 flex-direction: column;
-                justify-content: center;
                 align-items: center;
-                padding:30px;
-                opacity:0;
-                transition:all 0.5s cubic-bezier(0.445, 0.05, 0, 1);
-                transition-delay:0s;
-                color:#333;
-                background: #fff;
-                border-radius: 10px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            }}
-            .center h2{{
-                margin: 0 0 20px 0;
-                font-size: 24px;
-                font-weight: 700;
-                color: #333;
-            }}
-            .center input{{
-                width:100%;
-                padding:15px;
-                margin:5px;
-                border-radius:1px;
-                border:1px solid #ccc;
-                font-family:inherit;
-                font-size: 16px;
-            }}
-            .center input:focus{{
-                outline: none;
-                border-color: #3745b5;
-            }}
-            .login-button{{
-                padding: 10px 20px;
-                margin-top: 10px;
-                background: #3745b5;
+                justify-content: center;
+                background: radial-gradient(circle at top left, #0f172a, #1e293b);
+                color: white;
+                padding: 3rem;
+                border-radius: 16px;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+                width: 100%;
+                max-width: 400px;
+                margin: 5rem auto;
+                animation: fadeIn 1s ease-in-out;
+            }
+            .login-header {
+                font-size: 1.8rem;
+                font-weight: 800;
+                margin-bottom: 2rem;
+                color: #facc15;
+                text-align: center;
+            }
+            .stTextInput>div>div>input {
+                background-color: #1e293b;
+                color: #f8fafc;
+                border: 1px solid #3b82f6;
+                border-radius: 8px;
+                padding: 10px;
+            }
+            .stTextInput>label {
+                font-weight: 600;
+                color: #93c5fd;
+            }
+            .login-button button {
+                background: linear-gradient(135deg, #3b82f6, #9333ea);
                 color: white;
                 border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                font-family: 'Raleway', sans-serif;
-                font-size: 16px;
-                transition: background 0.3s ease;
-            }}
-            .login-button:disabled{{
-                background: #a0aec0;
-                cursor: not-allowed;
-            }}
-            .login-button:hover:not(:disabled){{
-                background: #60b8d4;
-            }}
-            .close-button{{
-                position: absolute;
-                top: 10px;
-                right: 10px;
-                background: transparent;
-                border: none;
-                font-size: 20px;
-                cursor: pointer;
-                color: #333;
-            }}
-            .error-message{{
-                color: #e46569;
-                font-size: 14px;
-                margin-top: 10px;
-                text-align: center;
-            }}
-            .caps-lock-warning{{
-                color: #eab308;
-                font-size: 14px;
-                margin-top: 5px;
-                text-align: center;
-                display: none;
-            }}
-            .company-logo{{
-                position: absolute;
-                top: 20px;
-                left: 20px;
-                font-family: 'Raleway', sans-serif;
-                font-size: 1.8rem;
+                padding: 0.6rem 1.2rem;
+                border-radius: 12px;
+                font-size: 1rem;
                 font-weight: 700;
-                color: #ffffff;
-                letter-spacing: 0.5px;
-                background: linear-gradient(135deg, #0f172a, #1e293b);
-                padding: 10px 20px;
-                border-radius: 10px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                z-index: 20;
-                animation: fadeIn 1s ease-in-out;
-            }}
-            @keyframes fadeIn {{
-                from {{ opacity: 0; transform: translateY(-20px); }}
-                to {{ opacity: 1; transform: translateY(0); }}
-            }}
+                box-shadow: 0 6px 18px rgba(59,130,246,0.4);
+                width: 100%;
+                transition: 0.3s ease;
+            }
+            .login-button button:hover {
+                background: linear-gradient(135deg, #6366f1, #a855f7);
+                transform: scale(1.03);
+            }
+            .error-msg {
+                color: #f87171;
+                margin-top: 1rem;
+                text-align: center;
+                font-weight: 600;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
         </style>
-        <div class="company-logo">INTERSOFT<br>International Software Company</div>
-        <div class="container" onclick="toggleAnimation()">
-            <div class="top"></div>
-            <div class="bottom"></div>
-            <div class="center">
-                <button class="close-button" onclick="closeModal()">✖</button>
-                <h2>Please Sign In</h2>
-                <input type="text" placeholder="Username" id="username">
-                <input type="password" placeholder="Password" id="password">
-                <div id="caps-lock-warning" class="caps-lock-warning">Caps Lock is ON</div>
-                <button class="login-button" id="login-button" onclick="submitLogin()">Log In</button>
-                <div id="error-message" class="error-message">{error_message}</div>
-            </div>
-        </div>
-        <script>
-            function toggleAnimation() {{
-                console.log('Container clicked, toggling animation');
-                document.querySelector('.container').classList.toggle('active');
-            }}
-            function submitLogin() {{
-                console.log('Log In button clicked');
-                const loginButton = document.getElementById('login-button');
-                const username = document.getElementById('username').value.trim();
-                const password = document.getElementById('password').value;
-                const errorDiv = document.getElementById('error-message');
-                
-                if (!username || !password) {{
-                    console.log('Empty fields detected');
-                    errorDiv.innerText = 'Please enter both username and password.';
-                    return;
-                }}
+        """, unsafe_allow_html=True)
 
-                loginButton.disabled = true;
-                errorDiv.innerText = '';
-                console.log('Sending login data:', {{ username, password }});
-                
-                const sendLoginData = () => {{
-                    try {{
-                        window.parent.postMessage({{
-                            type: 'streamlit:setComponentValue',
-                            value: JSON.stringify({{ username: username.toLowerCase(), password }})
-                        }}, '*');
-                        console.log('Login data sent to Streamlit');
-                    }} catch (e) {{
-                        console.error('Failed to send login data:', e);
-                        errorDiv.innerText = 'Error submitting login. Please try again.';
-                        loginButton.disabled = false;
-                    }}
-                }};
+        st.markdown('<div class="login-container">', unsafe_allow_html=True)
+        st.markdown('<div class="login-header">🔐 INTERSOFT Login</div>', unsafe_allow_html=True)
 
-                // Retry sending data up to 3 times with 500ms delay
-                let attempts = 0;
-                const maxAttempts = 3;
-                const retryInterval = setInterval(() => {{
-                    if (attempts < maxAttempts) {{
-                        sendLoginData();
-                        attempts++;
-                    }} else {{
-                        clearInterval(retryInterval);
-                        if (!errorDiv.innerText) {{
-                            loginButton.disabled = false;
-                        }}
-                    }}
-                }}, 500);
+        with st.form("login_form"):
+            username = st.text_input("👤 Username")
+            password = st.text_input("🔒 Password", type="password")
+            submitted = st.form_submit_button("🔓 Log In")
 
-                // Initial attempt
-                sendLoginData();
-            }}
-            function closeModal() {{
-                console.log('Close button clicked');
-                document.querySelector('.container').style.display = 'none';
-                try {{
-                    window.parent.postMessage({{
-                        type: 'streamlit:setComponentValue',
-                        value: JSON.stringify({{ action: 'close' }})
-                    }}, '*');
-                    console.log('Close signal sent to Streamlit');
-                }} catch (e) {{
-                    console.error('Failed to send close signal:', e);
-                }}
-            }}
-            document.onkeydown = function(evt) {{
-                evt = evt || window.event;
-                const key = evt.key || evt.keyCode;
-                if (key === 'Escape' || key === 27) {{
-                    console.log('Esc key pressed, closing modal');
-                    closeModal();
-                }}
-                if ((key === 'Enter' || key === 13) && document.activeElement.id === 'password') {{
-                    console.log('Enter key pressed in password field');
-                    submitLogin();
-                }}
-            }};
-            // Caps Lock detection
-            document.getElementById('password').addEventListener('keyup', function(evt) {{
-                const capsWarning = document.getElementById('caps-lock-warning');
-                if (evt.getModifierState && evt.getModifierState('CapsLock')) {{
-                    console.log('Caps Lock is ON');
-                    capsWarning.style.display = 'block';
-                }} else {{
-                    capsWarning.style.display = 'none';
-                }}
-            }});
-            // Trigger animation on load
-            setTimeout(() => {{
-                console.log('Triggering initial animation');
-                document.querySelector('.container').classList.add('active');
-            }}, 100);
-        </script>
-        """
+            if submitted:
+                user = USERS.get(username.lower())
+                if user and user["pass"] == password:
+                    st.session_state.logged_in = True
+                    st.session_state.user_role = username.lower()
+                    st.session_state.user_role_type = user["role"]
+                    st.session_state.login_log.append({
+                        "Username": username.lower(),
+                        "Login Time": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d %H:%M:%S'),
+                        "Role": user["role"]
+                    })
+                    save_data()
+                    st.rerun()
+                else:
+                    st.session_state.login_error = "❌ Invalid username or password"
+        if st.session_state.get("login_error"):
+            st.markdown(f"<div class='error-msg'>{st.session_state.login_error}</div>", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.stop()
 
-        # Render the login modal
-        components.html(login_html, height=600)
 
         # Handle login data from JavaScript
         login_data = st.query_params.get("login_data", [""])[0]
