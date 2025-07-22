@@ -58,7 +58,7 @@ st.markdown("""
 }
 
 body {
-    background: #0a1122;
+    background: linear-gradient(135deg, #0a1122 0%, #1c2526 100%);
     color: #e2e8f0;
     margin: 0;
     padding: 0;
@@ -150,13 +150,15 @@ body {
 
 .card.login-card {
     max-width: 500px;
-    margin: 2rem auto;
-    padding: 1.5rem;
+    margin: 4rem auto;
+    padding: 2rem;
+    box-shadow: 0 8px 24px rgba(74,222,128,0.2);
+    animation: fadeIn 0.5s ease;
 }
 
-.card:hover {
+.card.login-card:hover {
+    box-shadow: 0 12px 32px rgba(74,222,128,0.3);
     transform: translateY(-4px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
 }
 
 .card-title {
@@ -164,6 +166,24 @@ body {
     font-weight: 600;
     color: #4ade80;
     margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.login-logo {
+    display: block;
+    margin: 0 auto 1rem;
+    font-size: 2rem;
+    color: #4ade80;
+    font-weight: 700;
+}
+
+.company-header {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #4ade80;
+    position: absolute;
+    top: 1rem;
+    left: 2rem;
 }
 
 .stat-card {
@@ -209,6 +229,11 @@ body {
     to { transform: translateY(0); opacity: 1; }
 }
 
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 .stButton>button {
     background: linear-gradient(135deg, #2d3748 0%, #1c2526 100%);
     color: #e2e8f0;
@@ -242,21 +267,34 @@ body {
 
 .stButton>button.login-button {
     display: block;
-    margin: 1rem auto;
+    margin: 1.5rem auto;
     width: 200px;
     text-align: center;
+    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+    color: #1c2526;
+    font-weight: 600;
+    border: none;
+    box-shadow: 0 4px 12px rgba(74,222,128,0.5);
 }
 
-.stSelectbox, .stTextInput, .stTextArea, .stDateInput {
+.stButton>button.login-button:hover {
+    background: linear-gradient(135deg, #22c55e 0%, #4ade80 100%);
+    box-shadow: 0 6px 16px rgba(74,222,128,0.6);
+    transform: translateY(-2px);
+}
+
+.stTextInput input {
     background: #2d3748;
     color: #e2e8f0;
     border-radius: 10px;
-    padding: 0.6rem;
+    padding: 0.8rem;
     border: 1px solid #4b5563;
+    transition: border-color 0.3s ease;
 }
 
-.stSelectbox:hover, .stTextInput:hover, .stTextArea:hover, .stDateInput:hover {
+.stTextInput input:focus {
     border-color: #4ade80;
+    box-shadow: 0 0 8px rgba(74,222,128,0.3);
 }
 
 .stDataFrame table {
@@ -301,11 +339,6 @@ footer {
     padding: 2rem 0;
     font-size: 0.9rem;
     margin-top: 2rem;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
 }
 
 .section-divider {
@@ -381,9 +414,14 @@ def initialize_session():
 # --- Authentication ---
 def authenticate_user():
     if not st.session_state.logged_in:
-        st.markdown("<div class='card login-card'><h2 class='card-title'>🔐 Login</h2>", unsafe_allow_html=True)
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
+        st.markdown("""
+            <div class='company-header'>⚡ INTERSOFT International Software Company</div>
+            <div class='card login-card'>
+                <div class='login-logo'>⚡</div>
+                <h2 class='card-title'>🔐 Login</h2>
+        """, unsafe_allow_html=True)
+        username = st.text_input("Username", placeholder="Enter your username")
+        password = st.text_input("Password", type="password", placeholder="Enter your password")
         if st.button("Login", key="login_button", type="primary", help="Click to login"):
             user = USERS.get(username.lower())
             if user and user["pass"] == password:
