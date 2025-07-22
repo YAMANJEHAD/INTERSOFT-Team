@@ -336,75 +336,89 @@ def authenticate_user():
     if not st.session_state.logged_in:
         st.markdown("""
         <style>
-            .login-container {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                background: radial-gradient(circle at top left, #0f172a, #1e293b);
-                color: white;
-                padding: 3rem;
-                border-radius: 16px;
-                box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-                width: 100%;
-                max-width: 400px;
-                margin: 5rem auto;
-                animation: fadeIn 1s ease-in-out;
-            }
-            .login-header {
-                font-size: 1.8rem;
-                font-weight: 800;
-                margin-bottom: 2rem;
-                color: #facc15;
-                text-align: center;
-            }
-            .stTextInput>div>div>input {
-                background-color: #1e293b;
-                color: #f8fafc;
-                border: 1px solid #3b82f6;
-                border-radius: 8px;
-                padding: 10px;
-            }
-            .stTextInput>label {
-                font-weight: 600;
-                color: #93c5fd;
-            }
-            .login-button button {
-                background: linear-gradient(135deg, #3b82f6, #9333ea);
-                color: white;
-                border: none;
-                padding: 0.6rem 1.2rem;
-                border-radius: 12px;
-                font-size: 1rem;
-                font-weight: 700;
-                box-shadow: 0 6px 18px rgba(59,130,246,0.4);
-                width: 100%;
-                transition: 0.3s ease;
-            }
-            .login-button button:hover {
-                background: linear-gradient(135deg, #6366f1, #a855f7);
-                transform: scale(1.03);
-            }
-            .error-msg {
-                color: #f87171;
-                margin-top: 1rem;
-                text-align: center;
-                font-weight: 600;
-            }
-            @keyframes fadeIn {
-                from { opacity: 0; transform: translateY(-20px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
+        .login-box {
+            background: linear-gradient(145deg, #1e293b, #111827);
+            border: 1px solid #3b82f6;
+            border-radius: 18px;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+            padding: 2rem 2.5rem;
+            width: 100%;
+            max-width: 360px;
+            margin: 6rem auto;
+            animation: fadeInMove 1s ease;
+            color: #f8fafc;
+        }
+
+        @keyframes fadeInMove {
+            0% {opacity: 0; transform: translateY(-30px);}
+            100% {opacity: 1; transform: translateY(0);}
+        }
+
+        .login-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #facc15;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            animation: pulse 2s infinite;
+        }
+
+        .stTextInput>div>div>input {
+            background: #0f172a;
+            color: #f8fafc;
+            border: 1px solid #3b82f6;
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        .stTextInput>label {
+            font-weight: 600;
+            color: #93c5fd;
+            font-size: 0.9rem;
+        }
+
+        .login-button button {
+            width: 100%;
+            background: linear-gradient(135deg, #3b82f6, #9333ea);
+            color: white;
+            border: none;
+            padding: 0.6rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-top: 1rem;
+            box-shadow: 0 0 18px rgba(59,130,246,0.6);
+            transition: all 0.3s ease;
+        }
+
+        .login-button button:hover {
+            transform: scale(1.03);
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            box-shadow: 0 0 24px rgba(168,85,247,0.6);
+        }
+
+        .error-msg {
+            color: #f87171;
+            text-align: center;
+            font-weight: 600;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        @keyframes pulse {
+            0%, 100% {opacity: 1;}
+            50% {opacity: 0.7;}
+        }
         </style>
         """, unsafe_allow_html=True)
 
-        st.markdown('<div class="login-container">', unsafe_allow_html=True)
-        st.markdown('<div class="login-header">🔐 INTERSOFT Login</div>', unsafe_allow_html=True)
+        st.markdown('<div class="login-box">', unsafe_allow_html=True)
+        st.markdown('<div class="login-title">🚀 INTERSOFT Login</div>', unsafe_allow_html=True)
 
         with st.form("login_form"):
             username = st.text_input("👤 Username")
             password = st.text_input("🔒 Password", type="password")
-            submitted = st.form_submit_button("🔓 Log In")
+            submitted = st.form_submit_button("🔓 Log In", use_container_width=True)
 
             if submitted:
                 user = USERS.get(username.lower())
@@ -421,8 +435,10 @@ def authenticate_user():
                     st.rerun()
                 else:
                     st.session_state.login_error = "❌ Invalid username or password"
+
         if st.session_state.get("login_error"):
             st.markdown(f"<div class='error-msg'>{st.session_state.login_error}</div>", unsafe_allow_html=True)
+
         st.markdown('</div>', unsafe_allow_html=True)
         st.stop()
 
