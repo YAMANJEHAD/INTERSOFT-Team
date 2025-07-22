@@ -15,7 +15,7 @@ import numpy as np
 # --- Constants ---
 USERS = {
     "yaman": {"pass": "YAMAN1", "role": "Admin"},
-    "hatem": {"pass": "HATEM2", "role": "Supervisor"},
+    "hatem": {"pass": "HATEM2", "role": "Admin"},
     "qusai": {"pass": "QUSAI4", "role": "Employee"},
 }
 USER_PROFILE = {
