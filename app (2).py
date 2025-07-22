@@ -299,84 +299,72 @@ def authenticate_user():
     if not st.session_state.logged_in:
         st.markdown("""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
 
         html, body, [class*="css"] {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #0f172a, #1e293b);
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top left, #0f172a, #1e293b);
             color: #f8fafc;
         }
 
-        .login-main {
+        .login-container {
+            max-width: 700px;
+            margin: 3rem auto;
             display: flex;
-            flex-direction: row;
-            justify-content: center;
-            align-items: stretch;
-            height: 90vh;
-            margin-top: 2rem;
-            border-radius: 16px;
+            border-radius: 18px;
             overflow: hidden;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        .login-left {
+        .left {
             flex: 1;
-            background: url('https://images.unsplash.com/photo-1605902711622-cfb43c44367e') no-repeat center;
-            background-size: cover;
+            background: linear-gradient(160deg, #1e3a8a, #2563eb);
+            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
             position: relative;
         }
 
-        .login-left::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.6);
-        }
-
-        .login-left-content {
-            position: absolute;
-            top: 50%;
-            left: 10%;
-            transform: translateY(-50%);
-            z-index: 2;
-            color: #4ade80;
-        }
-
-        .login-left-content h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
+        .left svg {
+            width: 80px;
+            height: 80px;
             margin-bottom: 1rem;
         }
 
-        .login-left-content p {
-            font-size: 1rem;
-            color: #cbd5e1;
-            line-height: 1.6;
+        .left h1 {
+            font-size: 1.8rem;
+            margin: 0;
         }
 
-        .login-right {
+        .left p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .right {
             flex: 1;
-            background: rgba(17, 24, 39, 0.7);
-            backdrop-filter: blur(10px);
-            padding: 4rem 3rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+            background: #111827cc;
+            backdrop-filter: blur(12px);
+            padding: 2rem;
         }
 
-        .login-right h2 {
-            color: #ffffff;
-            font-size: 2rem;
-            margin-bottom: 2rem;
+        .right h2 {
             text-align: center;
+            font-size: 1.4rem;
+            margin-bottom: 1.5rem;
+            color: #4ade80;
         }
 
         .stTextInput>div>input {
             background-color: #1f2937;
             color: #f8fafc;
-            border: 1px solid #475569;
-            border-radius: 10px;
-            padding: 0.75rem 1rem;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 0.5rem 0.8rem;
+            font-size: 0.85rem;
         }
 
         .stTextInput>div>input:focus {
@@ -385,34 +373,36 @@ def authenticate_user():
         }
 
         .stButton>button.login-button {
-            background: linear-gradient(90deg, #22c55e, #16a34a);
+            background: linear-gradient(to right, #22c55e, #16a34a);
             color: white;
             border: none;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
-            padding: 0.8rem;
-            margin-top: 1.5rem;
-            transition: all 0.3s ease;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            padding: 0.6rem 1.2rem;
+            margin-top: 1rem;
             width: 100%;
+            transition: all 0.2s ease;
         }
 
         .stButton>button.login-button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
+            transform: scale(1.03);
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
         }
         </style>
 
-        <div class="login-main">
-            <div class="login-left">
-                <div class="login-left-content">
-                    <h1>INTERSOFT 🚀</h1>
-                    <p>Work smarter. Track faster. Empower your team.<br>Where productivity meets elegance.</p>
-                </div>
+        <div class="login-container">
+            <div class="left">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 11c0 1.104-.896 2-2 2s-2-.896-2-2 2-4 2-4 2 2.896 2 4zm4 2c1.104 0 2-.896 2-2s-2-4-2-4-2 2.896-2 4 .896 2 2 2zm-8 2h8m-4 0v5"/>
+                </svg>
+                <h1>INTERSOFT</h1>
+                <p>Your job. Your time. Your growth.</p>
             </div>
-            <div class="login-right">
-                <h2>🔐 Welcome Back</h2>
+            <div class="right">
+                <h2>🔐 Login to your account</h2>
         """, unsafe_allow_html=True)
+
 
 
         username = st.text_input("Username", placeholder="Enter your username")
