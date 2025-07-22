@@ -42,196 +42,87 @@ st.set_page_config(
 # --- Embed CSS ---
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
-* {
+html, body, [class*="css"] {
     font-family: 'Inter', sans-serif;
-    box-sizing: border-box;
+    background-color: #121212;
+    color: #E0E0E0;
+    scroll-behavior: smooth;
 }
 
-body {
-    background: #0f172a;
-    color: #e2e8f0;
-    margin: 0;
-    padding: 0;
+h1, h2, h3 {
+    font-weight: 700;
+    margin-bottom: 1rem;
 }
 
-.main-container {
-    max-width: 1400px;
-    margin: 0 auto;
+.section {
+    background-color: #1F1F1F;
+    border-radius: 12px;
     padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
 }
 
-.header {
+.header-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background-color: #2A2A2A;
     padding: 1.5rem 2rem;
-    background: #1e293b;
     border-radius: 12px;
     margin-bottom: 2rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
-.company-logo {
+.header-title {
     font-size: 1.8rem;
     font-weight: 700;
-    color: #60a5fa;
+    color: #90CAF9;
 }
 
-.user-info {
-    text-align: right;
+.header-user {
     font-size: 1rem;
-    color: #94a3b8;
-}
-
-.user-info b {
-    color: #f8fafc;
     font-weight: 600;
+    color: #B0BEC5;
 }
 
-.nav-bar {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-}
-
-.nav-button {
-    background: #1e3a8a;
-    color: #f8fafc;
-    padding: 0.8rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    border: none;
-    cursor: pointer;
-}
-
-.nav-button:hover, .nav-button.active {
-    background: #3b82f6;
-    box-shadow: 0 4px 12px rgba(59,130,246,0.3);
-}
-
-.card {
-    background: #1e293b;
-    padding: 1.5rem;
-    border-radius: 12px;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    transition: transform 0.3s ease;
-}
-
-.card:hover {
-    transform: translateY(-4px);
-}
-
-.card-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #60a5fa;
-    margin-bottom: 1rem;
-}
-
-.stat-card {
-    text-align: center;
-    padding: 1rem;
-    background: #1e3a8a;
-    border-radius: 8px;
-    color: #f8fafc;
-}
-
-.stat-card span {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #fcd34d;
-    display: block;
-    margin-bottom: 0.5rem;
-}
-
-.alert {
-    background: #b91c1c;
-    color: #f8fafc;
-    padding: 1rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-.alert.reminder {
-    background: #eab308;
-}
-
-.stButton>button {
-    background: #1e3a8a;
-    color: #f8fafc;
-    border-radius: 8px;
-    padding: 0.8rem 1.5rem;
+.button, .stButton>button {
+    background: linear-gradient(135deg, #3949AB, #5C6BC0);
+    color: white;
     font-weight: 600;
     border: none;
-    transition: all 0.3s ease;
+    border-radius: 10px;
+    padding: 0.6rem 1.5rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transition: background 0.3s ease;
 }
 
-.stButton>button:hover {
-    background: #3b82f6;
-    box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+.button:hover, .stButton>button:hover {
+    background: linear-gradient(135deg, #5C6BC0, #7986CB);
 }
 
-.stButton>button.delete-button {
-    background: #b91c1c;
+.stSelectbox, .stTextInput>div>input, .stTextArea>div>textarea {
+    background-color: #2A2A2A !important;
+    color: #E0E0E0 !important;
+    border-radius: 10px !important;
+    border: 1px solid #424242 !important;
+    padding: 0.5rem !important;
 }
 
-.stButton>button.delete-button:hover {
-    background: #dc2626;
-}
-
-.stSelectbox, .stTextInput, .stTextArea, .stDateInput {
-    background: #334155;
-    color: #f8fafc;
-    border-radius: 8px;
-    padding: 0.5rem;
-}
-
-.stDataFrame table {
-    background: #1e293b;
-    border-radius: 8px;
-    color: #f8fafc;
-}
-
-.stDataFrame th {
-    background: #1e3a8a;
-    color: #f8fafc;
-    font-weight: 600;
-}
-
-.stDataFrame td {
-    border-bottom: 1px solid #334155;
-}
-
-.chart-container {
-    padding: 1rem;
-    background: #1e293b;
+.stDataFrame {
     border-radius: 12px;
-    margin-bottom: 1.5rem;
-}
-
-.profile-picture {
-    border-radius: 50%;
-    width: 80px;
-    height: 80px;
-    object-fit: cover;
-    border: 2px solid #60a5fa;
+    overflow: hidden;
+    background-color: #1E1E1E;
 }
 
 footer {
     text-align: center;
-    color: #94a3b8;
-    padding: 2rem 0;
+    padding: 2rem;
+    color: #90A4AE;
     font-size: 0.9rem;
 }
 </style>
+
 """, unsafe_allow_html=True)
 
 # --- Persistent Storage ---
