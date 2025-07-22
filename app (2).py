@@ -1,4 +1,4 @@
-
+```python
 import streamlit as st
 import base64
 import pandas as pd
@@ -242,7 +242,7 @@ footer {
 }
 
 .task-attachment {
-    max-width: 200px; border-radius: 12px; margin правил: 0.5rem;
+    max-width: 200px; border-radius: 12px; margin: 0.5rem;
     border: 2px solid #60a5fa; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
@@ -338,7 +338,7 @@ def authenticate_user():
         import json
         error_message = json.dumps(st.session_state.get('login_error', ''))
         
-        # HTML for the new login modal
+        # HTML for the login modal
         login_html = f"""
         <style>
             @import url('https://fonts.googleapis.com/css?family=Raleway:400,700');
@@ -462,7 +462,35 @@ def authenticate_user():
                 margin-top: 10px;
                 text-align: center;
             }}
+            .caps-lock-warning{{
+                color: #eab308;
+                font-size: 14px;
+                margin-top: 5px;
+                text-align: center;
+                display: none;
+            }}
+            .company-logo{{
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                font-family: 'Raleway', sans-serif;
+                font-size: 1.8rem;
+                font-weight: 700;
+                color: #ffffff;
+                letter-spacing: 0.5px;
+                background: linear-gradient(135deg, #0f172a, #1e293b);
+                padding: 10px 20px;
+                border-radius: 10px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 20;
+                animation: fadeIn 1s ease-in-out;
+            }}
+            @keyframes fadeIn {{
+                from {{ opacity: 0; transform: translateY(-20px); }}
+                to {{ opacity: 1; transform: translateY(0); }}
+            }}
         </style>
+        <div class="company-logo">INTERSOFT<br>International Software Company</div>
         <div class="container" onclick="toggleAnimation()">
             <div class="top"></div>
             <div class="bottom"></div>
@@ -471,45 +499,66 @@ def authenticate_user():
                 <h2>Please Sign In</h2>
                 <input type="text" placeholder="Username" id="username">
                 <input type="password" placeholder="Password" id="password">
-                <button class="login-button" onclick="submitLogin()">Login</button>
+                <div id="caps-lock-warning" class="caps-lock-warning">Caps Lock is ON</div>
+                <button class="login-button" onclick="submitLogin()">Log In</button>
                 <div id="error-message" class="error-message">{error_message}</div>
             </div>
         </div>
         <script>
             function toggleAnimation() {{
+                console.log('Container clicked, toggling animation');
                 document.querySelector('.container').classList.toggle('active');
             }}
             function submitLogin() {{
+                console.log('Log In button clicked');
                 const username = document.getElementById('username').value;
                 const password = document.getElementById('password').value;
                 const errorDiv = document.getElementById('error-message');
                 
                 if (!username || !password) {{
+                    console.log('Empty fields detected');
                     errorDiv.innerText = 'Please enter both username and password.';
                     return;
                 }}
 
-                // Send login data to Streamlit
+                console.log('Sending login data to Streamlit:', {{ username, password }});
                 window.parent.postMessage({{
                     type: 'streamlit:setComponentValue',
-                    value: {{ username: username.toLowerCase(), password: password }}
+                    value: JSON.stringify({{ username: username.toLowerCase(), password }})
                 }}, '*');
             }}
             function closeModal() {{
+                console.log('Close button clicked');
                 document.querySelector('.container').style.display = 'none';
                 window.parent.postMessage({{
                     type: 'streamlit:setComponentValue',
-                    value: {{ action: 'close' }}
+                    value: JSON.stringify({{ action: 'close' }})
                 }}, '*');
             }}
             document.onkeydown = function(evt) {{
                 evt = evt || window.event;
                 if (evt.keyCode === 27) {{
+                    console.log('Esc key pressed, closing modal');
                     closeModal();
                 }}
+                if (evt.keyCode === 13 && document.activeElement.id === 'password') {{
+                    console.log('Enter key pressed in password field');
+                    submitLogin();
+                }}
             }};
+            // Caps Lock detection
+            document.getElementById('password').addEventListener('keyup', function(evt) {{
+                const capsWarning = document.getElementById('caps-lock-warning');
+                if (evt.getModifierState && evt.getModifierState('CapsLock')) {{
+                    console.log('Caps Lock is ON');
+                    capsWarning.style.display = 'block';
+                }} else {{
+                    capsWarning.style.display = 'none';
+                }}
+            }});
             // Trigger animation on load
             setTimeout(() => {{
+                console.log('Triggering initial animation');
                 document.querySelector('.container').classList.add('active');
             }}, 100);
         </script>
@@ -519,13 +568,14 @@ def authenticate_user():
         components.html(login_html, height=600)
 
         # Handle login data from JavaScript
-        login_data = st.experimental_get_query_params().get("login_data", [""])[0]
+        login_data = st.query_params.get("login_data", [""])[0]
         if login_data:
             try:
                 login_info = json.loads(login_data)
-                if login_info.get("action") == "close":
+                print(f"Received login data: {login_info}")  # Server-side debug
+                if isinstance(login_info, dict) and login_info.get("action") == "close":
                     st.session_state.login_error = "Login cancelled."
-                    st.experimental_set_query_params()
+                    st.query_params.clear()
                     st.rerun()
                 username = login_info.get("username")
                 password = login_info.get("password")
@@ -543,15 +593,20 @@ def authenticate_user():
                         save_data()
                         st.session_state.selected_tab = "Dashboard"
                         st.session_state.login_error = ""
-                        st.experimental_set_query_params()
+                        st.query_params.clear()
                         st.rerun()
                     else:
                         st.session_state.login_error = "❌ Invalid username or password"
-                        st.experimental_set_query_params()
+                        st.query_params.clear()
                         st.rerun()
-            except json.JSONDecodeError:
+                else:
+                    st.session_state.login_error = "⚠️ Invalid login data"
+                    st.query_params.clear()
+                    st.rerun()
+            except json.JSONDecodeError as e:
+                print(f"JSON decode error: {e}")  # Server-side debug
                 st.session_state.login_error = "⚠️ Invalid login data"
-                st.experimental_set_query_params()
+                st.query_params.clear()
                 st.rerun()
 
         st.stop()
@@ -568,7 +623,7 @@ def export_to_excel(df, sheet_name, file_name):
             worksheet = writer.sheets[sheet_name]
             header_format = workbook.add_format({
                 'bold': True, 'font_color': 'white', 'bg_color': '#4f81bd',
-                'font_size': 12, 'align': 'center', 'valign': 'vcenter'
+                'font_size: 12, 'align': 'center', 'valign': 'vcenter'
             })
             cell_format = workbook.add_format({
                 'font_color': '#000000', 'align': 'left', 'valign': 'vcenter'
@@ -834,7 +889,7 @@ def render_admin_download_tasks():
 # --- Render Header ---
 def render_header():
     tz = pytz.timezone("Asia/Riyadh")
-    current_time = "09:32 AM"  # Updated to match provided timestamp
+    current_time = "09:59 AM"  # Updated to match provided timestamp
     st.markdown(
         f"""
         <div class='top-header'>
@@ -861,7 +916,7 @@ def render_header():
 
     cols = st.columns(len(tabs))
     for idx, (tab_key, tab_label) in enumerate(tabs):
-        with cols(idx):
+        with cols[idx]:
             button_class = "selected" if st.session_state.selected_tab == tab_key else ""
             if st.button(tab_label, key=f"nav_{tab_key.lower().replace(' ', '_')}", help=tab_label, use_container_width=True):
                 st.session_state.selected_tab = tab_key
@@ -1369,6 +1424,7 @@ if __name__ == "__main__":
 
     # Footer
     st.markdown(
-        f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now(pytz.timezone('Asia/Riyadh')).strftime('%A, %B %d, %Y')} - 09:32 AM (+03)</footer>",
+        f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now(pytz.timezone('Asia/Riyadh')).strftime('%A, %B %d, %Y')} - 09:59 AM (+03)</footer>",
         unsafe_allow_html=True
     )
+```
