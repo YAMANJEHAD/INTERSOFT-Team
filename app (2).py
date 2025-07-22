@@ -19,9 +19,9 @@ USERS = {
     "qusai": {"pass": "QUSAI4", "role": "Employee"},
 }
 USER_PROFILE = {
-    "yaman": {"name": "Yaman", "email": "yaman@example.com", "picture": None},
-    "hatem": {"name": "Hatem", "email": "hatem@example.com", "picture": None},
-    "qusai": {"name": "Qusai", "email": "qusai@example.com", "picture": None},
+    "yaman": {"name": "Yaman", "picture": None},
+    "hatem": {"name": "Hatem", "picture": None},
+    "qusai": {"name": "Qusai", "picture": None},
 }
 EXPORT_FOLDER = "weekly_exports"
 DATA_FILE = "data.json"
@@ -292,7 +292,7 @@ def save_data():
             "timesheet": st.session_state.timesheet,
             "reminders": st.session_state.reminders,
             "user_profile": {
-                k: {"name": v["name"], "email": v["email"], "picture": None}
+                k: {"name": v["name"], "picture": None}
                 for k, v in USER_PROFILE.items()
             },
             "users": USERS,
@@ -324,9 +324,8 @@ def load_data():
                 for user, profile in data.get("user_profile", {}).items():
                     if user in USER_PROFILE:
                         USER_PROFILE[user]["name"] = profile.get("name", USER_PROFILE[user]["name"])
-                        USER_PROFILE[user]["email"] = profile.get("email", USER_PROFILE[user]["email"])
                     else:
-                        USER_PROFILE[user] = {"name": profile.get("name", ""), "email": profile.get("email", ""), "picture": None}
+                        USER_PROFILE[user] = {"name": profile.get("name", ""), "picture": None}
     except Exception as e:
         st.error(f"⚠️ Failed to load data: {e}")
 
@@ -340,6 +339,7 @@ def initialize_session():
         st.session_state.login_log = []
         st.session_state.reminders = []
         st.session_state.selected_tab = "Dashboard"
+        st.session_state.selected_date = datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d')
 
 # --- Authentication ---
 def authenticate_user():
@@ -413,6 +413,9 @@ def render_dashboard_stats(display_df, date_str):
     completed_tasks = display_df[display_df['Status'] == '✅ Completed'].shape[0]
     in_progress_tasks = display_df[display_df['Status'] == '🔄 In Progress'].shape[0]
     not_started_tasks = display_df[display_df['Status'] == '⏳ Not Started'].shape[0]
+    high_priority = display_df[display_df['Priority'] == '🔴 High'].shape[0]
+    tasks_by_dept = display_df['Department'].value_counts().to_dict()
+    tasks_by_shift = display_df['Shift'].value_counts().to_dict()
 
     st.markdown(f"<div class='card'><h3 class='card-title'>📊 Stats for {date_str}</h3>", unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
@@ -424,39 +427,109 @@ def render_dashboard_stats(display_df, date_str):
         st.markdown(f"<div class='stat-card'>In Progress<br><span>{in_progress_tasks}</span></div>", unsafe_allow_html=True)
     with col4:
         st.markdown(f"<div class='stat-card'>Not Started<br><span>{not_started_tasks}</span></div>", unsafe_allow_html=True)
+    
+    st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+    col5, col6 = st.columns(2)
+    with col5:
+        st.markdown("<h4>🏬 By Department</h4>", unsafe_allow_html=True)
+        for dept, count in tasks_by_dept.items():
+            st.markdown(f"<div class='stat-card'>{dept}<br><span>{count}</span></div>", unsafe_allow_html=True)
+    with col6:
+        st.markdown("<h4>⏰ By Shift</h4>", unsafe_allow_html=True)
+        for shift, count in tasks_by_shift.items():
+            st.markdown(f"<div class='stat-card'>{shift}<br><span>{count}</span></div>", unsafe_allow_html=True)
+    
+    st.markdown(f"<div class='stat-card'>High Priority<br><span>{high_priority}</span></div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 # --- Render Analytics ---
 def render_analytics(display_df):
+    tz = pytz.timezone("Asia/Riyadh")
+    today_str = datetime.now(tz).strftime('%Y-%m-%d')
+    
     st.markdown("<div class='card'><h2 class='card-title'>📈 Task Analytics</h2>", unsafe_allow_html=True)
+    
+    # Today's Work
+    st.markdown("<h3>📅 Today's Work</h3>", unsafe_allow_html=True)
+    today_df = display_df[display_df['Date'] == today_str]
+    if not today_df.empty:
+        render_dashboard_stats(today_df, today_str)
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            fig_status = px.histogram(
+                today_df, x="Status", title="Task Status",
+                color="Status", template="plotly_dark",
+                height=300
+            )
+            st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
+            st.plotly_chart(fig_status, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+        with col2:
+            fig_category = px.pie(
+                today_df, names="Category", title="Category Distribution",
+                template="plotly_dark", height=300
+            )
+            st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
+            st.plotly_chart(fig_category, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+        with col3:
+            fig_priority = px.pie(
+                today_df, names="Priority", title="Priority Distribution",
+                template="plotly_dark", height=300
+            )
+            st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
+            st.plotly_chart(fig_priority, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+        st.dataframe(today_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'), use_container_width=True)
+        data, file_name = export_to_excel(today_df, f"Tasks_{today_str}", f"tasks_{today_str}.xlsx")
+        if data:
+            st.download_button(f"⬇️ Download Today's Tasks", data, file_name, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    else:
+        st.info("ℹ️ No tasks for today.")
+    
+    st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+    
+    # All Work
+    st.markdown("<h3>📚 All Work</h3>", unsafe_allow_html=True)
     if not display_df.empty:
-        unique_dates = sorted(display_df['Date'].unique(), reverse=True)[:3]
-        for date_str in unique_dates:
-            date_df = display_df[display_df['Date'] == date_str]
-            render_dashboard_stats(date_df, date_str)
-            col1, col2 = st.columns(2)
+        unique_dates = sorted(display_df['Date'].unique(), reverse=True)
+        selected_date = st.selectbox("Filter by Date", ["All"] + unique_dates, key="date_filter")
+        filtered_df = display_df if selected_date == "All" else display_df[display_df['Date'] == selected_date]
+        
+        if not filtered_df.empty:
+            render_dashboard_stats(filtered_df, selected_date if selected_date != "All" else "All Time")
+            col1, col2, col3 = st.columns(3)
             with col1:
-                fig = px.histogram(
-                    date_df, x="Status", title="Task Status",
+                fig_status = px.histogram(
+                    filtered_df, x="Status", title="Task Status",
                     color="Status", template="plotly_dark",
                     height=300
                 )
                 st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig_status, use_container_width=True)
                 st.markdown("</div>", unsafe_allow_html=True)
             with col2:
-                fig = px.pie(
-                    date_df, names="Category", title="Category Distribution",
+                fig_category = px.pie(
+                    filtered_df, names="Category", title="Category Distribution",
                     template="plotly_dark", height=300
                 )
                 st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig_category, use_container_width=True)
                 st.markdown("</div>", unsafe_allow_html=True)
-            st.dataframe(date_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'), use_container_width=True)
-            data, file_name = export_to_excel(date_df, f"Tasks_{date_str}", f"tasks_{date_str}.xlsx")
+            with col3:
+                fig_priority = px.pie(
+                    filtered_df, names="Priority", title="Priority Distribution",
+                    template="plotly_dark", height=300
+                )
+                st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
+                st.plotly_chart(fig_priority, use_container_width=True)
+                st.markdown("</div>", unsafe_allow_html=True)
+            st.dataframe(filtered_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'), use_container_width=True)
+            data, file_name = export_to_excel(filtered_df, f"Tasks_{selected_date if selected_date != 'All' else 'All'}", f"tasks_{selected_date if selected_date != 'All' else 'all'}.xlsx")
             if data:
-                st.download_button(f"⬇️ Download {date_str} Tasks", data, file_name, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-            st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+                st.download_button(f"⬇️ Download Tasks", data, file_name, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        else:
+            st.info("ℹ️ No tasks for selected date.")
     else:
         st.info("ℹ️ No tasks available.")
     st.markdown("</div>", unsafe_allow_html=True)
@@ -493,21 +566,16 @@ def render_all_uploaded_files(df_all):
 def render_settings():
     st.markdown("<div class='card'><h2 class='card-title'>⚙️ Settings</h2>", unsafe_allow_html=True)
     user = st.session_state.user_role
-    profile = USER_PROFILE.get(user, {"name": "", "email": "", "picture": None})
+    profile = USER_PROFILE.get(user, {"name": "", "picture": None})
     
     with st.form("profile_form"):
         st.markdown("<h3>👤 Profile</h3>", unsafe_allow_html=True)
         if profile["picture"]:
             st.image(profile["picture"], width=70, caption="Profile Picture")
-        col1, col2 = st.columns(2)
-        with col1:
-            name = st.text_input("Name", profile["name"])
-        with col2:
-            email = st.text_input("Email", profile["email"])
+        name = st.text_input("Name", profile["name"])
         picture = st.file_uploader("Profile Picture", type=["png", "jpg", "jpeg"])
         if st.form_submit_button("💾 Save"):
             USER_PROFILE[user]["name"] = name
-            USER_PROFILE[user]["email"] = email
             if picture:
                 img = Image.open(picture).resize((70, 70))
                 USER_PROFILE[user]["picture"] = img
@@ -821,51 +889,54 @@ def render_employee_work():
 def render_admin_panel():
     if st.session_state.user_role_type == "Admin":
         st.markdown("<div class='card'><h2 class='card-title'>🛠 Admin Panel</h2>", unsafe_allow_html=True)
-        with st.expander("👤 Manage Users"):
-            with st.form("add_user_form"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    username = st.text_input("Username")
-                    password = st.text_input("Password", type="password")
-                    role = st.selectbox("Role", ROLES)
-                with col2:
-                    name = st.text_input("Name")
-                    email = st.text_input("Email")
-                if st.form_submit_button("➕ Add"):
-                    if username.lower() in USERS:
-                        st.error("⚠️ Username exists!")
-                    elif all([username, password, name, email]):
-                        USERS[username.lower()] = {"pass": password, "role": role}
-                        USER_PROFILE[username.lower()] = {"name": name, "email": email, "picture": None}
-                        save_data()
-                        st.success(f"✅ User {username} added!")
-                        st.rerun()
-                    else:
-                        st.error("⚠️ All fields required!")
-            
-            st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
-            with st.form("change_role_form"):
-                user = st.selectbox("User", [u for u in USERS.keys() if u != st.session_state.user_role])
-                new_role = st.selectbox("New Role", ROLES)
-                if st.checkbox("Confirm Role Change") and st.form_submit_button("🔄 Change"):
-                    USERS[user]["role"] = new_role
+        with st.form("add_user_form"):
+            st.markdown("<h3>👤 Add User</h3>", unsafe_allow_html=True)
+            col1, col2 = st.columns(2)
+            with col1:
+                username = st.text_input("Username")
+                password = st.text_input("Password", type="password")
+            with col2:
+                name = st.text_input("Name")
+                role = st.selectbox("Role", ROLES)
+            if st.form_submit_button("➕ Add"):
+                if username.lower() in USERS:
+                    st.error("⚠️ Username exists!")
+                elif all([username, password, name]):
+                    USERS[username.lower()] = {"pass": password, "role": role}
+                    USER_PROFILE[username.lower()] = {"name": name, "picture": None}
                     save_data()
-                    st.success(f"✅ Role for {user} changed!")
+                    st.success(f"✅ User {username} added!")
                     st.rerun()
-            
-            st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
-            with st.form("delete_user_form"):
-                user = st.selectbox("User to Delete", [u for u in USERS.keys() if u != st.session_state.user_role])
-                if st.checkbox("Confirm Delete") and st.form_submit_button("🗑 Delete", type="primary"):
-                    del USERS[user]
-                    del USER_PROFILE[user]
-                    st.session_state.timesheet = [t for t in st.session_state.timesheet if t["Employee"] != user]
-                    st.session_state.reminders = [r for r in st.session_state.reminders if r["user"] != user]
-                    save_data()
-                    st.warning(f"🗑 User {user} deleted!")
-                    st.rerun()
+                else:
+                    st.error("⚠️ All fields required!")
         
-        with st.expander("📅 Task Management"):
+        st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+        with st.form("change_role_form"):
+            st.markdown("<h3>🔄 Change Role</h3>", unsafe_allow_html=True)
+            user = st.selectbox("User", [u for u in USERS.keys() if u != st.session_state.user_role])
+            new_role = st.selectbox("New Role", ROLES)
+            if st.checkbox("Confirm Role Change") and st.form_submit_button("🔄 Change"):
+                USERS[user]["role"] = new_role
+                save_data()
+                st.success(f"✅ Role for {user} changed!")
+                st.rerun()
+        
+        st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+        with st.form("delete_user_form"):
+            st.markdown("<h3>🗑 Delete User</h3>", unsafe_allow_html=True)
+            user = st.selectbox("User to Delete", [u for u in USERS.keys() if u != st.session_state.user_role])
+            if st.checkbox("Confirm Delete") and st.form_submit_button("🗑 Delete", type="primary"):
+                del USERS[user]
+                del USER_PROFILE[user]
+                st.session_state.timesheet = [t for t in st.session_state.timesheet if t["Employee"] != user]
+                st.session_state.reminders = [r for r in st.session_state.reminders if r["user"] != user]
+                save_data()
+                st.warning(f"🗑 User {user} deleted!")
+                st.rerun()
+        
+        st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+        with st.form("admin_task_form"):
+            st.markdown("<h3>📅 Task Management</h3>", unsafe_allow_html=True)
             df_all = pd.DataFrame(st.session_state.timesheet)
             if not df_all.empty:
                 tz = pytz.timezone("Asia/Riyadh")
@@ -897,58 +968,57 @@ def render_admin_panel():
                         st.image(base64.b64decode(task['Attachment']['data']), width=150)
                     st.download_button("⬇️ Download", base64.b64decode(task['Attachment']['data']), task['Attachment']['name'], task['Attachment']['type'])
                 
-                with st.form("admin_edit_form"):
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        shift = st.selectbox("Shift", SHIFTS, index=SHIFTS.index(task["Shift"]))
-                        date = st.date_input("Date", datetime.strptime(task["Date"], '%Y-%m-%d'))
-                        dept = st.selectbox("Department", DEPARTMENTS, index=DEPARTMENTS.index(task["Department"]))
-                    with col2:
-                        category = st.selectbox("Category", CATEGORIES, index=CATEGORIES.index(task["Category"]))
-                        status = st.selectbox("Status", TASK_STATUSES, index=TASK_STATUSES.index(task["Status"]))
-                        priority = st.selectbox("Priority", TASK_PRIORITIES, index=TASK_PRIORITIES.index(task["Priority"]))
-                    desc = st.text_area("Description", task["Description"], height=100)
-                    attachment = st.file_uploader("New Attachment", type=["png", "jpg", "jpeg", "pdf", "xlsx"])
-                    set_reminder = st.checkbox("Set Reminder") if status == "⏳ Not Started" else False
-                    reminder_date = st.date_input("Reminder Due Date", datetime.now(tz) + timedelta(days=1)) if set_reminder else None
-                    
-                    if st.form_submit_button("💾 Save"):
-                        if desc.strip():
-                            for i, t in enumerate(st.session_state.timesheet):
-                                if t["TaskID"] == task["TaskID"]:
-                                    st.session_state.timesheet[i] = {
-                                        "TaskID": task["TaskID"],
-                                        "Employee": task["Employee"],
-                                        "Date": date.strftime('%Y-%m-%d'),
-                                        "Day": calendar.day_name[date.weekday()],
-                                        "Shift": shift,
-                                        "Department": dept,
-                                        "Category": category,
-                                        "Status": status,
-                                        "Priority": priority,
-                                        "Description": desc,
-                                        "Submitted": datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S'),
-                                        "Attachment": t.get("Attachment")
+                col1, col2 = st.columns(2)
+                with col1:
+                    shift = st.selectbox("Shift", SHIFTS, index=SHIFTS.index(task["Shift"]))
+                    date = st.date_input("Date", datetime.strptime(task["Date"], '%Y-%m-%d'))
+                    dept = st.selectbox("Department", DEPARTMENTS, index=DEPARTMENTS.index(task["Department"]))
+                with col2:
+                    category = st.selectbox("Category", CATEGORIES, index=CATEGORIES.index(task["Category"]))
+                    status = st.selectbox("Status", TASK_STATUSES, index=TASK_STATUSES.index(task["Status"]))
+                    priority = st.selectbox("Priority", TASK_PRIORITIES, index=TASK_PRIORITIES.index(task["Priority"]))
+                desc = st.text_area("Description", task["Description"], height=100)
+                attachment = st.file_uploader("New Attachment", type=["png", "jpg", "jpeg", "pdf", "xlsx"])
+                set_reminder = st.checkbox("Set Reminder") if status == "⏳ Not Started" else False
+                reminder_date = st.date_input("Reminder Due Date", datetime.now(tz) + timedelta(days=1)) if set_reminder else None
+                
+                if st.form_submit_button("💾 Save"):
+                    if desc.strip():
+                        for i, t in enumerate(st.session_state.timesheet):
+                            if t["TaskID"] == task["TaskID"]:
+                                st.session_state.timesheet[i] = {
+                                    "TaskID": task["TaskID"],
+                                    "Employee": task["Employee"],
+                                    "Date": date.strftime('%Y-%m-%d'),
+                                    "Day": calendar.day_name[date.weekday()],
+                                    "Shift": shift,
+                                    "Department": dept,
+                                    "Category": category,
+                                    "Status": status,
+                                    "Priority": priority,
+                                    "Description": desc,
+                                    "Submitted": datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S'),
+                                    "Attachment": t.get("Attachment")
+                                }
+                                if attachment and attachment.size <= 5 * 1024 * 1024:
+                                    st.session_state.timesheet[i]["Attachment"] = {
+                                        "name": attachment.name,
+                                        "data": base64.b64encode(attachment.read()).decode('utf-8'),
+                                        "type": attachment.type
                                     }
-                                    if attachment and attachment.size <= 5 * 1024 * 1024:
-                                        st.session_state.timesheet[i]["Attachment"] = {
-                                            "name": attachment.name,
-                                            "data": base64.b64encode(attachment.read()).decode('utf-8'),
-                                            "type": attachment.type
-                                        }
-                                    if set_reminder and status == "⏳ Not Started":
-                                        st.session_state.reminders = [r for r in st.session_state.reminders if r["task_id"] != task["TaskID"]]
-                                        st.session_state.reminders.append({
-                                            "user": task["Employee"],
-                                            "task_id": task["TaskID"],
-                                            "task_desc": desc,
-                                            "date": datetime.now(tz).strftime('%Y-%m-%d'),
-                                            "due_date": reminder_date.strftime('%Y-%m-%d')
-                                        })
-                            save_data()
-                            st.success("✅ Task updated!")
-                            st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
+                                if set_reminder and status == "⏳ Not Started":
+                                    st.session_state.reminders = [r for r in st.session_state.reminders if r["task_id"] != task["TaskID"]]
+                                    st.session_state.reminders.append({
+                                        "user": task["Employee"],
+                                        "task_id": task["TaskID"],
+                                        "task_desc": desc,
+                                        "date": datetime.now(tz).strftime('%Y-%m-%d'),
+                                        "due_date": reminder_date.strftime('%Y-%m-%d')
+                                    })
+                        save_data()
+                        st.success("✅ Task updated!")
+                        st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # --- Main App ---
 if __name__ == "__main__":
