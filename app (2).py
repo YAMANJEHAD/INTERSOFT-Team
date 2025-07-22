@@ -91,6 +91,21 @@ html, body, [class*="css"] {
     margin: 1.5rem 0; padding: 1rem;
 }
 
+.stSelectbox {
+    background: linear-gradient(135deg, #6d28d9, #e11d48);
+    color: white; font-weight: 700; font-size: 1.2rem;
+    border-radius: 26px; padding: 0.8rem; min-width: 220px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+    transition: all 0.4s ease; border: 1px solid transparent;
+}
+
+.stSelectbox:hover {
+    transform: scale(1.15);
+    background: linear-gradient(135deg, #8b5cf6, #f43f5e);
+    box-shadow: 0 16px 36px rgba(139,92,246,0.5), 0 0 20px rgba(244,63,94,0.4);
+    border: 1px solid #93c5fd;
+}
+
 .stButton>button {
     background: linear-gradient(135deg, #6d28d9, #e11d48);
     color: white; font-weight: 700; font-size: 1.2rem;
@@ -118,19 +133,6 @@ html, body, [class*="css"] {
 .stButton>button:active {
     transform: scale(0.92);
     box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-}
-
-.stButton>button.selected {
-    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-    transform: scale(1.07);
-    box-shadow: 0 14px 34px rgba(30,64,175,0.5);
-    font-weight: 800;
-    animation: pulseSelected 1.3s infinite;
-}
-
-@keyframes pulseSelected {
-    0%, 100% { transform: scale(1.07); }
-    50% { transform: scale(1.1); }
 }
 
 .stButton>button.delete-button {
@@ -355,7 +357,6 @@ def authenticate_user():
 def export_to_excel(df, sheet_name, file_name):
     output = BytesIO()
     try:
-        # Clean data: Remove TaskID and Attachment columns, replace NaN/INF
         df_clean = df.drop(columns=['TaskID', 'Attachment'], errors='ignore')
         df_clean = df_clean.replace([np.nan, np.inf, -np.inf], '')
         with pd.ExcelWriter(output, engine="xlsxwriter", engine_kwargs={'options': {'nan_inf_to_errors': True}}) as writer:
@@ -394,7 +395,6 @@ def auto_export_weekly():
             df_export = pd.DataFrame(st.session_state.timesheet)
             if not df_export.empty:
                 try:
-                    # Clean data for CSV export
                     df_export = df_export.drop(columns=['TaskID', 'Attachment'], errors='ignore')
                     df_export = df_export.replace([np.nan, np.inf, -np.inf], '')
                     df_export.to_csv(filename, index=False)
@@ -422,7 +422,6 @@ def render_analytics(display_df):
         st.markdown("### 📈 Task Analytics")
         col1, col2 = st.columns(2)
         with col1:
-            # Histogram: Tasks Over Time
             fig_hist = px.histogram(
                 display_df,
                 x="Date",
@@ -449,7 +448,6 @@ def render_analytics(display_df):
             st.markdown("</div>", unsafe_allow_html=True)
 
         with col2:
-            # Pie Chart: Category Distribution
             fig_pie = px.pie(
                 display_df,
                 names="Category",
@@ -470,7 +468,6 @@ def render_analytics(display_df):
             st.plotly_chart(fig_pie, use_container_width=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # Bar Chart: Priority Levels
         fig_bar = px.bar(
             display_df,
             x="Priority",
@@ -493,11 +490,9 @@ def render_analytics(display_df):
         st.plotly_chart(fig_bar, use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # Task Table
         st.markdown("### 📋 Task Table")
         st.dataframe(display_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'))
 
-        # Download Tasks
         st.markdown("### 📥 Download Tasks")
         data, file_name = export_to_excel(display_df, "Tasks", "tasks_export.xlsx")
         if data:
@@ -550,11 +545,9 @@ def render_settings():
         user = st.session_state.user_role
         current_profile = USER_PROFILE.get(user, {"name": "", "email": "", "picture": None})
         
-        # Display Profile Picture
         if current_profile["picture"]:
             st.image(current_profile["picture"], width=100, caption="Profile Picture", output_format="PNG")
         
-        # Edit Profile
         with st.form("profile_form"):
             name = st.text_input("Name", value=current_profile["name"], key="profile_name")
             email = st.text_input("Email", value=current_profile["email"], key="profile_email")
@@ -571,7 +564,6 @@ def render_settings():
                 st.success("✅ Profile updated successfully!")
                 st.rerun()
 
-        # Change Password
         st.subheader("🔑 Change Password")
         with st.form("password_form"):
             current_password = st.text_input("Current Password", type="password", key="current_password")
@@ -592,19 +584,47 @@ def render_settings():
 
 # --- Download Tasks ---
 def render_download_tasks():
+    tz = pytz.timezone("Asia/Riyadh")
+    st.header("⬇️ Download My Tasks")
     current_user = st.session_state.user_role
     user_tasks = df_all[df_all['Employee'] == current_user] if not df_all.empty and 'Employee' in df_all.columns else pd.DataFrame()
     if not user_tasks.empty:
-        data, file_name = export_to_excel(user_tasks, f"{current_user}_Tasks", f"{current_user}_tasks.xlsx")
+        st.markdown("<div class='edit-section'>", unsafe_allow_html=True)
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            start = st.date_input("Start Date", value=datetime.now(tz) - timedelta(days=7), key="download_start")
+        with col2:
+            end = st.date_input("End Date", value=datetime.now(tz), key="download_end")
+        with col3:
+            category = st.selectbox("Category", options=["All"] + CATEGORIES, key="download_category")
+        priority = st.selectbox("Priority", options=["All"] + TASK_PRIORITIES, key="download_priority")
+        
+        filtered_tasks = user_tasks
+        if category != "All":
+            filtered_tasks = filtered_tasks[filtered_tasks['Category'] == category]
+        if priority != "All":
+            filtered_tasks = filtered_tasks[filtered_tasks['Priority'] == priority]
+        filtered_tasks = filtered_tasks[(filtered_tasks['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_tasks['Date'] <= end.strftime('%Y-%m-%d'))]
+        
+        st.dataframe(filtered_tasks.drop(columns=['TaskID', 'Attachment'], errors='ignore'))
+        
+        file_name = f"{current_user}_tasks_{start.strftime('%Y%m%d')}_{end.strftime('%Y%m%d')}.xlsx"
+        if category != "All":
+            file_name = f"{current_user}_tasks_{category}_{start.strftime('%Y%m%d')}_{end.strftime('%Y%m%d')}.xlsx"
+        if priority != "All":
+            file_name = f"{current_user}_tasks_{category}_{priority}_{start.strftime('%Y%m%d')}_{end.strftime('%Y%m%d')}.xlsx"
+        
+        data, file_name = export_to_excel(filtered_tasks, f"{current_user}_Tasks", file_name)
         if data:
             st.download_button(
-                label="⬇️ Download My Tasks",
+                label="⬇️ Download Filtered Tasks",
                 data=data,
                 file_name=file_name,
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
         else:
             st.error("⚠️ Failed to generate Excel file.")
+        st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.info("ℹ️ No tasks available for your account.")
 
@@ -652,7 +672,7 @@ def render_header():
         unsafe_allow_html=True
     )
 
-    # Navigation Buttons
+    # Dropdown Menu for Navigation
     st.markdown("<div class='nav-buttons'>", unsafe_allow_html=True)
     tabs = [
         ("Dashboard", "🏠 Dashboard"),
@@ -665,24 +685,15 @@ def render_header():
     if st.session_state.user_role_type == "Admin":
         tabs.insert(-2, ("Admin Panel", "🛠 Admin Panel"))
 
-    cols = st.columns(len(tabs))
-    for idx, (tab_key, tab_label) in enumerate(tabs):
-        with cols[idx]:
-            button_class = "selected" if st.session_state.selected_tab == tab_key else ""
-            if st.button(tab_label, key=f"nav_{tab_key.lower().replace(' ', '_')}", help=tab_label, use_container_width=True):
-                st.session_state.selected_tab = tab_key
-                st.rerun()
-            st.markdown(f"""
-                <script>
-                    document.querySelectorAll('.stButton>button').forEach((btn, index) => {{
-                        if (index === {idx} && "{st.session_state.selected_tab}" === "{tab_key}") {{
-                            btn.classList.add('selected');
-                        }} else {{
-                            btn.classList.remove('selected');
-                        }}
-                    }});
-                </script>
-            """, unsafe_allow_html=True)
+    selected_tab = st.selectbox(
+        "Navigate to",
+        options=[tab[0] for tab in tabs],
+        format_func=lambda x: next(tab[1] for tab in tabs if tab[0] == x),
+        key="nav_dropdown"
+    )
+    if selected_tab != st.session_state.selected_tab:
+        st.session_state.selected_tab = selected_tab
+        st.rerun()
     st.markdown("</div>", unsafe_allow_html=True)
 
 # --- Render Sidebar Stats ---
@@ -731,7 +742,6 @@ def render_alerts(df_user, df_all):
             if user.lower() not in users or not any(df_all[df_all['Employee'] == user.lower()]['Date'] == today_str):
                 st.sidebar.markdown(f"<div class='alert-box'>🔔 Alert: <b>{user.capitalize()}</b> has not submitted a task today!</div>", unsafe_allow_html=True)
 
-    # Render Reminders
     try:
         reminders = st.session_state.reminders
     except AttributeError:
@@ -831,7 +841,6 @@ def render_edit_delete_task(display_df):
         selected_id = task_dict[selected_label]
         selected_task = display_df[display_df["TaskID"] == selected_id].iloc[0]
 
-        # Display Attachment
         if isinstance(selected_task.get("Attachment"), dict):
             st.markdown("### 📎 Current Attachment")
             attachment = selected_task["Attachment"]
@@ -846,7 +855,6 @@ def render_edit_delete_task(display_df):
                 key=f"download_attachment_{selected_id}"
             )
 
-        # Edit Form
         with st.form("edit_form"):
             col1, col2 = st.columns(2)
             with col1:
@@ -882,7 +890,7 @@ def render_edit_delete_task(display_df):
                                 "Attachment": t.get("Attachment")
                             }
                             if attachment:
-                                if attachment.size > 5 * 1024 * 1024:  # Limit to 5MB
+                                if attachment.size > 5 * 1024 * 1024:
                                     st.error("⚠️ File size exceeds 5MB limit!")
                                     st.stop()
                                 else:
@@ -906,7 +914,6 @@ def render_edit_delete_task(display_df):
                 else:
                     st.error("⚠️ Description cannot be empty!")
 
-        # Delete Form (Admin Only)
         if st.session_state.user_role_type == "Admin":
             with st.form("delete_form"):
                 st.warning("⚠️ This action cannot be undone!")
@@ -931,7 +938,6 @@ def render_employee_work():
     st.header("👥 Employee Work")
     df_all = pd.DataFrame(st.session_state.timesheet)
     if not df_all.empty and 'Employee' in df_all.columns:
-        # Filter Tasks
         st.markdown("### 📅 View Employee Tasks")
         col1, col2 = st.columns(2)
         with col1:
@@ -955,159 +961,182 @@ def render_admin_panel():
         st.header("🛠 Admin Panel")
         df_all = pd.DataFrame(st.session_state.timesheet)
         
-        # User Management
-        st.markdown("### 👤 Manage Users")
-        st.markdown("<div class='edit-section'>", unsafe_allow_html=True)
-        
-        # Add New User
-        st.subheader("Add New User")
-        with st.form("add_user_form"):
-            col1, col2 = st.columns(2)
-            with col1:
-                new_username = st.text_input("Username", key="new_username")
-                new_password = st.text_input("Password", type="password", key="new_password")
-                new_role = st.selectbox("Role", ROLES, key="new_role")
-            with col2:
-                new_name = st.text_input("Name", key="new_name")
-                new_email = st.text_input("Email", key="new_email")
-            submitted = st.form_submit_button("➕ Add User")
-            if submitted:
-                if new_username.lower() in USERS:
-                    st.error("⚠️ Username already exists!")
-                elif not all([new_username, new_password, new_name, new_email]):
-                    st.error("⚠️ All fields are required!")
-                else:
-                    USERS[new_username.lower()] = {"pass": new_password, "role": new_role}
-                    USER_PROFILE[new_username.lower()] = {"name": new_name, "email": new_email, "picture": None}
-                    save_data()
-                    st.success(f"✅ User {new_username} added successfully!")
-                    st.rerun()
-
-        # Delete User
-        st.subheader("Delete User")
-        with st.form("delete_user_form"):
-            users = [u for u in USERS.keys() if u != st.session_state.user_role]
-            selected_user = st.selectbox("Select User to Delete", users, key="delete_user_select")
-            delete_confirmed = st.checkbox("I confirm I want to delete this user", key="confirm_user_delete")
-            submitted_delete = st.form_submit_button("🗑 Delete User", type="primary", help="Delete selected user")
-            if submitted_delete and delete_confirmed:
-                if selected_user == st.session_state.user_role:
-                    st.error("⚠️ Cannot delete your own account!")
-                else:
-                    del USERS[selected_user]
-                    del USER_PROFILE[selected_user]
-                    st.session_state.timesheet = [t for t in st.session_state.timesheet if t["Employee"] != selected_user]
-                    st.session_state.reminders = [r for r in st.session_state.reminders if r["user"] != selected_user]
-                    save_data()
-                    st.warning(f"🗑 User {selected_user} deleted successfully!")
-                    st.rerun()
-        
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        # Filter Tasks
-        if not df_all.empty and 'Employee' in df_all.columns:
-            st.markdown("### 📅 View and Filter Tasks")
-            col1, col2 = st.columns(2)
-            with col1:
-                users = df_all['Employee'].unique().tolist()
-                selected_user = st.selectbox("Employee", options=["All"] + users, key="filter_employee")
-            with col2:
-                start = st.date_input("Start Date", value=datetime.now(tz) - timedelta(days=7), key="filter_start")
-                end = st.date_input("End Date", value=datetime.now(tz), key="filter_end")
-            filtered_df = df_all
-            if selected_user != "All":
-                filtered_df = filtered_df[filtered_df['Employee'] == selected_user]
-            filtered_df = filtered_df[(filtered_df['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end.strftime('%Y-%m-%d'))]
-            st.dataframe(filtered_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'))
-
-            # Edit Any Task
-            st.markdown("### ✏️ Edit Any Task")
+        with st.expander("👤 Manage Users", expanded=False):
             st.markdown("<div class='edit-section'>", unsafe_allow_html=True)
-            task_dict = {f"{row['Description'][:30]}... ({row['Date']} | {row['Category']} | {row['Status']} | {row['Employee'].capitalize()})": row["TaskID"] for _, row in df_all.iterrows()}
-            selected_label = st.selectbox("📋 Select Task to Edit", list(task_dict.keys()), key="admin_select_task")
-            selected_id = task_dict[selected_label]
-            selected_task = df_all[df_all["TaskID"] == selected_id].iloc[0]
-
-            # Display Attachment
-            if isinstance(selected_task.get("Attachment"), dict):
-                st.markdown("### 📎 Current Attachment")
-                attachment = selected_task["Attachment"]
-                st.markdown(f"<div class='attachment-info'>File: {attachment.get('name', 'Unknown')} ({attachment.get('type', 'Unknown')})</div>", unsafe_allow_html=True)
-                if attachment.get("type", "").startswith("image/"):
-                    st.image(base64.b64decode(attachment["data"]), caption=attachment.get("name", "Image"), width=200, use_column_width=False)
-                st.download_button(
-                    label=f"📎 Download {attachment.get('name', 'File')}",
-                    data=base64.b64decode(attachment["data"]),
-                    file_name=attachment.get("name", "attachment"),
-                    mime=attachment.get("type", "application/octet-stream"),
-                    key=f"admin_download_attachment_{selected_id}"
-                )
-
-            with st.form("admin_edit_form"):
+            st.subheader("Add New User")
+            with st.form("add_user_form"):
                 col1, col2 = st.columns(2)
                 with col1:
-                    shift = st.selectbox("🕒 Shift", SHIFTS, index=SHIFTS.index(selected_task["Shift"]), key="admin_edit_shift")
-                    date = st.date_input("📅 Date", datetime.strptime(selected_task["Date"], '%Y-%m-%d'), key="admin_edit_date")
-                    dept = st.selectbox("🏢 Department", DEPARTMENTS, index=DEPARTMENTS.index(selected_task["Department"]), key="admin_edit_dept")
+                    new_username = st.text_input("Username", key="new_username")
+                    new_password = st.text_input("Password", type="password", key="new_password")
+                    new_role = st.selectbox("Role", ROLES, key="new_role")
                 with col2:
-                    cat = st.selectbox("📂 Category", CATEGORIES, index=CATEGORIES.index(selected_task["Category"]), key="admin_edit_cat")
-                    stat = st.selectbox("📌 Status", TASK_STATUSES, index=TASK_STATUSES.index(selected_task["Status"]), key="admin_edit_stat")
-                    prio = st.selectbox("⚠️ Priority", TASK_PRIORITIES, index=TASK_PRIORITIES.index(selected_task["Priority"]), key="admin_edit_prio")
-                desc = st.text_area("🗒 Description", selected_task["Description"], height=120, key="admin_edit_desc")
-                attachment = st.file_uploader("📎 Upload New File (Optional)", type=["png", "jpg", "jpeg", "pdf", "xlsx", "xls"], key="admin_edit_attachment")
-                set_reminder = st.checkbox("🔔 Set Reminder for Not Started Task", key="admin_edit_reminder") if stat == "⏳ Not Started" else False
-                reminder_date = st.date_input("📅 Reminder Due Date", value=datetime.now(tz) + timedelta(days=1), key="admin_edit_reminder_date") if set_reminder else None
-
-                submitted = st.form_submit_button("💾 Save Changes")
+                    new_name = st.text_input("Name", key="new_name")
+                    new_email = st.text_input("Email", key="new_email")
+                submitted = st.form_submit_button("➕ Add User")
                 if submitted:
-                    if desc.strip():
-                        for i, t in enumerate(st.session_state.timesheet):
-                            if t["TaskID"] == selected_id:
-                                st.session_state.timesheet[i] = {
-                                    "TaskID": selected_id,
-                                    "Employee": selected_task["Employee"],
-                                    "Date": date.strftime('%Y-%m-%d'),
-                                    "Day": calendar.day_name[date.weekday()],
-                                    "Shift": shift,
-                                    "Department": dept,
-                                    "Category": cat,
-                                    "Status": stat,
-                                    "Priority": prio,
-                                    "Description": desc,
-                                    "Submitted": datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S'),
-                                    "Attachment": t.get("Attachment")
-                                }
-                                if attachment:
-                                    if attachment.size > 5 * 1024 * 1024:  # Limit to 5MB
-                                        st.error("⚠️ File size exceeds 5MB limit!")
-                                        st.stop()
-                                    else:
-                                        st.session_state.timesheet[i]["Attachment"] = {
-                                            "name": attachment.name,
-                                            "data": base64.b64encode(attachment.read()).decode('utf-8'),
-                                            "type": attachment.type
-                                        }
-                                if set_reminder and stat == "⏳ Not Started":
-                                    st.session_state.reminders = [r for r in st.session_state.reminders if r["task_id"] != selected_id]
-                                    st.session_state.reminders.append({
-                                        "user": selected_task["Employee"],
-                                        "task_id": selected_id,
-                                        "task_desc": desc,
-                                        "date": datetime.now(tz).strftime('%Y-%m-%d'),
-                                        "due_date": reminder_date.strftime('%Y-%m-%d')
-                                    })
-                                save_data()
-                                st.success("✅ Task updated successfully!")
-                                st.rerun()
+                    if new_username.lower() in USERS:
+                        st.error("⚠️ Username already exists!")
+                    elif not all([new_username, new_password, new_name, new_email]):
+                        st.error("⚠️ All fields are required!")
                     else:
-                        st.error("⚠️ Description cannot be empty!")
+                        USERS[new_username.lower()] = {"pass": new_password, "role": new_role}
+                        USER_PROFILE[new_username.lower()] = {"name": new_name, "email": new_email, "picture": None}
+                        save_data()
+                        st.success(f"✅ User {new_username} added successfully!")
+                        st.rerun()
+
+            st.markdown("<hr>", unsafe_allow_html=True)
+            st.subheader("Delete User")
+            with st.form("delete_user_form"):
+                users = [u for u in USERS.keys() if u != st.session_state.user_role]
+                selected_user = st.selectbox("Select User to Delete", users, key="delete_user_select")
+                delete_confirmed = st.checkbox("I confirm I want to delete this user", key="confirm_user_delete")
+                submitted_delete = st.form_submit_button("🗑 Delete User", type="primary", help="Delete selected user")
+                if submitted_delete and delete_confirmed:
+                    if selected_user == st.session_state.user_role:
+                        st.error("⚠️ Cannot delete your own account!")
+                    else:
+                        del USERS[selected_user]
+                        del USER_PROFILE[selected_user]
+                        st.session_state.timesheet = [t for t in st.session_state.timesheet if t["Employee"] != selected_user]
+                        st.session_state.reminders = [r for r in st.session_state.reminders if r["user"] != selected_user]
+                        save_data()
+                        st.warning(f"🗑 User {selected_user} deleted successfully!")
+                        st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
 
-            # Login Activity Log
+        with st.expander("📅 Task Management", expanded=False):
+            if not df_all.empty and 'Employee' in df_all.columns:
+                st.markdown("### 📅 View and Filter Tasks")
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    users = df_all['Employee'].unique().tolist()
+                    selected_user = st.selectbox("Employee", options=["All"] + users, key="filter_employee")
+                with col2:
+                    start = st.date_input("Start Date", value=datetime.now(tz) - timedelta(days=7), key="filter_start")
+                with col3:
+                    end = st.date_input("End Date", value=datetime.now(tz), key="filter_end")
+                with col4:
+                    category = st.selectbox("Category", options=["All"] + CATEGORIES, key="filter_category")
+                priority = st.selectbox("Priority", options=["All"] + TASK_PRIORITIES, key="filter_priority")
+                
+                filtered_df = df_all
+                if selected_user != "All":
+                    filtered_df = filtered_df[filtered_df['Employee'] == selected_user]
+                if category != "All":
+                    filtered_df = filtered_df[filtered_df['Category'] == category]
+                if priority != "All":
+                    filtered_df = filtered_df[filtered_df['Priority'] == priority]
+                filtered_df = filtered_df[(filtered_df['Date'] >= start.strftime('%Y-%m-%d')) & (filtered_df['Date'] <= end.strftime('%Y-%m-%d'))]
+                st.dataframe(filtered_df.drop(columns=['TaskID', 'Attachment'], errors='ignore'))
+
+                st.markdown("### 📥 Export Filtered Tasks")
+                file_name = f"tasks_{selected_user}_{start.strftime('%Y%m%d')}_{end.strftime('%Y%m%d')}.xlsx"
+                if category != "All":
+                    file_name = f"tasks_{selected_user}_{category}_{start.strftime('%Y%m%d')}_{end.strftime('%Y%m%d')}.xlsx"
+                if priority != "All":
+                    file_name = f"tasks_{selected_user}_{category}_{priority}_{start.strftime('%Y%m%d')}_{end.strftime('%Y%m%d')}.xlsx"
+                data, file_name = export_to_excel(filtered_df, "Filtered_Tasks", file_name)
+                if data:
+                    st.download_button(
+                        label="📥 Download Filtered Tasks",
+                        data=data,
+                        file_name=file_name,
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+                else:
+                    st.error("⚠️ Failed to generate Excel file.")
+
+                st.markdown("<hr>", unsafe_allow_html=True)
+                st.markdown("### ✏️ Edit Any Task")
+                st.markdown("<div class='edit-section'>", unsafe_allow_html=True)
+                task_dict = {f"{row['Description'][:30]}... ({row['Date']} | {row['Category']} | {row['Status']} | {row['Employee'].capitalize()})": row["TaskID"] for _, row in df_all.iterrows()}
+                selected_label = st.selectbox("📋 Select Task to Edit", list(task_dict.keys()), key="admin_select_task")
+                selected_id = task_dict[selected_label]
+                selected_task = df_all[df_all["TaskID"] == selected_id].iloc[0]
+
+                if isinstance(selected_task.get("Attachment"), dict):
+                    st.markdown("### 📎 Current Attachment")
+                    attachment = selected_task["Attachment"]
+                    st.markdown(f"<div class='attachment-info'>File: {attachment.get('name', 'Unknown')} ({attachment.get('type', 'Unknown')})</div>", unsafe_allow_html=True)
+                    if attachment.get("type", "").startswith("image/"):
+                        st.image(base64.b64decode(attachment["data"]), caption=attachment.get("name", "Image"), width=200, use_column_width=False)
+                    st.download_button(
+                        label=f"📎 Download {attachment.get('name', 'File')}",
+                        data=base64.b64decode(attachment["data"]),
+                        file_name=attachment.get("name", "attachment"),
+                        mime=attachment.get("type", "application/octet-stream"),
+                        key=f"admin_download_attachment_{selected_id}"
+                    )
+
+                with st.form("admin_edit_form"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        shift = st.selectbox("🕒 Shift", SHIFTS, index=SHIFTS.index(selected_task["Shift"]), key="admin_edit_shift")
+                        date = st.date_input("📅 Date", datetime.strptime(selected_task["Date"], '%Y-%m-%d'), key="admin_edit_date")
+                        dept = st.selectbox("🏢 Department", DEPARTMENTS, index=DEPARTMENTS.index(selected_task["Department"]), key="admin_edit_dept")
+                    with col2:
+                        cat = st.selectbox("📂 Category", CATEGORIES, index=CATEGORIES.index(selected_task["Category"]), key="admin_edit_cat")
+                        stat = st.selectbox("📌 Status", TASK_STATUSES, index=TASK_STATUSES.index(selected_task["Status"]), key="admin_edit_stat")
+                        prio = st.selectbox("⚠️ Priority", TASK_PRIORITIES, index=TASK_PRIORITIES.index(selected_task["Priority"]), key="admin_edit_prio")
+                    desc = st.text_area("🗒 Description", selected_task["Description"], height=120, key="admin_edit_desc")
+                    attachment = st.file_uploader("📎 Upload New File (Optional)", type=["png", "jpg", "jpeg", "pdf", "xlsx", "xls"], key="admin_edit_attachment")
+                    set_reminder = st.checkbox("🔔 Set Reminder for Not Started Task", key="admin_edit_reminder") if stat == "⏳ Not Started" else False
+                    reminder_date = st.date_input("📅 Reminder Due Date", value=datetime.now(tz) + timedelta(days=1), key="admin_edit_reminder_date") if set_reminder else None
+
+                    submitted = st.form_submit_button("💾 Save Changes")
+                    if submitted:
+                        if desc.strip():
+                            for i, t in enumerate(st.session_state.timesheet):
+                                if t["TaskID"] == selected_id:
+                                    st.session_state.timesheet[i] = {
+                                        "TaskID": selected_id,
+                                        "Employee": selected_task["Employee"],
+                                        "Date": date.strftime('%Y-%m-%d'),
+                                        "Day": calendar.day_name[date.weekday()],
+                                        "Shift": shift,
+                                        "Department": dept,
+                                        "Category": cat,
+                                        "Status": stat,
+                                        "Priority": prio,
+                                        "Description": desc,
+                                        "Submitted": datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S'),
+                                        "Attachment": t.get("Attachment")
+                                    }
+                                    if attachment:
+                                        if attachment.size > 5 * 1024 * 1024:
+                                            st.error("⚠️ File size exceeds 5MB limit!")
+                                            st.stop()
+                                        else:
+                                            st.session_state.timesheet[i]["Attachment"] = {
+                                                "name": attachment.name,
+                                                "data": base64.b64encode(attachment.read()).decode('utf-8'),
+                                                "type": attachment.type
+                                            }
+                                    if set_reminder and stat == "⏳ Not Started":
+                                        st.session_state.reminders = [r for r in st.session_state.reminders if r["task_id"] != selected_id]
+                                        st.session_state.reminders.append({
+                                            "user": selected_task["Employee"],
+                                            "task_id": selected_id,
+                                            "task_desc": desc,
+                                            "date": datetime.now(tz).strftime('%Y-%m-%d'),
+                                            "due_date": reminder_date.strftime('%Y-%m-%d')
+                                        })
+                                    save_data()
+                                    st.success("✅ Task updated successfully!")
+                                    st.rerun()
+                        else:
+                            st.error("⚠️ Description cannot be empty!")
+                st.markdown("</div>", unsafe_allow_html=True)
+            else:
+                st.info("ℹ️ No tasks recorded yet.")
+
+        with st.expander("📊 Statistics & Logs", expanded=False):
             st.markdown("### 📜 Login Activity Log")
             st.dataframe(pd.DataFrame(st.session_state.login_log))
 
-            # Employee Statistics
+            st.markdown("<hr>", unsafe_allow_html=True)
             st.markdown("### 📊 Employee Statistics")
             stats_df = df_all.groupby('Employee').agg({
                 'TaskID': 'count',
@@ -1116,22 +1145,24 @@ def render_admin_panel():
             stats_df['Completion Rate'] = (stats_df['Completed Tasks'] / stats_df['Total Tasks'] * 100).round(2)
             st.dataframe(stats_df)
 
-            # Export All Tasks
+            st.markdown("<hr>", unsafe_allow_html=True)
             st.markdown("### 📥 Export All Tasks")
             data, file_name = export_to_excel(df_all, "All_Tasks", "all_tasks_export.xlsx")
             if data:
-                st.download_button("📥 Download All Tasks", data=data, file_name=file_name, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                st.download_button(
+                    label="📥 Download All Tasks",
+                    data=data,
+                    file_name=file_name,
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
             else:
                 st.error("⚠️ Failed to generate Excel file.")
-        else:
-            st.info("ℹ️ No tasks recorded yet.")
 
 # --- Main App Logic ---
 if __name__ == "__main__":
     initialize_session()
     authenticate_user()
 
-    # Sidebar
     st.sidebar.title("🔒 Session")
     if st.sidebar.button("Logout", key="logout_button"):
         st.session_state.logged_in = False
@@ -1142,21 +1173,13 @@ if __name__ == "__main__":
         save_data()
         st.rerun()
 
-    # Render Alerts in Sidebar
     df_all = pd.DataFrame(st.session_state.timesheet)
     df_user = df_all[df_all['Employee'] == st.session_state.user_role] if not df_all.empty and 'Employee' in df_all.columns else pd.DataFrame()
     render_alerts(df_user, df_all)
-
-    # Render Sidebar Stats
     render_sidebar_stats()
-
-    # Data Setup
     display_df = df_user if st.session_state.user_role_type == "Employee" else df_all
-
-    # Render Header with Navigation
     render_header()
 
-    # Render Content Based on Selected Tab
     if st.session_state.selected_tab == "Dashboard":
         st.header("🏠 Dashboard")
         render_dashboard_stats(display_df)
@@ -1182,7 +1205,6 @@ if __name__ == "__main__":
     elif st.session_state.selected_tab == "Download Tasks":
         render_download_tasks()
 
-    # Footer
     st.markdown(
         f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now(pytz.timezone('Asia/Riyadh')).strftime('%A, %B %d, %Y - %I:%M %p')}</footer>",
         unsafe_allow_html=True
