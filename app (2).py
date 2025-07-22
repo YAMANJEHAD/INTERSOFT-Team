@@ -1,4 +1,4 @@
-```python
+
 import streamlit as st
 import base64
 import pandas as pd
@@ -1433,4 +1433,4 @@ if __name__ == "__main__":
         f"<footer>📅 INTERSOFT FLM Tracker • {datetime.now(pytz.timezone('Asia/Riyadh')).strftime('%A, %B %d, %Y')} - 10:05 AM (+03)</footer>",
         unsafe_allow_html=True
     )
-```
+
