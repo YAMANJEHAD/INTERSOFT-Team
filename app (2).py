@@ -1,42 +1,3 @@
-The provided Streamlit application code has several issues that prevent data persistence and cause some buttons to malfunction. Below is a corrected and improved version of the code that addresses these problems, ensures proper data saving, and fixes button functionality. The fixes include proper initialization, consistent data handling, button key uniqueness, and robust error handling. The code structure remains the same, with targeted improvements for clarity and functionality.
-
-### Key Issues Identified and Fixed
-1. **Data Not Saving**:
-   - The `save_data` function was not consistently called or failed due to improper serialization of complex objects like PIL images.
-   - Fixed by serializing only necessary data and ensuring `save_data` is called after every critical operation.
-   - Added checks to ensure the data file exists and is properly loaded.
-
-2. **Buttons Not Working**:
-   - Duplicate or missing button keys caused Streamlit to fail in rendering or processing button clicks.
-   - Fixed by ensuring unique keys for all buttons and forms.
-   - Ensured proper form submission logic and state management with `st.rerun()` where necessary.
-
-3. **Session State Initialization**:
-   - The session state was not properly initialized, leading to potential crashes if keys were missing.
-   - Added comprehensive session state initialization with defaults.
-
-4. **Attachment Handling**:
-   - PIL image objects in `USER_PROFILE` caused serialization issues in `save_data`.
-   - Fixed by storing base64-encoded strings for images instead of PIL objects.
-
-5. **Data Validation**:
-   - Invalid or missing data in `timesheet` caused errors during filtering or display.
-   - Added robust validation for `timesheet` and `reminders` data.
-
-6. **Admin Panel Issues**:
-   - Admin panel forms (e.g., delete user, delete data) were not consistently updating state or saving changes.
-   - Fixed by ensuring proper state updates and data persistence.
-
-7. **General Improvements**:
-   - Improved error messages for better debugging.
-   - Ensured consistent timezone handling with `Asia/Riyadh`.
-   - Optimized form submissions to prevent unnecessary reruns.
-   - Added checks for empty data frames to avoid errors in analytics and exports.
-
-### Corrected Code
-Below is the fully corrected Streamlit application code. It maintains the original structure and functionality while addressing all identified issues.
-
-```python
 import streamlit as st
 import base64
 import pandas as pd
@@ -898,7 +859,7 @@ def render_header():
         ("Add Task", "➕"),
         ("Edit/Delete Task", "✏️"),
         ("Employee Work", "👥"),
-        ("Settings", "🔙"),
+        ("Settings", "⚙️"),
         ("Download Tasks", "⬇️")
     ]
     if st.session_state.user_role_type == "Admin":
@@ -1361,69 +1322,3 @@ if __name__ == "__main__":
         
         st.markdown(f"<footer>© INTERSOFT {datetime.now(pytz.timezone('Asia/Riyadh')).strftime('%Y')}</footer>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
-```
-
-### Specific Fixes Applied
-1. **Data Persistence**:
-   - Modified `save_data` to exclude PIL image objects and store base64-encoded strings for profile pictures.
-   - Enhanced `load_data` to validate `reminders` data structure, ensuring only valid entries are loaded.
-   - Ensured `save_data` is called after every state-changing operation (e.g., adding tasks, updating profiles, deleting users).
-
-2. **Button Functionality**:
-   - Added unique keys to all buttons and form elements using descriptive identifiers (e.g., `task_shift`, `edit_form_{selected_id}`).
-   - Fixed form submissions by ensuring proper `key` parameters and consistent use of `st.rerun()` to refresh the UI.
-   - Corrected the "Delete All Data" and "Delete Day Data" buttons in the Admin Panel by assigning unique form keys and ensuring proper state updates.
-
-3. **Attachment Handling**:
-   - In `render_settings`, profile pictures are now saved as base64 strings to avoid serialization issues with PIL objects.
-   - Ensured attachment downloads in `render_all_uploaded_files` and `render_edit_delete_task` use unique keys based on `TaskID`.
-
-4. **Form and Input Keys**:
-   - Added unique keys to all input widgets (e.g., `st.text_input`, `st.selectbox`, `st.file_uploader`) to prevent Streamlit's key collision errors.
-   - Used dynamic keys for repeated elements (e.g., `edit_shift_{selected_id}`) to ensure uniqueness in forms.
-
-5. **Data Validation**:
-   - Strengthened `load_data` to filter out invalid `timesheet` and `reminders` entries, preventing crashes during data frame operations.
-   - Added checks in `render_analytics` and other functions to handle empty data frames gracefully.
-
-6. **Admin Panel**:
-   - Fixed the "Add User", "Change Role", and "Delete User" forms by ensuring unique keys and proper state updates.
-   - Corrected the "Delete All Data" and "Delete Day Data" forms to use unique keys and properly clear the respective data.
-
-7. **General Robustness**:
-   - Added error handling in `export_to_excel` and other critical functions to display meaningful error messages.
-   - Ensured consistent timezone usage (`Asia/Riyadh`) across all datetime operations.
-   - Optimized `st.rerun()` calls to avoid unnecessary refreshes, improving performance.
-
-### How to Test the Fixed Code
-1. **Run the Application**:
-   - Save the code in a file (e.g., `app.py`).
-   - Install required dependencies: `pip install streamlit pandas plotly pillow xlsxwriter`.
-   - Run the app: `streamlit run app.py`.
-
-2. **Test Data Persistence**:
-   - Log in with a user (e.g., `yaman`/`YAMAN1`).
-   - Add a task in the "Add Task" tab and verify that it appears in the "Dashboard" and is saved to `data.json`.
-   - Update the user profile in the "Settings" tab and check that the changes persist after a rerun.
-   - Log out and log back in to ensure data is loaded correctly.
-
-3. **Test Button Functionality**:
-   - Verify that all navigation buttons (Dashboard, Add Task, etc.) switch tabs correctly.
-   - Test form submissions (e.g., Add Task, Edit Task, Download Tasks) to ensure they work without errors.
-   - As an admin (`mohammad aleem`/`moh00`), test all Admin Panel features (Add User, Change Role, Delete User, Delete Data).
-
-4. **Test Downloads**:
-   - Download tasks from the "Download Tasks" and "Admin: Download Tasks" sections to ensure Excel files are generated correctly.
-   - Verify that attachments can be uploaded and downloaded without errors.
-
-5. **Test Data Deletion**:
-   - Use the Admin Panel to delete a user and confirm that their tasks and reminders are removed.
-   - Test "Delete All Data" and "Delete Day Data" to ensure data is cleared and saved correctly.
-
-### Notes
-- The `data.json` file will be created in the same directory as the script and will store all tasks, reminders, users, and login logs.
-- Ensure write permissions in the directory for `data.json` and the `weekly_exports` folder.
-- The application assumes a local environment. For deployment (e.g., Streamlit Cloud), you may need to adapt file storage to a persistent storage solution (e.g., a database or cloud storage).
-- The code avoids generating charts for this response since the user did not explicitly request one, per the guidelines.
-
-This corrected code should resolve the issues with data not saving and buttons not working, providing a fully functional task management dashboard. If you encounter any specific issues or need further enhancements, please let me know!
