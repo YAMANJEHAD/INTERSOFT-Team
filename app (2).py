@@ -360,7 +360,7 @@ def authenticate_user():
         .login-right h2 {
             font-size: 1.8rem;
             color: #4ade80;
-            margin-bottom: 0.5rem;
+            margin-bottom: 1rem;
             text-align: center;
         }
 
@@ -408,6 +408,22 @@ def authenticate_user():
             100% {opacity: 1; transform: translateY(0);}
         }
         </style>
+
+        <div class="login-wrapper">
+            <div class="login-left">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 11c0 1.104-.896 2-2 2s-2-.896-2-2 2-4 2-4 2 2.896 2 4zm4 2c1.104 0 2-.896 2-2s-2-4-2-4-2 2.896-2 4 .896 2 2 2zm-8 2h8m-4 0v5"/>
+                </svg>
+                <h4>INTERSOFT time sheet</h4>
+                <p>International Software Company</p>
+                <p>Empowering your workflow with intelligent time tracking 🚀</p>
+            </div>
+            <div class="login-right">
+                <h2>🔐 Login</h2>
+                <p>WELCOME BACK , GET YOUR COFFEE READY ☕</p>
+        """, unsafe_allow_html=True)
+
 
         <div class="login-wrapper">
             <div class="login-left">
