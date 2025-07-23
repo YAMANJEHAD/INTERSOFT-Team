@@ -46,23 +46,22 @@ st.set_page_config(page_title="INTERSOFT Time Sheet", page_icon="⚡", layout="w
 # --- Embed CSS ---
 st.markdown("""
 <style>
-/* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+/* Import Roboto font */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 
-/* Define color variables for consistency */
+/* Color variables */
 :root {
-    --primary-blue: #1E3A8A;
-    --secondary-blue: #2563EB;
-    --accent-yellow: #FCD34D;
-    --dark-bg: #0F172A;
-    --card-bg: #1E293B;
-    --text-primary: #F8FAFC;
-    --text-secondary: #94A3B8;
+    --primary-blue: #1B263B;
+    --secondary-blue: #415A77;
+    --accent-yellow: #FFB703;
+    --accent-yellow-dark: #FB8500;
+    --text-primary: #E0E1DD;
+    --text-secondary: #A5A6A8;
 }
 
 /* Global styles */
 * {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Roboto', sans-serif;
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -70,10 +69,10 @@ st.markdown("""
 
 /* Main container */
 .main-container {
-    max-width: 1400px;
+    max-width: 1600px;
     margin: 0 auto;
-    padding: 1.5rem;
-    background: var(--dark-bg);
+    padding: 1rem;
+    background: linear-gradient(180deg, var(--primary-blue), var(--secondary-blue));
     min-height: 100vh;
 }
 
@@ -82,28 +81,40 @@ st.markdown("""
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.5rem;
+    padding: 0.8rem 1.2rem;
     background: var(--primary-blue);
-    border-radius: 10px;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    margin-bottom: 1rem;
 }
 
 .company-logo {
-    font-size: 1.6rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--accent-yellow);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.company-logo svg {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
 }
 
 .user-info {
-    text-align: right;
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 .user-info b {
     color: var(--text-primary);
-    font-weight: 600;
+    font-weight: 500;
 }
 
 /* Navigation bar */
@@ -111,102 +122,118 @@ st.markdown("""
     display: flex;
     gap: 0.5rem;
     justify-content: center;
-    margin-bottom: 1.5rem;
-    padding: 1rem;
-    background: var(--card-bg);
-    border-radius: 10px;
+    padding: 0.8rem;
+    background: var(--secondary-blue);
+    border-radius: 8px;
+    margin-bottom: 1rem;
 }
 
 .nav-button {
     background: var(--primary-blue);
     color: var(--text-primary);
-    padding: 0.7rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.9rem;
+    padding: 0.6rem;
+    border-radius: 50%;
+    font-size: 1.2rem;
     border: none;
     cursor: pointer;
     transition: all 0.3s ease;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: center;
 }
 
 .nav-button:hover, .nav-button.active {
     background: var(--accent-yellow);
     color: var(--primary-blue);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(252, 211, 77, 0.4);
+    transform: scale(1.1);
+}
+
+/* Sidebar */
+.sidebar {
+    transition: width 0.3s ease;
+    width: 0;
+    overflow: hidden;
+}
+
+.sidebar.open {
+    width: 250px;
+}
+
+.sidebar-content {
+    background: var(--primary-blue);
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 /* Cards */
 .card {
-    background: var(--card-bg);
-    padding: 1.5rem;
-    border-radius: 10px;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+    background: var(--secondary-blue);
+    padding: 1.2rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     transition: transform 0.3s ease;
 }
 
 .card:hover {
-    transform: translateY(-3px);
+    transform: translateY(-2px);
 }
 
 .card-title {
-    font-size: 1.3rem;
-    font-weight: 600;
+    font-size: 1.2rem;
+    font-weight: 500;
     color: var(--accent-yellow);
-    margin-bottom: 1rem;
-    text-align: left;
+    margin-bottom: 0.8rem;
 }
 
 /* Stat cards */
 .stat-card {
     text-align: center;
-    padding: 1rem;
+    padding: 0.8rem;
     background: var(--primary-blue);
-    border-radius: 8px;
+    border-radius: 6px;
     color: var(--text-primary);
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
 }
 
 .stat-card span {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--accent-yellow);
     display: block;
-    margin-bottom: 0.3rem;
 }
 
 /* Alerts */
 .alert {
-    background: #7F1D1D;
+    background: #9B2226;
     color: var(--text-primary);
-    padding: 0.8rem;
-    border-radius: 8px;
-    margin-bottom: 0.75rem;
-    font-size: 0.85rem;
-    animation: slideIn 0.5s ease;
+    padding: 0.7rem;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    font-size: 0.8rem;
+    animation: fadeIn 0.5s ease;
 }
 
 .alert.reminder {
-    background: #D97706;
+    background: #F48C06;
 }
 
-@keyframes slideIn {
-    from { transform: translateY(-10px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* Streamlit button styles */
 .stButton>button {
     background: var(--primary-blue);
     color: var(--text-primary);
-    border-radius: 8px;
-    padding: 0.6rem 1.2rem;
-    font-weight: 600;
-    font-size: 0.9rem;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    font-size: 0.85rem;
     border: none;
     transition: all 0.3s ease;
 }
@@ -214,156 +241,127 @@ st.markdown("""
 .stButton>button:hover {
     background: var(--accent-yellow);
     color: var(--primary-blue);
-    transform: translateY(-2px);
+    transform: scale(1.05);
 }
 
 .stButton>button.delete-button {
-    background: #7F1D1D;
+    background: #9B2226;
 }
 
 .stButton>button.delete-button:hover {
-    background: #B91C1C;
-    color: var(--text-primary);
+    background: #BB3E03;
 }
 
 /* Streamlit input styles */
 .stTextInput input, .stSelectbox select, .stDateInput input {
     background: var(--primary-blue);
     color: var(--text-primary);
-    border-radius: 8px;
-    padding: 0.6rem;
+    border-radius: 6px;
+    padding: 0.5rem;
     border: 1px solid var(--text-secondary);
 }
 
 .stTextInput input:focus, .stSelectbox select:focus, .stDateInput input:focus {
     border-color: var(--accent-yellow);
-    box-shadow: 0 0 5px rgba(252, 211, 77, 0.4);
+    box-shadow: 0 0 4px rgba(255, 183, 3, 0.4);
 }
 
 /* Streamlit table styles */
 .stDataFrame table {
-    background: var(--card-bg);
-    border-radius: 8px;
+    background: var(--secondary-blue);
+    border-radius: 6px;
     color: var(--text-primary);
 }
 
 .stDataFrame th {
     background: var(--primary-blue);
     color: var(--text-primary);
-    font-weight: 600;
+    font-weight: 500;
 }
 
 .stDataFrame td {
     border-bottom: 1px solid var(--text-secondary);
-    padding: 0.8rem;
+    padding: 0.7rem;
 }
 
 /* Chart container */
 .chart-container {
     padding: 1rem;
-    background: var(--card-bg);
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
+    background: var(--secondary-blue);
+    border-radius: 6px;
+    margin-bottom: 1rem;
 }
 
 /* Profile picture */
 .profile-picture {
     border-radius: 50%;
-    width: 80px;
-    height: 80px;
+    width: 70px;
+    height: 70px;
     object-fit: cover;
     border: 2px solid var(--accent-yellow);
-    margin-bottom: 1rem;
+    margin-bottom: 0.8rem;
 }
 
 /* Footer */
 footer {
     text-align: center;
     color: var(--text-secondary);
-    padding: 1.5rem 0;
-    font-size: 0.85rem;
+    padding: 1rem 0;
+    font-size: 0.8rem;
 }
 
-/* Section divider */
-.section-divider {
-    border-top: 1px solid var(--text-secondary);
-    margin: 1.5rem 0;
-}
-
-/* Login page specific styles */
-.login-wrapper {
-    max-width: 800px;
-    margin: 4rem auto;
-    display: flex;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-}
-
-.login-left {
-    flex: 1;
-    background: linear-gradient(135deg, var(--secondary-blue), var(--primary-blue));
-    color: var(--text-primary);
+/* Login page */
+.login-container {
+    max-width: 400px;
+    margin: 5rem auto;
     padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
+    background: var(--primary-blue);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    animation: fadeIn 0.8s ease;
 }
 
-.login-left svg {
-    width: 60px;
-    height: 60px;
-    margin-bottom: 1rem;
-}
-
-.login-left h4 {
-    font-size: 1.8rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.login-left p {
-    font-size: 0.9rem;
-    opacity: 0.9;
-}
-
-.login-right {
-    flex: 1;
-    background: rgba(17, 24, 39, 0.95);
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.login-right h2 {
-    font-size: 1.5rem;
+.login-container h2 {
+    font-size: 1.4rem;
     color: var(--accent-yellow);
-    margin-bottom: 1rem;
     text-align: center;
+    margin-bottom: 1rem;
 }
 
-.login-right p {
+.login-container p {
     text-align: center;
     color: var(--text-secondary);
-    font-size: 0.9rem;
-    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    margin-bottom: 1.2rem;
 }
 
 .stButton>button.login-button {
     background: var(--accent-yellow);
     color: var(--primary-blue);
-    font-weight: 600;
-    border-radius: 8px;
-    padding: 0.7rem;
+    font-weight: 500;
+    border-radius: 6px;
+    padding: 0.6rem;
     width: 100%;
 }
 
 .stButton>button.login-button:hover {
-    background: #FBBF24;
-    transform: scale(1.02);
+    background: var(--accent-yellow-dark);
+    transform: scale(1.05);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .nav-bar {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .header {
+        flex-direction: column;
+        text-align: center;
+    }
+    .sidebar.open {
+        width: 100%;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -377,23 +375,19 @@ def authenticate_user():
 
     if not st.session_state.logged_in:
         st.markdown("""
-        <div class="login-wrapper">
-            <div class="login-left">
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="login-container">
+            <div style="text-align: center; margin-bottom: 1rem;">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 50px; height: 50px; color: var(--accent-yellow);">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 11c0 1.104-.896 2-2 2s-2-.896-2-2 2-4 2-4 2 2.896 2 4zm4 2c1.104 0 2-.896 2-2s-2-4-2-4-2 2.896-2 4 .896 2 2 2zm-8 2h8m-4 0v5"/>
                 </svg>
-                <h4>INTERSOFT Time Sheet</h4>
-                <p>International Software Company</p>
-                <p>Empowering your workflow with intelligent time tracking 🚀</p>
             </div>
-            <div class="login-right">
-                <h2>🔐 Login</h2>
-                <p>Welcome back, let's get to work! ☕</p>
+            <h2>INTERSOFT Login</h2>
+            <p>Sign in to manage your tasks</p>
         """, unsafe_allow_html=True)
 
-        username = st.text_input("Username", placeholder="Enter your username", key="login_username")
-        password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password")
+        username = st.text_input("Username", placeholder="Enter username", key="login_username")
+        password = st.text_input("Password", type="password", placeholder="Enter password", key="login_password")
 
         if st.button("Login", key="login_button", type="primary"):
             user = USERS.get(username.lower())
@@ -411,7 +405,7 @@ def authenticate_user():
             else:
                 st.error("❌ Invalid credentials")
 
-        st.markdown("</div></div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
         st.stop()
 
 # --- Persistent Storage ---
@@ -479,7 +473,8 @@ def initialize_session():
         "login_log": [],
         "reminders": [],
         "selected_tab": "Dashboard",
-        "selected_date": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d')
+        "selected_date": datetime.now(pytz.timezone("Asia/Riyadh")).strftime('%Y-%m-%d'),
+        "sidebar_open": False
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -497,7 +492,7 @@ def export_to_excel(df, sheet_name, file_name):
             workbook = writer.book
             worksheet = writer.sheets[sheet_name]
             header_format = workbook.add_format({
-                'bold': True, 'font_color': 'white', 'bg_color': '#2d3748',
+                'bold': True, 'font_color': 'white', 'bg_color': '#415A77',
                 'align': 'center'
             })
             for col_num, col in enumerate(df_clean.columns):
@@ -545,14 +540,13 @@ def render_dashboard_stats(display_df, date_str):
     with col4:
         st.markdown(f"<div class='stat-card'>Not Started<br><span>{not_started_tasks}</span></div>", unsafe_allow_html=True)
     
-    st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
     col5, col6 = st.columns(2)
     with col5:
-        st.markdown("<h4>🏬 By Department</h4>", unsafe_allow_html=True)
+        st.markdown("<h4>🏬 Departments</h4>", unsafe_allow_html=True)
         for dept, count in tasks_by_dept.items():
             st.markdown(f"<div class='stat-card'>{dept}<br><span>{count}</span></div>", unsafe_allow_html=True)
     with col6:
-        st.markdown("<h4>⏰ By Shift</h4>", unsafe_allow_html=True)
+        st.markdown("<h4>⏰ Shifts</h4>", unsafe_allow_html=True)
         for shift, count in tasks_by_shift.items():
             st.markdown(f"<div class='stat-card'>{shift}<br><span>{count}</span></div>", unsafe_allow_html=True)
     
@@ -566,7 +560,6 @@ def render_analytics(display_df):
     
     st.markdown("<div class='card'><h2 class='card-title'>📈 Task Analytics</h2>", unsafe_allow_html=True)
     
-    # Today's Work
     st.markdown("<h3>📅 Today's Work</h3>", unsafe_allow_html=True)
     if not display_df.empty and 'Date' in display_df.columns:
         today_df = display_df[display_df['Date'] == today_str]
@@ -577,23 +570,23 @@ def render_analytics(display_df):
                 fig_status = px.histogram(
                     today_df, x="Status", title="Task Status",
                     color="Status", template="plotly_dark",
-                    height=300
+                    height=250
                 )
                 st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
                 st.plotly_chart(fig_status, use_container_width=True)
                 st.markdown("</div>", unsafe_allow_html=True)
             with col2:
                 fig_category = px.pie(
-                    today_df, names="Category", title="Category Distribution",
-                    template="plotly_dark", height=300
+                    today_df, names="Category", title="Categories",
+                    template="plotly_dark", height=250
                 )
                 st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
                 st.plotly_chart(fig_category, use_container_width=True)
                 st.markdown("</div>", unsafe_allow_html=True)
             with col3:
                 fig_priority = px.pie(
-                    today_df, names="Priority", title="Priority Distribution",
-                    template="plotly_dark", height=300
+                    today_df, names="Priority", title="Priorities",
+                    template="plotly_dark", height=250
                 )
                 st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
                 st.plotly_chart(fig_priority, use_container_width=True)
@@ -613,11 +606,10 @@ def render_analytics(display_df):
         else:
             st.info("ℹ️ No tasks for today.")
     else:
-        st.info("ℹ️ No tasks available or data is missing required fields.")
+        st.info("ℹ️ No tasks available.")
     
-    st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin: 1rem 0; border-top: 1px solid var(--text-secondary);'></div>", unsafe_allow_html=True)
     
-    # All Work
     st.markdown("<h3>📚 All Work</h3>", unsafe_allow_html=True)
     if not display_df.empty and 'Date' in display_df.columns:
         unique_dates = sorted(display_df['Date'].unique(), reverse=True)
@@ -631,23 +623,23 @@ def render_analytics(display_df):
                 fig_status = px.histogram(
                     filtered_df, x="Status", title="Task Status",
                     color="Status", template="plotly_dark",
-                    height=300
+                    height=250
                 )
                 st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
                 st.plotly_chart(fig_status, use_container_width=True)
                 st.markdown("</div>", unsafe_allow_html=True)
             with col2:
                 fig_category = px.pie(
-                    filtered_df, names="Category", title="Category Distribution",
-                    template="plotly_dark", height=300
+                    filtered_df, names="Category", title="Categories",
+                    template="plotly_dark", height=250
                 )
                 st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
                 st.plotly_chart(fig_category, use_container_width=True)
                 st.markdown("</div>", unsafe_allow_html=True)
             with col3:
                 fig_priority = px.pie(
-                    filtered_df, names="Priority", title="Priority Distribution",
-                    template="plotly_dark", height=300
+                    filtered_df, names="Priority", title="Priorities",
+                    template="plotly_dark", height=250
                 )
                 st.markdown("<div class='chart-container'>", unsafe_allow_html=True)
                 st.plotly_chart(fig_priority, use_container_width=True)
@@ -667,7 +659,7 @@ def render_analytics(display_df):
         else:
             st.info("ℹ️ No tasks for selected date.")
     else:
-        st.info("ℹ️ No tasks available or data is missing required fields.")
+        st.info("ℹ️ No tasks available.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # --- Render Uploaded Files ---
@@ -713,13 +705,13 @@ def render_settings():
     with st.form(key="profile_form"):
         st.markdown("<h3>👤 Profile</h3>", unsafe_allow_html=True)
         if profile["picture"]:
-            st.image(base64.b64decode(profile["picture"]), width=80, caption="Profile Picture")
+            st.image(base64.b64decode(profile["picture"]), width=70, caption="Profile Picture")
         name = st.text_input("Name", profile["name"], key="profile_name")
         picture = st.file_uploader("Profile Picture", type=["png", "jpg", "jpeg"], key="profile_picture")
         if st.form_submit_button("💾 Save"):
             USER_PROFILE[user]["name"] = name
             if picture:
-                img = Image.open(picture).resize((80, 80))
+                img = Image.open(picture).resize((70, 70))
                 buffered = BytesIO()
                 img.save(buffered, format="PNG")
                 USER_PROFILE[user]["picture"] = base64.b64encode(buffered.getvalue()).decode('utf-8')
@@ -727,7 +719,7 @@ def render_settings():
             st.success("✅ Profile updated!")
             st.rerun()
     
-    st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin: 1rem 0; border-top: 1px solid var(--text-secondary);'></div>", unsafe_allow_html=True)
     with st.form(key="password_form"):
         st.markdown("<h3>🔑 Password</h3>", unsafe_allow_html=True)
         current = st.text_input("Current Password", type="password", key="current_password")
@@ -835,9 +827,15 @@ def render_header():
     tz = pytz.timezone("Asia/Riyadh")
     st.markdown(f"""
         <div class='header'>
-            <div class='company-logo'>⚡ INTERSOFT Dashboard</div>
+            <div class='company-logo'>
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 11c0 1.104-.896 2-2 2s-2-.896-2-2 2-4 2-4 2 2.896 2 4zm4 2c1.104 0 2-.896 2-2s-2-4-2-4-2 2.896-2 4 .896 2 2 2zm-8 2h8m-4 0v5"/>
+                </svg>
+                INTERSOFT
+            </div>
             <div class='user-info'>
-                👋 {st.session_state.user_role.capitalize()} ({st.session_state.user_role_type})<br>
+                👤 {st.session_state.user_role.capitalize()} ({st.session_state.user_role_type})<br>
                 <small>{datetime.now(tz).strftime('%A, %B %d, %Y - %I:%M %p')}</small>
             </div>
         </div>
@@ -858,16 +856,19 @@ def render_header():
     cols = st.columns(len(tabs))
     for idx, (tab, icon) in enumerate(tabs):
         with cols[idx]:
-            if st.button(f"{icon} {tab}", key=f"nav_{tab.lower().replace(' ', '_')}", type="primary" if st.session_state.selected_tab == tab else "secondary"):
+            if st.button(icon, key=f"nav_{tab.lower().replace(' ', '_')}", type="primary" if st.session_state.selected_tab == tab else "secondary"):
                 st.session_state.selected_tab = tab
                 st.rerun()
+    if st.button("☰", key="toggle_sidebar"):
+        st.session_state.sidebar_open = not st.session_state.sidebar_open
+        st.rerun()
     st.markdown("</div>", unsafe_allow_html=True)
 
 # --- Sidebar Stats ---
 def render_sidebar_stats():
     tz = pytz.timezone("Asia/Riyadh")
     today_str = datetime.now(tz).strftime('%Y-%m-%d')
-    st.sidebar.markdown(f"<h3>📊 Today's Stats ({today_str})</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3>📊 Today's Stats ({today_str})</h3>", unsafe_allow_html=True)
     df_all = pd.DataFrame(st.session_state.timesheet, columns=TASK_COLUMNS)
     if not df_all.empty and 'Date' in df_all.columns:
         today_df = df_all[df_all['Date'] == today_str]
@@ -875,7 +876,7 @@ def render_sidebar_stats():
             emp_df = today_df[today_df['Employee'] == employee]
             total = len(emp_df)
             completed = emp_df[emp_df['Status'] == '✅ Completed'].shape[0]
-            st.sidebar.markdown(
+            st.markdown(
                 f"""
                 <div class='stat-card'>
                     {employee.capitalize()}<br>
@@ -884,7 +885,7 @@ def render_sidebar_stats():
                 </div>
                 """, unsafe_allow_html=True)
     else:
-        st.sidebar.info("ℹ️ No tasks today.")
+        st.info("ℹ️ No tasks today.")
 
 # --- Alerts ---
 def render_alerts(df_user, df_all):
@@ -892,14 +893,14 @@ def render_alerts(df_user, df_all):
     today_str = datetime.now(tz).strftime('%Y-%m-%d')
     if st.session_state.user_role_type != "Admin":
         if df_user.empty or 'Date' not in df_user.columns or today_str not in df_user['Date'].values:
-            st.sidebar.markdown("<div class='alert'>⚠️ No tasks submitted today!</div>", unsafe_allow_html=True)
+            st.markdown("<div class='alert'>⚠️ No tasks submitted today!</div>", unsafe_allow_html=True)
         if st.session_state.user_role_type == "Supervisor":
             for user in USERS.keys():
                 if USERS[user]["role"] != "Admin" and (user not in df_all['Employee'].unique() or today_str not in df_all[df_all['Employee'] == user]['Date'].values):
-                    st.sidebar.markdown(f"<div class='alert'>🔔 {user.capitalize()} has no tasks today!</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div class='alert'>🔔 {user.capitalize()} has no tasks today!</div>", unsafe_allow_html=True)
         for reminder in st.session_state.reminders:
             if reminder["user"] == st.session_state.user_role and reminder["date"] == today_str:
-                st.sidebar.markdown(f"<div class='alert reminder'>🔔 Reminder: {reminder['task_desc'][:20]}... Due: {reminder['due_date']}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='alert reminder'>🔔 Reminder: {reminder['task_desc'][:20]}... Due: {reminder['due_date']}</div>", unsafe_allow_html=True)
 
 # --- Add Task ---
 def render_add_task():
@@ -1033,7 +1034,7 @@ def render_edit_delete_task(display_df):
                 else:
                     st.error("⚠️ Description required!")
         
-        st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin: 1rem 0; border-top: 1px solid var(--text-secondary);'></div>", unsafe_allow_html=True)
         with st.form(key=f"delete_form_{selected_id}"):
             st.warning("⚠️ This action is permanent!")
             if st.form_submit_button("🗑 Delete", type="primary"):
@@ -1077,7 +1078,6 @@ def render_admin_panel():
     if st.session_state.user_role_type == "Admin":
         st.markdown("<div class='card'><h2 class='card-title'>🛠 Admin Panel</h2>", unsafe_allow_html=True)
         
-        # --- Add User ---
         with st.form(key="add_user_form"):
             st.markdown("<h3>👤 Add User</h3>", unsafe_allow_html=True)
             col1, col2 = st.columns(2)
@@ -1099,8 +1099,7 @@ def render_admin_panel():
                 else:
                     st.error("⚠️ All fields required!")
         
-        # --- Change Role ---
-        st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin: 1rem 0; border-top: 1px solid var(--text-secondary);'></div>", unsafe_allow_html=True)
         with st.form(key="change_role_form"):
             st.markdown("<h3>🔄 Change Role</h3>", unsafe_allow_html=True)
             user = st.selectbox("User", [u for u in USERS.keys() if u != st.session_state.user_role], key="change_role_user")
@@ -1111,8 +1110,7 @@ def render_admin_panel():
                 st.success(f"✅ Role for {user} changed!")
                 st.rerun()
         
-        # --- Delete User ---
-        st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin: 1rem 0; border-top: 1px solid var(--text-secondary);'></div>", unsafe_allow_html=True)
         with st.form(key="delete_user_form"):
             st.markdown("<h3>🗑 Delete User</h3>", unsafe_allow_html=True)
             user = st.selectbox("User to Delete", [u for u in USERS.keys() if u != st.session_state.user_role], key="delete_user_select")
@@ -1125,8 +1123,7 @@ def render_admin_panel():
                 st.warning(f"🗑 User {user} deleted!")
                 st.rerun()
         
-        # --- Task Filter ---
-        st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin: 1rem 0; border-top: 1px solid var(--text-secondary);'></div>", unsafe_allow_html=True)
         df_all = pd.DataFrame(st.session_state.timesheet, columns=TASK_COLUMNS)
         if not df_all.empty and 'Date' in df_all.columns:
             st.markdown("<h3>📅 Task Management</h3>", unsafe_allow_html=True)
@@ -1163,9 +1160,8 @@ def render_admin_panel():
                     key=f"admin_task_download_{start.strftime('%Y%m%d')}"
                 )
         
-        # --- Edit Task ---
         if not df_all.empty and 'TaskID' in df_all.columns:
-            st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='margin: 1rem 0; border-top: 1px solid var(--text-secondary);'></div>", unsafe_allow_html=True)
             st.markdown("<h3>✏️ Edit Task</h3>", unsafe_allow_html=True)
             task_dict = {f"{row['Description'][:20]}... ({row['Date']} | {row['Category']})": row["TaskID"] for _, row in df_all.iterrows()}
             selected_task = st.selectbox("Select Task", list(task_dict.keys()), key="admin_edit_task_select")
@@ -1237,8 +1233,7 @@ def render_admin_panel():
                     else:
                         st.error("⚠️ Description required!")
         
-        # --- Delete All Data ---
-        st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin: 1rem 0; border-top: 1px solid var(--text-secondary);'></div>", unsafe_allow_html=True)
         with st.form(key="delete_all_data_form"):
             st.markdown("<h3>🗑 Delete All Data</h3>", unsafe_allow_html=True)
             st.warning("⚠️ This action is permanent and will delete all tasks, reminders, and login logs!")
@@ -1250,8 +1245,7 @@ def render_admin_panel():
                 st.warning("🗑 All data deleted!")
                 st.rerun()
         
-        # --- Delete Data for Specific Day ---
-        st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin: 1rem 0; border-top: 1px solid var(--text-secondary);'></div>", unsafe_allow_html=True)
         with st.form(key="delete_day_data_form"):
             st.markdown("<h3>🗑 Delete Data for Specific Day</h3>", unsafe_allow_html=True)
             tz = pytz.timezone("Asia/Riyadh")
@@ -1272,42 +1266,52 @@ if __name__ == "__main__":
     initialize_session()
     authenticate_user()
     
-    st.sidebar.title("🔒 Session")
-    if st.sidebar.button("Logout", key="logout_button"):
-        st.session_state.logged_in = False
-        st.session_state.user_role = None
-        st.session_state.user_role_type = None
-        st.session_state.reminders = []
-        st.session_state.selected_tab = "Dashboard"
-        save_data()
-        st.rerun()
-    
     if st.session_state.logged_in:
-        st.markdown("<div class='main-container'>", unsafe_allow_html=True)
-        df_all = pd.DataFrame(st.session_state.timesheet, columns=TASK_COLUMNS)
-        df_user = df_all[df_all['Employee'] == st.session_state.user_role] if not df_all.empty else pd.DataFrame(columns=TASK_COLUMNS)
-        render_alerts(df_user, df_all)
-        render_sidebar_stats()
-        display_df = df_user if st.session_state.user_role_type == "Employee" else df_all
-        render_header()
-        
-        if st.session_state.selected_tab == "Dashboard":
-            render_analytics(display_df)
-            render_all_uploaded_files(df_all)
-            render_admin_download_tasks()
-            auto_export_weekly()
-        elif st.session_state.selected_tab == "Add Task":
-            render_add_task()
-        elif st.session_state.selected_tab == "Edit/Delete Task":
-            render_edit_delete_task(display_df)
-        elif st.session_state.selected_tab == "Employee Work":
-            render_employee_work()
-        elif st.session_state.selected_tab == "Settings":
-            render_settings()
-        elif st.session_state.selected_tab == "Download Tasks":
-            render_download_tasks()
-        elif st.session_state.selected_tab == "Admin Panel":
-            render_admin_panel()
-        
-        st.markdown(f"<footer>© INTERSOFT {datetime.now(pytz.timezone('Asia/Riyadh')).strftime('%Y')}</footer>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            st.markdown(f"<div class='sidebar {'open' if st.session_state.sidebar_open else ''}'><div class='sidebar-content'>", unsafe_allow_html=True)
+            st.markdown("<h3>🔒 Session</h3>", unsafe_allow_html=True)
+            if st.button("Logout", key="logout_button"):
+                st.session_state.logged_in = False
+                st.session_state.user_role = None
+                st.session_state.user_role_type = None
+                st.session_state.reminders = []
+                st.session_state.selected_tab = "Dashboard"
+                save_data()
+                st.rerun()
+            render_alerts(
+                pd.DataFrame(st.session_state.timesheet, columns=TASK_COLUMNS)[
+                    pd.DataFrame(st.session_state.timesheet, columns=TASK_COLUMNS)['Employee'] == st.session_state.user_role
+                ] if not pd.DataFrame(st.session_state.timesheet, columns=TASK_COLUMNS).empty else pd.DataFrame(columns=TASK_COLUMNS),
+                pd.DataFrame(st.session_state.timesheet, columns=TASK_COLUMNS)
+            )
+            render_sidebar_stats()
+            st.markdown("</div></div>", unsafe_allow_html=True)
+        with col2:
+            st.markdown("<div class='main-container'>", unsafe_allow_html=True)
+            render_header()
+            
+            df_all = pd.DataFrame(st.session_state.timesheet, columns=TASK_COLUMNS)
+            df_user = df_all[df_all['Employee'] == st.session_state.user_role] if not df_all.empty else pd.DataFrame(columns=TASK_COLUMNS)
+            display_df = df_user if st.session_state.user_role_type == "Employee" else df_all
+            
+            if st.session_state.selected_tab == "Dashboard":
+                render_analytics(display_df)
+                render_all_uploaded_files(df_all)
+                render_admin_download_tasks()
+                auto_export_weekly()
+            elif st.session_state.selected_tab == "Add Task":
+                render_add_task()
+            elif st.session_state.selected_tab == "Edit/Delete Task":
+                render_edit_delete_task(display_df)
+            elif st.session_state.selected_tab == "Employee Work":
+                render_employee_work()
+            elif st.session_state.selected_tab == "Settings":
+                render_settings()
+            elif st.session_state.selected_tab == "Download Tasks":
+                render_download_tasks()
+            elif st.session_state.selected_tab == "Admin Panel":
+                render_admin_panel()
+            
+            st.markdown(f"<footer>© INTERSOFT {datetime.now(pytz.timezone('Asia/Riyadh')).strftime('%Y')}</footer>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
