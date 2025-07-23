@@ -41,151 +41,157 @@ TASK_COLUMNS = [
 ]
 
 # --- Page Config ---
-st.set_page_config(page_title="Login | INTERSOFT", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="INTERSOFT Time Sheet", page_icon="⚡", layout="wide")
 
 # --- Embed CSS ---
 st.markdown("""
 <style>
+/* Import Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
 
+/* Define color variables for consistency */
+:root {
+    --primary-blue: #1E3A8A;
+    --secondary-blue: #2563EB;
+    --accent-yellow: #FCD34D;
+    --dark-bg: #0F172A;
+    --card-bg: #1E293B;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+}
+
+/* Global styles */
 * {
     font-family: 'Inter', sans-serif;
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
+/* Main container */
 .main-container {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 1.5rem;
+    background: var(--dark-bg);
+    min-height: 100vh;
 }
 
+/* Header */
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.5rem 2rem;
-    background: #1c2526;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    transition: all 0.3s ease;
-}
-
-.header:hover {
-    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    padding: 1rem 1.5rem;
+    background: var(--primary-blue);
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 .company-logo {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     font-weight: 700;
-    color: #4ade80;
-    letter-spacing: 0.5px;
+    color: var(--accent-yellow);
 }
 
 .user-info {
     text-align: right;
-    font-size: 1rem;
-    color: #94a3b8;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
 }
 
 .user-info b {
-    color: #f8fafc;
+    color: var(--text-primary);
     font-weight: 600;
 }
 
+/* Navigation bar */
 .nav-bar {
     display: flex;
-    gap: 1rem;
+    gap: 0.5rem;
     justify-content: center;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-    background: #1c2526;
-    padding: 1.5rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--card-bg);
+    border-radius: 10px;
 }
 
 .nav-button {
-    background: linear-gradient(135deg, #2d3748 0%, #1c2526 100%);
-    color: #e2e8f0;
-    padding: 0.8rem 1.8rem;
-    border-radius: 12px;
+    background: var(--primary-blue);
+    color: var(--text-primary);
+    padding: 0.7rem 1.5rem;
+    border-radius: 8px;
     font-weight: 600;
-    font-size: 1rem;
-    border: 1px solid #4b5563;
+    font-size: 0.9rem;
+    border: none;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
 .nav-button:hover, .nav-button.active {
-    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
-    color: #1c2526;
-    box-shadow: 0 4px 12px rgba(74,222,128,0.5);
+    background: var(--accent-yellow);
+    color: var(--primary-blue);
     transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(252, 211, 77, 0.4);
 }
 
+/* Cards */
 .card {
-    background: #1c2526;
-    padding: 2rem;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
 }
 
 .card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    transform: translateY(-3px);
 }
 
 .card-title {
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     font-weight: 600;
-    color: #4ade80;
+    color: var(--accent-yellow);
     margin-bottom: 1rem;
-    text-align: center;
+    text-align: left;
 }
 
+/* Stat cards */
 .stat-card {
     text-align: center;
-    padding: 1.2rem;
-    background: #2d3748;
-    border-radius: 10px;
-    color: #e2e8f0;
-    transition: all 0.3s ease;
-    margin-bottom: 1rem;
-}
-
-.stat-card:hover {
-    background: #4ade80;
-    color: #1c2526;
+    padding: 1rem;
+    background: var(--primary-blue);
+    border-radius: 8px;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
 }
 
 .stat-card span {
-    font-size: 2rem;
+    font-size: 1.8rem;
     font-weight: 700;
-    color: #fcd34d;
+    color: var(--accent-yellow);
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.3rem;
 }
 
+/* Alerts */
 .alert {
-    background: #7f1d1d;
-    color: #f8fafc;
-    padding: 1rem;
-    border-radius: 10px;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-    font-weight: 500;
+    background: #7F1D1D;
+    color: var(--text-primary);
+    padding: 0.8rem;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    font-size: 0.85rem;
     animation: slideIn 0.5s ease;
 }
 
 .alert.reminder {
-    background: #d97706;
+    background: #D97706;
 }
 
 @keyframes slideIn {
@@ -193,98 +199,171 @@ st.markdown("""
     to { transform: translateY(0); opacity: 1; }
 }
 
+/* Streamlit button styles */
 .stButton>button {
-    background: linear-gradient(135deg, #2d3748 0%, #1c2526 100%);
-    color: #e2e8f0;
-    border-radius: 12px;
-    padding: 0.8rem 1.8rem;
+    background: var(--primary-blue);
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
     font-weight: 600;
-    font-size: 1rem;
-    border: 1px solid #4b5563;
+    font-size: 0.9rem;
+    border: none;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
 .stButton>button:hover {
-    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
-    color: #1c2526;
-    box-shadow: 0 4px 12px rgba(74,222,128,0.5);
+    background: var(--accent-yellow);
+    color: var(--primary-blue);
     transform: translateY(-2px);
 }
 
 .stButton>button.delete-button {
-    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
-    border: 1px solid #7f1d1d;
+    background: #7F1D1D;
 }
 
 .stButton>button.delete-button:hover {
-    background: linear-gradient(135deg, #991b1b 0%, #b91c1c 100%);
-    color: #f8fafc;
-    box-shadow: 0 4px 12px rgba(153,27,27,0.5);
-    transform: translateY(-2px);
+    background: #B91C1C;
+    color: var(--text-primary);
 }
 
-.stTextInput input {
-    background: #2d3748;
-    color: #e2e8f0;
-    border-radius: 10px;
-    padding: 0.7rem;
-    border: 1px solid #4b5563;
-    transition: all 0.3s ease;
+/* Streamlit input styles */
+.stTextInput input, .stSelectbox select, .stDateInput input {
+    background: var(--primary-blue);
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 0.6rem;
+    border: 1px solid var(--text-secondary);
 }
 
-.stTextInput input:focus {
-    border-color: #4ade80;
-    box-shadow: 0 0 6px rgba(74,222,128,0.3);
+.stTextInput input:focus, .stSelectbox select:focus, .stDateInput input:focus {
+    border-color: var(--accent-yellow);
+    box-shadow: 0 0 5px rgba(252, 211, 77, 0.4);
 }
 
+/* Streamlit table styles */
 .stDataFrame table {
-    background: #1c2526;
-    border-radius: 10px;
-    color: #e2e8f0;
-    border-collapse: collapse;
+    background: var(--card-bg);
+    border-radius: 8px;
+    color: var(--text-primary);
 }
 
 .stDataFrame th {
-    background: #2d3748;
-    color: #e2e8f0;
+    background: var(--primary-blue);
+    color: var(--text-primary);
     font-weight: 600;
-    padding: 1rem;
 }
 
 .stDataFrame td {
-    border-bottom: 1px solid #4b5563;
-    padding: 1rem;
+    border-bottom: 1px solid var(--text-secondary);
+    padding: 0.8rem;
 }
 
+/* Chart container */
 .chart-container {
-    padding: 1.5rem;
-    background: #1c2526;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    padding: 1rem;
+    background: var(--card-bg);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
 }
 
+/* Profile picture */
 .profile-picture {
     border-radius: 50%;
     width: 80px;
     height: 80px;
     object-fit: cover;
-    border: 3px solid #4ade80;
+    border: 2px solid var(--accent-yellow);
+    margin-bottom: 1rem;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 1.5rem 0;
+    font-size: 0.85rem;
+}
+
+/* Section divider */
+.section-divider {
+    border-top: 1px solid var(--text-secondary);
+    margin: 1.5rem 0;
+}
+
+/* Login page specific styles */
+.login-wrapper {
+    max-width: 800px;
+    margin: 4rem auto;
+    display: flex;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.login-left {
+    flex: 1;
+    background: linear-gradient(135deg, var(--secondary-blue), var(--primary-blue));
+    color: var(--text-primary);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.login-left svg {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 1rem;
+}
+
+.login-left h4 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.login-left p {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.login-right {
+    flex: 1;
+    background: rgba(17, 24, 39, 0.95);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.login-right h2 {
+    font-size: 1.5rem;
+    color: var(--accent-yellow);
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.login-right p {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
     margin-bottom: 1.5rem;
 }
 
-footer {
-    text-align: center;
-    color: #94a3b8;
-    padding: 2rem 0;
-    font-size: 0.9rem;
-    margin-top: 2rem;
+.stButton>button.login-button {
+    background: var(--accent-yellow);
+    color: var(--primary-blue);
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 0.7rem;
+    width: 100%;
 }
 
-.section-divider {
-    border-top: 1px solid #4b5563;
-    margin: 2rem 0;
+.stButton>button.login-button:hover {
+    background: #FBBF24;
+    transform: scale(1.02);
 }
 </style>
 """, unsafe_allow_html=True)
@@ -298,137 +377,20 @@ def authenticate_user():
 
     if not st.session_state.logged_in:
         st.markdown("""
-        <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-
-        html, body, [class*="css"] {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(to bottom right, #0f172a, #1e293b);
-            color: #f8fafc;
-        }
-
-        .login-wrapper {
-            max-width: 900px;
-            margin: 5rem auto;
-            display: flex;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
-            animation: fadeIn 1.2s ease-out;
-        }
-
-        .login-left {
-            flex: 1;
-            background: radial-gradient(circle at top left, #2563eb, #1e3a8a);
-            color: #f8fafc;
-            padding: 3rem 2rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        }
-
-        .login-left svg {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 1rem;
-        }
-
-        .login-left h4 {
-            font-size: 2rem;
-            font-weight: 800;
-            margin-bottom: 0.5rem;
-        }
-
-        .login-left p {
-            font-size: 1rem;
-            margin: 0.3rem 0;
-            opacity: 0.9;
-        }
-
-        .login-right {
-            flex: 1;
-            background: rgba(17, 24, 39, 0.9);
-            backdrop-filter: blur(12px);
-            padding: 3rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .login-right h2 {
-            font-size: 1.8rem;
-            color: #4ade80;
-            margin-bottom: 1rem;
-            text-align: center;
-        }
-
-        .login-right p {
-            text-align: center;
-            color: #94a3b8;
-            font-size: 0.9rem;
-            margin-bottom: 2rem;
-        }
-
-        .stTextInput>div>input {
-            background-color: #1f2937;
-            color: #f8fafc;
-            border: 1px solid #374151;
-            border-radius: 10px;
-            padding: 0.7rem 1rem;
-            font-size: 0.95rem;
-        }
-
-        .stTextInput>div>input:focus {
-            border-color: #22c55e;
-            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.4);
-        }
-
-        .stButton>button.login-button {
-            background: linear-gradient(to right, #22c55e, #16a34a);
-            color: white;
-            font-weight: 600;
-            border: none;
-            border-radius: 10px;
-            font-size: 1rem;
-            padding: 0.75rem;
-            margin-top: 1rem;
-            width: 100%;
-            transition: all 0.25s ease;
-        }
-
-        .stButton>button.login-button:hover {
-            transform: scale(1.04);
-            box-shadow: 0 0 16px rgba(34, 197, 94, 0.4);
-        }
-
-        @keyframes fadeIn {
-            0% {opacity: 0; transform: translateY(-20px);}
-            100% {opacity: 1; transform: translateY(0);}
-        }
-        </style>
-
         <div class="login-wrapper">
             <div class="login-left">
                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 11c0 1.104-.896 2-2 2s-2-.896-2-2 2-4 2-4 2 2.896 2 4zm4 2c1.104 0 2-.896 2-2s-2-4-2-4-2 2.896-2 4 .896 2 2 2zm-8 2h8m-4 0v5"/>
                 </svg>
-                <h4>INTERSOFT time sheet</h4>
+                <h4>INTERSOFT Time Sheet</h4>
                 <p>International Software Company</p>
                 <p>Empowering your workflow with intelligent time tracking 🚀</p>
             </div>
             <div class="login-right">
                 <h2>🔐 Login</h2>
-                <p>WELCOME BACK , GET YOUR COFFEE READY ☕</p>
+                <p>Welcome back, let's get to work! ☕</p>
         """, unsafe_allow_html=True)
-
-
-
-            
-
-       
 
         username = st.text_input("Username", placeholder="Enter your username", key="login_username")
         password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password")
