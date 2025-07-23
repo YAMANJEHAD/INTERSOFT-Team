@@ -1077,7 +1077,7 @@ def render_admin_panel():
             task = df_all[df_all["TaskID"] == task_dict[selected_id]].iloc[0]
             
             if isinstance(task.get("Attachment"), dict):
-                st.markdown(f"<p>File: {task['Attachment']['name']}</p>",-JX unsafe_allow_html=True)
+                st.markdown(f"<p>File: {task['Attachment']['name']}</p>",unsafe_allow_html=True)
                 if task['Attachment']['type'].startswith("image/"):
                     st.image(base64.b64decode(task['Attachment']['data']), width=150)
                 st.download_button(
