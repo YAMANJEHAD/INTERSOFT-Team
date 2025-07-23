@@ -26,7 +26,6 @@ USER_PROFILE = {
     "qusai": {"name": "Qusai", "picture": None},
     "mahmoud": {"name": "Mahmoud", "picture": None},
     "mohammad aleem": {"name": "Mohammad aleem", "picture": None},
-    
 }
 EXPORT_FOLDER = "weekly_exports"
 DATA_FILE = "data.json"
@@ -295,6 +294,14 @@ footer {
 </style>
 """, unsafe_allow_html=True)
 
+# --- Helper Functions ---
+def generate_task_id():
+    """Generate a unique TaskID."""
+    while True:
+        task_id = str(uuid.uuid4())
+        if not any(t["TaskID"] == task_id for t in st.session_state.timesheet):
+            return task_id
+
 # --- Persistent Storage ---
 def save_data():
     try:
@@ -322,7 +329,6 @@ def load_data():
                 timesheet = data.get("timesheet", [])
                 valid_timesheet = []
                 for task in timesheet:
-                    # Ensure required fields exist and are valid
                     if (isinstance(task, dict) and
                         all(key in task for key in ["TaskID", "Employee", "Date", "Submitted"]) and
                         isinstance(task["Date"], str) and
@@ -344,8 +350,15 @@ def load_data():
                         USER_PROFILE[user]["name"] = profile.get("name", USER_PROFILE[user]["name"])
                     else:
                         USER_PROFILE[user] = {"name": profile.get("name", ""), "picture": None}
-    except Exception as e:
-        st.error(f"⚠️ Failed to load data: {e}")
+        else:
+            st.session_state.timesheet = []
+            st.session_state.reminders = []
+            st.session_state.login_log = []
+    except json.JSONDecodeError:
+        st.error("⚠️ Corrupted data file. Starting fresh.")
+        st.session_state.timesheet = []
+        st.session_state.reminders = []
+        st.session_state.login_log = []
 
 # --- Session Initialization ---
 def initialize_session():
@@ -413,7 +426,7 @@ def export_to_excel(df, sheet_name, file_name):
 def auto_export_weekly():
     os.makedirs(EXPORT_FOLDER, exist_ok=True)
     now = datetime.now(pytz.timezone("Asia/Riyadh"))
-    if now.weekday() == 6:
+    if now.weekday() == 6:  # Sunday
         filename = os.path.join(EXPORT_FOLDER, f"flm_tasks_week_{now.strftime('%Y_%U')}.csv")
         if not os.path.exists(filename):
             df_export = pd.DataFrame(st.session_state.timesheet)
@@ -815,7 +828,7 @@ def render_add_task():
         if st.form_submit_button("✅ Submit"):
             if desc.strip():
                 task = {
-                    "TaskID": str(uuid.uuid4()),
+                    "TaskID": generate_task_id(),
                     "Employee": st.session_state.user_role,
                     "Date": date.strftime('%Y-%m-%d'),
                     "Day": calendar.day_name[date.weekday()],
@@ -1064,7 +1077,7 @@ def render_admin_panel():
             task = df_all[df_all["TaskID"] == task_dict[selected_id]].iloc[0]
             
             if isinstance(task.get("Attachment"), dict):
-                st.markdown(f"<p>File: {task['Attachment']['name']}</p>", unsafe_allow_html=True)
+                st.markdown(f"<p>File: {task['Attachment']['name']}</p>",-JX unsafe_allow_html=True)
                 if task['Attachment']['type'].startswith("image/"):
                     st.image(base64.b64decode(task['Attachment']['data']), width=150)
                 st.download_button(
@@ -1134,7 +1147,7 @@ def render_admin_panel():
         with st.form("delete_all_data_form"):
             st.markdown("<h3>🗑 Delete All Data</h3>", unsafe_allow_html=True)
             st.warning("⚠️ This action is permanent and will delete all tasks, reminders, and login logs!")
-            if st.form_submit_button("🗑 حذف جميع البيانات", type="primary"):
+            if st.form_submit_button("🗑 Delete All Data", type="primary"):
                 st.session_state.timesheet = []
                 st.session_state.reminders = []
                 st.session_state.login_log = []
@@ -1149,7 +1162,7 @@ def render_admin_panel():
             tz = pytz.timezone("Asia/Riyadh")
             delete_date = st.date_input("Select Date to Delete", datetime.now(tz))
             st.warning("⚠️ This action is permanent and will delete all tasks and reminders for the selected date!")
-            if st.form_submit_button("🗑 حذف بيانات اليوم", type="primary"):
+            if st.form_submit_button("🗑 Delete Day's Data", type="primary"):
                 delete_date_str = delete_date.strftime('%Y-%m-%d')
                 st.session_state.timesheet = [t for t in st.session_state.timesheet if t["Date"] != delete_date_str]
                 st.session_state.reminders = [r for r in st.session_state.reminders if r["date"] != delete_date_str]
@@ -1162,6 +1175,7 @@ def render_admin_panel():
 # --- Main App ---
 if __name__ == "__main__":
     initialize_session()
+    load_data()
     authenticate_user()
     
     st.sidebar.title("🔒 Session")
