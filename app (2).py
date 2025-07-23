@@ -299,109 +299,122 @@ def authenticate_user():
     if not st.session_state.logged_in:
         st.markdown("""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
         html, body, [class*="css"] {
             font-family: 'Inter', sans-serif;
-            background: radial-gradient(circle at top left, #0f172a, #1e293b);
+            background: linear-gradient(135deg, #0f172a, #1e293b);
             color: #f8fafc;
         }
 
-        .login-container {
-            max-width: 700px;
-            margin: 3rem auto;
+        .login-wrapper {
+            max-width: 800px;
+            margin: 4rem auto;
             display: flex;
-            border-radius: 18px;
+            background: #0f172a;
+            border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
         }
 
-        .left {
+        .login-left {
             flex: 1;
-            background: linear-gradient(160deg, #1e3a8a, #2563eb);
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
             color: #f8fafc;
             display: flex;
             flex-direction: column;
-            align-items: center;
             justify-content: center;
-            padding: 2rem 1rem;
+            align-items: center;
+            padding: 2rem;
             position: relative;
+            animation: fadeSlide 1s ease forwards;
         }
 
-        .left svg {
+        .login-left h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-left p {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            text-align: center;
+        }
+
+        .login-left svg {
             width: 80px;
             height: 80px;
             margin-bottom: 1rem;
         }
 
-        .left h1 {
-            font-size: 1.8rem;
-            margin: 0;
-        }
-
-        .left p {
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-
-        .right {
+        .login-right {
             flex: 1;
-            background: #111827cc;
-            backdrop-filter: blur(12px);
-            padding: 2rem;
+            background: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 3rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
-        .right h2 {
-            text-align: center;
-            font-size: 1.4rem;
-            margin-bottom: 1.5rem;
+        .login-right h2 {
+            font-size: 1.5rem;
             color: #4ade80;
+            margin-bottom: 2rem;
+            text-align: center;
         }
 
         .stTextInput>div>input {
             background-color: #1f2937;
             color: #f8fafc;
             border: 1px solid #374151;
-            border-radius: 8px;
-            padding: 0.5rem 0.8rem;
-            font-size: 0.85rem;
+            border-radius: 10px;
+            padding: 0.6rem;
+            font-size: 0.9rem;
         }
 
         .stTextInput>div>input:focus {
             border-color: #22c55e;
-            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.4);
         }
 
         .stButton>button.login-button {
             background: linear-gradient(to right, #22c55e, #16a34a);
             color: white;
+            font-weight: bold;
             border: none;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            padding: 0.6rem 1.2rem;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            padding: 0.7rem 1.5rem;
             margin-top: 1rem;
             width: 100%;
-            transition: all 0.2s ease;
+            transition: all 0.25s ease;
         }
 
         .stButton>button.login-button:hover {
             transform: scale(1.03);
-            box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
+        }
+
+        @keyframes fadeSlide {
+            0% {opacity: 0; transform: translateX(-30px);}
+            100% {opacity: 1; transform: translateX(0);}
         }
         </style>
 
-        <div class="login-container">
-            <div class="left">
+        <div class="login-wrapper">
+            <div class="login-left">
                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 11c0 1.104-.896 2-2 2s-2-.896-2-2 2-4 2-4 2 2.896 2 4zm4 2c1.104 0 2-.896 2-2s-2-4-2-4-2 2.896-2 4 .896 2 2 2zm-8 2h8m-4 0v5"/>
                 </svg>
                 <h1>INTERSOFT</h1>
-                <p>Your job. Your time. Your growth.</p>
+                <p>Empowering your workflow with intelligent time tracking 🚀</p>
             </div>
-            <div class="right">
+            <div class="login-right">
                 <h2>🔐 Login to your account</h2>
         """, unsafe_allow_html=True)
+
 
         username = st.text_input("Username", placeholder="Enter your username", key="login_username")
         password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password")
