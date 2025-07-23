@@ -303,41 +303,29 @@ def authenticate_user():
 
         html, body, [class*="css"] {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f172a, #1e293b);
+            background: linear-gradient(to bottom right, #0f172a, #1e293b);
             color: #f8fafc;
         }
 
         .login-wrapper {
-            max-width: 800px;
-            margin: 4rem auto;
+            max-width: 900px;
+            margin: 5rem auto;
             display: flex;
-            background: #0f172a;
             border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+            animation: fadeIn 1.2s ease-out;
         }
 
         .login-left {
             flex: 1;
-            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            background: radial-gradient(circle at top left, #2563eb, #1e3a8a);
             color: #f8fafc;
+            padding: 3rem 2rem;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 2rem;
-            position: relative;
-            animation: fadeSlide 1s ease forwards;
-        }
-
-        .login-left h1 {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .login-left p {
-            font-size: 0.95rem;
-            opacity: 0.9;
             text-align: center;
         }
 
@@ -347,10 +335,22 @@ def authenticate_user():
             margin-bottom: 1rem;
         }
 
+        .login-left h4 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-left p {
+            font-size: 1rem;
+            margin: 0.3rem 0;
+            opacity: 0.9;
+        }
+
         .login-right {
             flex: 1;
-            background: rgba(17, 24, 39, 0.8);
-            backdrop-filter: blur(10px);
+            background: rgba(17, 24, 39, 0.9);
+            backdrop-filter: blur(12px);
             padding: 3rem;
             display: flex;
             flex-direction: column;
@@ -358,10 +358,17 @@ def authenticate_user():
         }
 
         .login-right h2 {
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             color: #4ade80;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
             text-align: center;
+        }
+
+        .login-right p {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
         }
 
         .stTextInput>div>input {
@@ -369,8 +376,8 @@ def authenticate_user():
             color: #f8fafc;
             border: 1px solid #374151;
             border-radius: 10px;
-            padding: 0.6rem;
-            font-size: 0.9rem;
+            padding: 0.7rem 1rem;
+            font-size: 0.95rem;
         }
 
         .stTextInput>div>input:focus {
@@ -381,24 +388,24 @@ def authenticate_user():
         .stButton>button.login-button {
             background: linear-gradient(to right, #22c55e, #16a34a);
             color: white;
-            font-weight: bold;
+            font-weight: 600;
             border: none;
             border-radius: 10px;
-            font-size: 0.95rem;
-            padding: 0.7rem 1.5rem;
+            font-size: 1rem;
+            padding: 0.75rem;
             margin-top: 1rem;
             width: 100%;
             transition: all 0.25s ease;
         }
 
         .stButton>button.login-button:hover {
-            transform: scale(1.03);
-            box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
+            transform: scale(1.04);
+            box-shadow: 0 0 16px rgba(34, 197, 94, 0.4);
         }
 
-        @keyframes fadeSlide {
-            0% {opacity: 0; transform: translateX(-30px);}
-            100% {opacity: 1; transform: translateX(0);}
+        @keyframes fadeIn {
+            0% {opacity: 0; transform: translateY(-20px);}
+            100% {opacity: 1; transform: translateY(0);}
         }
         </style>
 
@@ -413,9 +420,10 @@ def authenticate_user():
                 <p>Empowering your workflow with intelligent time tracking 🚀</p>
             </div>
             <div class="login-right">
-                <h2>🔐Login </h2>
-                <p> WELCOME BACK , GET YOUR COFFEE READY</p>
+                <h2>🔐 Login</h2>
+                <p>WELCOME BACK , GET YOUR COFFEE READY ☕</p>
         """, unsafe_allow_html=True)
+
 
 
         username = st.text_input("Username", placeholder="Enter your username", key="login_username")
