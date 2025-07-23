@@ -425,49 +425,10 @@ def authenticate_user():
         """, unsafe_allow_html=True)
 
 
-        <div class="login-wrapper">
-            <div class="login-left">
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 11c0 1.104-.896 2-2 2s-2-.896-2-2 2-4 2-4 2 2.896 2 4zm4 2c1.104 0 2-.896 2-2s-2-4-2-4-2 2.896-2 4 .896 2 2 2zm-8 2h8m-4 0v5"/>
-                </svg>
-                <h4>INTERSOFT time sheet</h4>
-                <p>International Software Company</p>
-                <p>Empowering your workflow with intelligent time tracking 🚀</p>
-            </div>
-            <div class="login-right">
-                <h2>🔐 Login</h2>
-                <p>WELCOME BACK , GET YOUR COFFEE READY ☕</p>
-        """, unsafe_allow_html=True)
 
-        # داخل مربع وسط الصفحة
-        st.markdown("""
-        <div style="
-            background-color: #0f172acc;
-            border: 1px solid #334155;
-            padding: 2rem;
-            border-radius: 16px;
-            max-width: 380px;
-            margin: auto;
-            box-shadow: 0 0 20px rgba(0,0,0,0.3);
-        ">
-        """, unsafe_allow_html=True)
+            
 
-        username = st.text_input("**<small style='font-size:14px;'>Username</small>**", 
-                                 placeholder="Enter your username", 
-                                 label_visibility="visible")
-
-        password = st.text_input("**<small style='font-size:14px;'>Password</small>**", 
-                                 type="password", 
-                                 placeholder="Enter your password", 
-                                 label_visibility="visible")
-
-        st.markdown("""<style>
-        ::placeholder {
-            font-size: 13px;
-            color: #cbd5e1;
-        }
-        </style>""", unsafe_allow_html=True)
+       
 
         username = st.text_input("Username", placeholder="Enter your username", key="login_username")
         password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password")
