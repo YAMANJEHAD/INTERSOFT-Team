@@ -408,11 +408,13 @@ def authenticate_user():
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 11c0 1.104-.896 2-2 2s-2-.896-2-2 2-4 2-4 2 2.896 2 4zm4 2c1.104 0 2-.896 2-2s-2-4-2-4-2 2.896-2 4 .896 2 2 2zm-8 2h8m-4 0v5"/>
                 </svg>
-                <h1>INTERSOFT</h1>
+                <h1>INTERSOFT time sheet</h1>
+                <h3>International Software Company</h3>
                 <p>Empowering your workflow with intelligent time tracking 🚀</p>
             </div>
             <div class="login-right">
-                <h2>🔐 Login to your account</h2>
+                <h2>🔐Login </h2>
+                <h3> WELCOME BACK , GET YOUR COFFEE READY</h3>
         """, unsafe_allow_html=True)
 
 
