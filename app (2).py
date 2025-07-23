@@ -117,7 +117,7 @@ def logout():
     """Log out the user."""
     for key in list(st.session_state.keys()):
         del st.session_state[key]
-    st.experimental_rerun()
+    st.rerun()
 # ===================== USER INTERFACE =====================
 def display_sidebar():
     """Display the sidebar with navigation options."""
@@ -371,7 +371,7 @@ def edit_delete_task_page():
                     
                     st.success("Task updated successfully!")
                     time.sleep(1)
-                    st.experimental_rerun()
+                    st.rerun()
                 
                 elif delete:
                     # Remove task
@@ -385,7 +385,7 @@ def edit_delete_task_page():
                     
                     st.success("Task deleted successfully!")
                     time.sleep(1)
-                    st.experimental_rerun()
+                    st.rerun()
     else:
         st.info("No tasks found.")
 def employee_work_page():
@@ -879,7 +879,7 @@ def main():
     if "logged_in" not in st.session_state or not st.session_state.logged_in:
         # Display login page
         if login_page():
-            st.experimental_rerun()
+            st.rerun()
     else:
         # Display the main app
         page = display_sidebar()
