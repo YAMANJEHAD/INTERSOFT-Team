@@ -360,7 +360,7 @@ def authenticate_user():
         .login-right h2 {
             font-size: 1.8rem;
             color: #4ade80;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
             text-align: center;
         }
 
@@ -424,7 +424,34 @@ def authenticate_user():
                 <p>WELCOME BACK , GET YOUR COFFEE READY ☕</p>
         """, unsafe_allow_html=True)
 
+        # داخل مربع وسط الصفحة
+        st.markdown("""
+        <div style="
+            background-color: #0f172acc;
+            border: 1px solid #334155;
+            padding: 2rem;
+            border-radius: 16px;
+            max-width: 380px;
+            margin: auto;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        ">
+        """, unsafe_allow_html=True)
 
+        username = st.text_input("**<small style='font-size:14px;'>Username</small>**", 
+                                 placeholder="Enter your username", 
+                                 label_visibility="visible")
+
+        password = st.text_input("**<small style='font-size:14px;'>Password</small>**", 
+                                 type="password", 
+                                 placeholder="Enter your password", 
+                                 label_visibility="visible")
+
+        st.markdown("""<style>
+        ::placeholder {
+            font-size: 13px;
+            color: #cbd5e1;
+        }
+        </style>""", unsafe_allow_html=True)
 
         username = st.text_input("Username", placeholder="Enter your username", key="login_username")
         password = st.text_input("Password", type="password", placeholder="Enter your password", key="login_password")
