@@ -12,14 +12,14 @@ import re
 # Set page configuration
 st.set_page_config(page_title="INTERSOFT Analyzer", layout="wide", initial_sidebar_state="expanded")
 
-# Custom CSS for a clean, professional design
+# Custom CSS for a cohesive design
 st.markdown("""
 <style>
     .stApp {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     .stButton>button {
-        background-color: #2563eb;
+        background-color: #3b82f6;
         color: white;
         border-radius: 8px;
         padding: 8px 16px;
@@ -27,46 +27,54 @@ st.markdown("""
         transition: all 0.3s ease;
     }
     .stButton>button:hover {
-        background-color: #1e40af;
+        background-color: #2563eb;
         transform: scale(1.05);
     }
     .stFileUploader {
-        background-color: #f8fafc;
+        background-color: var(--card-bg);
         border-radius: 8px;
         padding: 15px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     .stExpander {
-        background-color: rgba(255,255,255,0.1);
+        background-color: var(--card-bg);
         border-radius: 8px;
         margin-bottom: 10px;
     }
     .stDataFrame {
         border-radius: 8px;
         padding: 10px;
+        background-color: var(--card-bg);
     }
     .sidebar .sidebar-content {
-        background-color: #1e293b;
-        color: #ffffff;
+        background-color: var(--sidebar-bg);
+        color: var(--text-color);
     }
     h1, h2, h3, h4 {
-        color: #ffffff;
+        color: var(--text-color);
         margin-top: 10px;
     }
     .metric-card {
-        background-color: rgba(255,255,255,0.15);
+        background-color: var(--card-bg);
         border-radius: 8px;
         padding: 12px;
         text-align: center;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         margin-bottom: 10px;
     }
+    .sidebar-metric {
+        background-color: var(--card-bg);
+        border-radius: 6px;
+        padding: 8px;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
     .clock-container {
         font-family: 'Segoe UI', monospace;
-        font-size: 16px;
-        color: #fff;
-        background: rgba(0,0,0,0.3);
-        padding: 8px 15px;
+        font-size: 14px;
+        color: var(--text-color);
+        background: rgba(0,0,0,0.2);
+        padding: 6px 12px;
         border-radius: 6px;
         position: fixed;
         top: 10px;
@@ -76,16 +84,17 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# JavaScript to detect device theme and apply it
+# JavaScript to detect device theme
 theme_html = """
 <script>
     function setTheme() {
         const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
         document.documentElement.style.setProperty('--background', prefersDark ? 
             'linear-gradient(135deg, #1e3a8a, #3b82f6)' : 
-            'linear-gradient(135deg, #f0f9ff, #e0f2fe)');
+            'linear-gradient(135deg, #e0f2fe, #f8fafc)');
         document.documentElement.style.setProperty('--text-color', prefersDark ? '#ffffff' : '#1e293b');
         document.documentElement.style.setProperty('--card-bg', prefersDark ? 'rgba(255,255,255,0.15)' : '#ffffff');
+        document.documentElement.style.setProperty('--sidebar-bg', prefersDark ? '#1e293b' : '#f1f5f9');
     }
     setTheme();
     window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", setTheme);
@@ -96,13 +105,12 @@ theme_html = """
         color: var(--text-color);
     }
     h1, h2, h3, h4 { color: var(--text-color); }
-    .metric-card { background-color: var(--card-bg); }
-    .stDataFrame { background-color: var(--card-bg); }
+    .metric-card, .stDataFrame, .stFileUploader, .stExpander { background-color: var(--card-bg); }
 </style>
 """
 components.html(theme_html, height=0)
 
-# Clock with minimal design
+# Clock
 clock_html = """
 <div class="clock-container">
     <div id="clock"></div>
@@ -120,16 +128,16 @@ updateClock();
 """
 components.html(clock_html, height=40)
 
-# Sidebar
+# Sidebar with detailed metrics
 with st.sidebar:
-    st.markdown("<h2 style='color:#ffffff;'>INTERSOFT Analyzer</h2>", unsafe_allow_html=True)
-    st.markdown("Upload and analyze Excel data with real-time insights.")
+    st.markdown("<h2 style='color:var(--text-color);'>INTERSOFT Analyzer</h2>", unsafe_allow_html=True)
+    st.markdown("Real-time data analysis for operational insights.")
 
 # Main title
 st.markdown("""
 <h1 style='text-align:center;'>📊 INTERSOFT Analyzer</h1>
 <div style='text-align:center; font-size:16px; margin-bottom:15px;'>
-    Real-time data analysis for operational excellence
+    Optimize operations with data-driven insights
 </div>
 """, unsafe_allow_html=True)
 
@@ -196,40 +204,6 @@ def problem_severity(note_type):
     if note_type in low: return "Low"
     return "Unclassified"
 
-def suggest_solutions(note_type):
-    solutions = {
-        "WRONG DATE": "Verify device timestamp and sync with server.",
-        "TERMINAL ID - WRONG DATE": "Recheck terminal ID and date configuration.",
-        "NO IMAGE FOR THE DEVICE": "Capture and upload device image.",
-        "NO RETAILERS SIGNATURE": "Ensure retailer signs the form.",
-        "NO ENGINEER SIGNATURE": "Engineer must sign before submission.",
-        "NO SIGNATURE": "Capture all required signatures.",
-        "UNCLEAR IMAGE": "Retake photo with better clarity.",
-        "NOT ACTIVE": "Check and retry activation process.",
-        "NO BILL": "Attach a valid billing document.",
-        "NO RECEIPT": "Upload a clear transaction receipt.",
-        "ANOTHER TERMINAL RECEIPT": "Upload the correct terminal's receipt.",
-        "WRONG RECEIPT": "Verify and re-upload the correct receipt.",
-        "REJECTED RECEIPT": "Correct and resubmit the receipt.",
-        "MULTIPLE ISSUES": "Address all issues and update note.",
-        "NO J.O": "Provide Job Order details.",
-        "PENDING": "Finalize the pending task.",
-        "MISSING INFORMATION": "Provide complete details."
-    }
-    return solutions.get(note_type, "No solution available.")
-
-def generate_alerts(df):
-    alerts = []
-    critical_percent = (df['Problem_Severity'] == 'Critical').mean() * 100
-    if critical_percent > 50:
-        alerts.append(f"⚠️ High critical problems: {critical_percent:.1f}%")
-    tech_problems = df.groupby('Technician_Name')['Problem_Severity'].apply(
-        lambda x: (x != 'Low').mean() * 100)
-    for tech, percent in tech_problems.items():
-        if percent > 20:
-            alerts.append(f"👨‍🔧 Technician {tech} has high problem rate: {percent:.1f}%")
-    return alerts
-
 # File processing
 if uploaded_file:
     progress_bar.progress(40)
@@ -254,39 +228,38 @@ if uploaded_file:
     else:
         df['Note_Type'] = df['NOTE'].apply(classify_note)
         df['Problem_Severity'] = df['Note_Type'].apply(problem_severity)
-        df['Suggested_Solution'] = df['Note_Type'].apply(suggest_solutions)
         st.success("✅ File processed successfully!")
         progress_bar.progress(100)
 
+        # Update sidebar with metrics
+        with st.sidebar:
+            st.markdown("### 📊 Key Metrics")
+            st.markdown(f"<div class='sidebar-metric'><strong>Total Notes:</strong> {len(df)}</div>", unsafe_allow_html=True)
+            critical_count = (df['Problem_Severity'] == 'Critical').sum()
+            st.markdown(f"<div class='sidebar-metric'><strong>Critical Issues:</strong> {critical_count}</div>", unsafe_allow_html=True)
+            done_count = (df['Note_Type'] == 'DONE').sum()
+            st.markdown(f"<div class='sidebar-metric'><strong>Completed Tasks:</strong> {done_count}</div>", unsafe_allow_html=True)
+            top_problem = df['Note_Type'].value_counts().index[0] if not df['Note_Type'].empty else "N/A"
+            st.markdown(f"<div class='sidebar-metric'><strong>Top Problem:</strong> {top_problem}</div>", unsafe_allow_html=True)
+            total_technicians = df['Technician_Name'].nunique()
+            st.markdown(f"<div class='sidebar-metric'><strong>Total Technicians:</strong> {total_technicians}</div>", unsafe_allow_html=True)
+
         # Metrics dashboard
         with st.container():
-            st.markdown("### 📈 Key Metrics")
+            st.markdown("### 📈 Overview")
             col1, col2, col3 = st.columns(3)
             with col1:
                 st.markdown(f"<div class='metric-card'><h4>Total Notes</h4><p>{len(df)}</p></div>", unsafe_allow_html=True)
             with col2:
-                critical_count = (df['Problem_Severity'] == 'Critical').sum()
                 st.markdown(f"<div class='metric-card'><h4>Critical Issues</h4><p>{critical_count}</p></div>", unsafe_allow_html=True)
             with col3:
-                done_count = (df['Note_Type'] == 'DONE').sum()
                 st.markdown(f"<div class='metric-card'><h4>Completed Tasks</h4><p>{done_count}</p></div>", unsafe_allow_html=True)
 
-        # Alerts section
-        alerts = generate_alerts(df)
-        if alerts:
-            with st.expander("🚨 Alerts", expanded=True):
-                for alert in alerts:
-                    st.markdown(f"""
-                    <div style='background-color:#fef3c7; color:#78350f; padding:8px; border-radius:6px; margin-bottom:8px;'>
-                        {alert}
-                    </div>
-                    """, unsafe_allow_html=True)
-
         # Tabs for analysis
-        tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
             "📊 Summary", "👨‍🔧 Technicians", "🚨 Top Issues",
             "🥧 Distribution", "✅ Completed", "📑 Details",
-            "✍️ Signatures", "🔍 Analysis"
+            "✍️ Signatures"
         ])
 
         with tab1:
@@ -298,7 +271,7 @@ if uploaded_file:
                 st.dataframe(note_counts, use_container_width=True)
             with col2:
                 fig_bar = px.bar(note_counts, x="Note_Type", y="Count", title="Note Type Frequency",
-                                 color="Note_Type")
+                                 color="Note_Type", color_continuous_scale="Blues")
                 st.plotly_chart(fig_bar, use_container_width=True)
 
         with tab2:
@@ -309,7 +282,7 @@ if uploaded_file:
                 st.dataframe(tech_counts.reset_index(), use_container_width=True)
             with col2:
                 fig_tech = px.bar(tech_counts.reset_index(), x="Technician_Name", y="Note_Type",
-                                  title="Notes per Technician", color="Note_Type")
+                                  title="Notes per Technician", color="Note_Type", color_continuous_scale="Blues")
                 st.plotly_chart(fig_tech, use_container_width=True)
 
         with tab3:
@@ -324,12 +297,13 @@ if uploaded_file:
                 st.dataframe(technician_notes_count, use_container_width=True)
             with col2:
                 fig_top = px.bar(technician_notes_count, x="Technician_Name", y="Notes_Count",
-                                 title="Top 5 Technicians with Issues", color="Notes_Count")
+                                 title="Top 5 Technicians with Issues", color="Notes_Count", color_continuous_scale="Blues")
                 st.plotly_chart(fig_top, use_container_width=True)
 
         with tab4:
             st.markdown("### 🥧 Note Type Distribution")
-            fig_pie = px.pie(note_counts, names='Note_Type', values='Count', title='Note Type Distribution')
+            fig_pie = px.pie(note_counts, names='Note_Type', values='Count', title='Note Type Distribution',
+                             color_discrete_sequence=px.colors.sequential.Blues)
             fig_pie.update_traces(textinfo='percent+label')
             st.plotly_chart(fig_pie, use_container_width=True)
 
@@ -344,7 +318,8 @@ if uploaded_file:
                 st.dataframe(done_terminals_summary, use_container_width=True)
             with col2:
                 fig_done = px.bar(done_terminals_summary, x="Technician_Name", y="DONE_Notes_Count",
-                                  title="Top 5 Technicians with Completed Tasks", color="DONE_Notes_Count")
+                                  title="Top 5 Technicians with Completed Tasks", color="DONE_Notes_Count",
+                                  color_continuous_scale="Blues")
                 st.plotly_chart(fig_done, use_container_width=True)
 
         with tab6:
@@ -372,17 +347,13 @@ if uploaded_file:
                 with col2:
                     st.markdown("#### 📊 Bar Chart")
                     fig_sig_bar = px.bar(sig_merged, x='Technician_Name', y='Signature_Issues',
-                                         color='Signature_Issue_Rate (%)', title='Signature Issues per Technician')
+                                         color='Signature_Issue_Rate (%)', title='Signature Issues per Technician',
+                                         color_continuous_scale="Blues")
                     st.plotly_chart(fig_sig_bar, use_container_width=True)
                 st.markdown("#### 📈 Line Chart")
                 fig_sig_line = px.line(sig_merged, x='Technician_Name', y='Signature_Issue_Rate (%)',
                                        markers=True, title='Signature Issue Rate')
                 st.plotly_chart(fig_sig_line, use_container_width=True)
-                st.markdown("#### 🗺️ Geo Map (Dummy Coordinates)")
-                df_map = signature_issues_df.copy()
-                df_map['lat'] = 24.7136 + (df_map.index % 10) * 0.03
-                df_map['lon'] = 46.6753 + (df_map.index % 10) * 0.03
-                st.map(df_map[['lat', 'lon']])
                 sig_output = io.BytesIO()
                 with pd.ExcelWriter(sig_output, engine='xlsxwriter') as writer:
                     signature_issues_df.to_excel(writer, index=False, sheet_name="Signature Issues")
@@ -390,7 +361,7 @@ if uploaded_file:
                 st.download_button("📥 Download Signature Issues Report", sig_output.getvalue(),
                                   "signature_issues.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-        with tab8:
+        with st.container():
             st.markdown("### 🔍 Deep Problem Analysis")
             common_problems = df[~df['Note_Type'].isin(['DONE'])]
             problem_freq = common_problems['Note_Type'].value_counts().reset_index()
@@ -402,14 +373,11 @@ if uploaded_file:
             with col2:
                 st.markdown("#### 🥧 Problem Distribution")
                 fig_problems = px.pie(problem_freq, names='Problem', values='Count',
-                                     title='Problem Distribution')
+                                     title='Problem Distribution', color_discrete_sequence=px.colors.sequential.Blues)
                 st.plotly_chart(fig_problems, use_container_width=True)
             st.markdown("#### 🎫 Ticket Type vs Problem Type")
             ticket_problem = pd.crosstab(df['Ticket_Type'], df['Note_Type'])
             st.dataframe(ticket_problem.style.background_gradient(cmap='Blues'), use_container_width=True)
-            st.markdown("#### 💡 Suggested Solutions")
-            solutions_df = df[['Note_Type', 'Suggested_Solution']].drop_duplicates()
-            st.dataframe(solutions_df, use_container_width=True)
 
         # Download full report
         with st.container():
@@ -421,6 +389,5 @@ if uploaded_file:
                 note_counts.to_excel(writer, sheet_name="Note Type Count", index=False)
                 tech_counts_filtered.reset_index().to_excel(writer, sheet_name="Technician Notes Count", index=False)
                 done_terminals.to_excel(writer, sheet_name="DONE_Terminals", index=False)
-                solutions_df.to_excel(writer, sheet_name="Suggested Solutions", index=False)
             st.download_button("📥 Download Full Report", output.getvalue(), "FULL_SUMMARY.xlsx",
                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
