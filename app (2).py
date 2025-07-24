@@ -31,7 +31,7 @@ def login_ui():
             st.session_state.username = username
             st.session_state.role = USERS[username]["role"]
             st.success(f"✅ Logged in as {st.session_state.role}")
-            st.experimental_rerun()
+            st.rerun()  # Replaced experimental_rerun with rerun
         else:
             st.error("❌ Invalid credentials. Try again.")
 
@@ -40,7 +40,7 @@ def logout_button():
     if st.sidebar.button("🚪 Logout"):
         for key in st.session_state.keys():
             del st.session_state[key]
-        st.experimental_rerun()
+        st.rerun()  # Replaced experimental_rerun with rerun
 
 # --- Employee Interface ---
 def employee_interface():
