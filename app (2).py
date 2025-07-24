@@ -3,131 +3,117 @@ import pandas as pd
 from datetime import datetime, timedelta
 import pytz
 import os
-import time
 
-# ========== CONFIG ==========
+# --- Settings ---
 st.set_page_config(page_title="Smart Attendance", layout="centered")
 tz = pytz.timezone("Asia/Amman")
 LOG_FILE = "attendance_log.csv"
 
-# ========== STYLING ==========
+# --- Styles ---
 st.markdown("""
 <style>
-html, body {
-    font-family: 'Segoe UI', sans-serif;
+body {
     background-color: #f8fafc;
+    font-family: 'Segoe UI', sans-serif;
 }
 h1, h2 {
-    color: #1e40af;
+    color: #1e3a8a;
     text-align: center;
 }
-.stTextInput > div > div > input {
-    font-size: 18px;
-    padding: 10px;
+input, .stButton>button {
+    font-size: 16px !important;
 }
-.stButton > button {
-    background-color: #3b82f6;
-    color: white;
-    font-size: 16px;
-    padding: 0.6rem 1.2rem;
-    border: none;
-    border-radius: 8px;
-}
-.stButton > button:hover {
+.stButton>button {
     background-color: #2563eb;
+    color: white;
+    border-radius: 8px;
+    padding: 0.5rem 1.2rem;
 }
-.record {
-    background-color: #eff6ff;
-    padding: 12px;
-    border-radius: 10px;
-    margin-top: 1rem;
+.stButton>button:hover {
+    background-color: #1d4ed8;
 }
-.live-time {
-    font-size: 20px;
-    font-weight: bold;
+.live-clock {
+    font-size: 22px;
     color: #16a34a;
     text-align: center;
-    margin-bottom: 1rem;
+    margin-top: -10px;
+}
+.success-msg {
+    background-color: #e0f2fe;
+    padding: 10px;
+    border-radius: 10px;
+    margin-top: 10px;
+    color: #0c4a6e;
+    font-weight: bold;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ========== TIME DISPLAY ==========
-def get_live_time():
-    now = datetime.now(tz)
-    return now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S"), now
+# --- Current Time ---
+now = datetime.now(tz)
+today_str = now.strftime("%Y-%m-%d")
+current_time_str = now.strftime("%H:%M:%S")
+st.title("🕘 Smart Attendance System")
+st.markdown(f"<div class='live-clock'>📅 {today_str} | ⏰ {current_time_str}</div>", unsafe_allow_html=True)
 
-today_str, current_time_str, now = get_live_time()
-st.markdown(f"<div class='live-time'>📅 {today_str} | ⏰ {current_time_str}</div>", unsafe_allow_html=True)
+# --- Input Name & Break Time ---
+employee = st.text_input("👤 Enter your name")
+break_time = st.time_input("☕ Choose break time", value=datetime.strptime("13:00", "%H:%M").time())
 
-# ========== INPUT ==========
-employee_name = st.text_input("👤 Employee Name", max_chars=50)
-break_time = st.time_input("☕ Set Break Time (Optional)")
-
-# ========== LOAD DATA ==========
-def load_log():
+# --- Load & Save ---
+def load_data():
     if os.path.exists(LOG_FILE):
         return pd.read_csv(LOG_FILE)
-    else:
-        return pd.DataFrame(columns=["Name", "Action", "Date", "Time"])
+    return pd.DataFrame(columns=["Name", "Action", "Date", "Time"])
 
-# ========== SAVE LOG ==========
-def save_log(name, action, time_override=None):
-    log = load_log()
-    record_time = time_override if time_override else now.strftime("%H:%M:%S")
-    record = {
+def save_action(name, action, custom_time=None):
+    df = load_data()
+    time_str = custom_time.strftime("%H:%M:%S") if custom_time else now.strftime("%H:%M:%S")
+    new_row = pd.DataFrame([{
         "Name": name,
         "Action": action,
         "Date": today_str,
-        "Time": record_time
-    }
-    log = pd.concat([log, pd.DataFrame([record])], ignore_index=True)
-    log.to_csv(LOG_FILE, index=False, encoding="utf-8-sig")
-    st.success(f"✅ {action} recorded at {record_time}")
-    st.markdown(f"<div class='record'>✅ <strong>{action}</strong> for <strong>{name}</strong> at <strong>{record_time}</strong></div>", unsafe_allow_html=True)
+        "Time": time_str
+    }])
+    df = pd.concat([df, new_row], ignore_index=True)
+    df.to_csv(LOG_FILE, index=False, encoding="utf-8-sig")
+    st.markdown(f"<div class='success-msg'>✅ {action} saved at {time_str}</div>", unsafe_allow_html=True)
 
-# ========== VALIDATION ==========
-def already_logged(name, action):
-    df = load_log()
-    return not df[
-        (df["Name"].str.lower() == name.lower()) &
-        (df["Date"] == today_str) &
-        (df["Action"] == action)
-    ].empty
+def already_done(name, action):
+    df = load_data()
+    return not df[(df["Name"].str.lower() == name.lower()) & (df["Date"] == today_str) & (df["Action"] == action)].empty
 
-# ========== BUTTONS ==========
+# --- Actions ---
 col1, col2, col3 = st.columns(3)
 
 with col1:
     if st.button("📥 Check In"):
-        if employee_name.strip():
-            if already_logged(employee_name.strip(), "Check In"):
-                st.warning("⚠️ Already checked in today.")
-            else:
-                save_log(employee_name.strip(), "Check In")
-        else:
+        if employee.strip() == "":
             st.warning("Please enter your name.")
+        elif already_done(employee, "Check In"):
+            st.warning("⚠️ Already checked in today.")
+        else:
+            save_action(employee, "Check In")
 
 with col2:
-    if st.button("☕ Break"):
-        if employee_name.strip():
-            if already_logged(employee_name.strip(), "Break"):
-                st.warning("⚠️ Break already recorded today.")
-            else:
-                save_log(employee_name.strip(), "Break", break_time.strftime("%H:%M:%S"))
-        else:
+    if st.button("☕ Take Break"):
+        if employee.strip() == "":
             st.warning("Please enter your name.")
+        elif already_done(employee, "Break"):
+            st.warning("⚠️ Break already taken today.")
+        else:
+            save_action(employee, "Break", break_time)
 
 with col3:
     if st.button("📤 Check Out"):
-        if employee_name.strip():
-            save_log(employee_name.strip(), "Check Out")
-        else:
+        if employee.strip() == "":
             st.warning("Please enter your name.")
+        else:
+            save_action(employee, "Check Out")
 
-# ========== CALCULATE DURATION ==========
+# --- Duration Calculation ---
 def calculate_duration(name):
-    df = load_log()
+    df = load_data()
     records = df[(df["Name"].str.lower() == name.lower()) & (df["Date"] == today_str)]
     if "Check In" in records["Action"].values and "Check Out" in records["Action"].values:
         in_time = records[records["Action"] == "Check In"]["Time"].values[0]
@@ -137,22 +123,21 @@ def calculate_duration(name):
         return str(duration)
     return None
 
-# ========== EXPORT ==========
-st.markdown("### 📦 Export Records")
+# --- Export + Show Data ---
 if os.path.exists(LOG_FILE):
-    df = load_log()
+    st.markdown("### 📦 Export Attendance")
+    df = pd.read_csv(LOG_FILE)
     st.download_button(
         label="📥 Download CSV",
-        data=df.to_csv(index=False).encode("utf-8-sig"),
+        data=df.to_csv(index=False).encode('utf-8-sig'),
         file_name=f"attendance_{today_str}.csv",
-        mime="text/csv"
+        mime='text/csv'
     )
 
-    st.markdown("### 🗂️ Last 10 Records")
+    st.markdown("### 📊 Last 10 Records")
     st.dataframe(df.tail(10), use_container_width=True)
 
-    if employee_name.strip():
-        work_duration = calculate_duration(employee_name.strip())
-        if work_duration:
-            st.info(f"⏳ Total Work Duration Today: **{work_duration}**")
-
+    if employee.strip():
+        duration = calculate_duration(employee)
+        if duration:
+            st.info(f"⏳ Total work duration today: **{duration}**")
