@@ -1,219 +1,362 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+import io
 import plotly.express as px
-import pytz
+import streamlit.components.v1 as components
+from datetime import datetime
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
+from collections import Counter
 import os
+import hashlib
+import re
 
-# --- User Data (can be connected to a database later) ---
-USERS = {
-    "admin": {"password": "admin123", "role": "Admin"},
-    "yaman": {"password": "yaman1", "role": "Employee"},
-    "hatem": {"password": "hatem1", "role": "Employee"},
-    "qusai": {"password": "qusai1", "role": "Employee"},
+st.set_page_config(page_title="INTERSOFT Analyzer", layout="wide")
+
+clock_html = """<div style="background: transparent;"><style>
+.clock-container {
+    font-family: 'Courier New', monospace;
+    font-size: 22px;
+    color: #fff;
+    background: linear-gradient(135deg, #1abc9c, #16a085);
+    padding: 12px 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: pulse 2s infinite;
+    position: fixed;
+    top: 15px;
+    right: 25px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
 }
+.clock-time { font-size: 22px; font-weight: bold; }
+.clock-date { font-size: 16px; margin-top: 4px; }
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0.4); }
+    70% { box-shadow: 0 0 0 15px rgba(26, 188, 156, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0); }
+}
+</style>
+<div class="clock-container">
+    <div class="clock-time" id="clock"></div>
+    <div class="clock-date" id="date"></div>
+</div>
+<script>
+function updateClock() {
+    const now = new Date();
+    const time = now.toLocaleTimeString();
+    const date = now.toLocaleDateString(undefined, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    document.getElementById('clock').innerText = time;
+    document.getElementById('date').innerText = date;
+}
+setInterval(updateClock, 1000);
+updateClock();
+</script>
+</div>"""
+components.html(clock_html, height=130, scrolling=False)
 
-# --- Session State Initialization ---
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-    st.session_state.username = ""
-    st.session_state.role = ""
+st.markdown("<h1 style='color:#ffffff; text-align:center;'>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
 
-# --- Login Interface ---
-def login_ui():
-    st.title("🔐 Login to Attendance System")
-    username = st.text_input("👤 Username")
-    password = st.text_input("🔑 Password", type="password")
+uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
+required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
-    if st.button("🚪 Login"):
-        if username in USERS and USERS[username]["password"] == password:
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            st.session_state.role = USERS[username]["role"]
-            st.success(f"✅ Logged in as {st.session_state.role}")
-            st.rerun()  # Replaced experimental_rerun with rerun
-        else:
-            st.error("❌ Invalid credentials. Try again.")
+def normalize(text):
+    text = str(text).upper()
+    text = re.sub(r"[^\w\s]", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
 
-# --- Logout Button ---
-def logout_button():
-    if st.sidebar.button("🚪 Logout"):
-        for key in st.session_state.keys():
-            del st.session_state[key]
-        st.rerun()  # Replaced experimental_rerun with rerun
-
-# --- Employee Interface ---
-def employee_interface():
-    tz = pytz.timezone("Asia/Amman")
-    now = datetime.now(tz)
-    today_str = now.strftime("%Y-%m-%d")
-    current_time = now.strftime("%H:%M:%S")
-    log_file = "attendance_log.csv"
-
-    st.title("🕘 Employee Attendance Panel")
-    st.markdown(f"<div class='live-clock'>📅 {today_str} | ⏰ {current_time}</div>", unsafe_allow_html=True)
-
-    # Break time input
-    break_time = st.time_input("☕ Choose your break time", value=datetime.strptime("13:00", "%H:%M").time())
-
-    def load_log():
-        if os.path.exists(log_file):
-            return pd.read_csv(log_file)
-        else:
-            return pd.DataFrame(columns=["Name", "Action", "Date", "Time"])
-
-    def save_log(action, custom_time=None):
-        log = load_log()
-        time_str = custom_time.strftime("%H:%M:%S") if custom_time else now.strftime("%H:%M:%S")
-        record = {
-            "Name": st.session_state.username,
-            "Action": action,
-            "Date": today_str,
-            "Time": time_str
-        }
-        log = pd.concat([log, pd.DataFrame([record])], ignore_index=True)
-        log.to_csv(log_file, index=False, encoding='utf-8-sig')
-        st.success(f"✅ {action} recorded at {time_str}")
-        st.markdown(f"<div class='success-msg'>✅ <strong>{action}</strong> for <strong>{st.session_state.username}</strong> at <strong>{time_str}</strong></div>", unsafe_allow_html=True)
-
-    def already_logged(action):
-        df = load_log()
-        return not df[
-            (df["Name"].str.lower() == st.session_state.username.lower()) &
-            (df["Date"] == today_str) &
-            (df["Action"] == action)
-        ].empty
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        if st.button("📥 Check In"):
-            if already_logged("Check In"):
-                st.warning("⚠️ You already checked in today.")
-            else:
-                save_log("Check In")
-
-    with col2:
-        if st.button("☕ Break"):
-            if already_logged("Break"):
-                st.warning("⚠️ Break already taken today.")
-            else:
-                save_log("Break", break_time)
-
-    with col3:
-        if st.button("📤 Check Out"):
-            save_log("Check Out")
-
-    # Calculate Work Duration
-    def calc_duration():
-        df = load_log()
-        user_df = df[(df["Name"].str.lower() == st.session_state.username.lower()) & (df["Date"] == today_str)]
-        if "Check In" in user_df["Action"].values and "Check Out" in user_df["Action"].values:
-            in_time = user_df[user_df["Action"] == "Check In"]["Time"].values[0]
-            out_time = user_df[user_df["Action"] == "Check Out"]["Time"].values[0]
-            fmt = "%H:%M:%S"
-            duration = datetime.strptime(out_time, fmt) - datetime.strptime(in_time, fmt)
-            return str(duration)
-        return None
-
-    df = load_log()
-    st.markdown("### 🗂️ Last 10 Records")
-    st.dataframe(df[df["Name"].str.lower() == st.session_state.username.lower()].tail(10), use_container_width=True)
-
-    duration = calc_duration()
-    if duration:
-        st.info(f"⏳ Total Work Duration Today: **{duration}**")
-
-    # Export User Records
-    st.markdown("### 📤 Export My Records")
-    user_df = df[df["Name"].str.lower() == st.session_state.username.lower()]
-    st.download_button(
-        label="📥 Download CSV",
-        data=user_df.to_csv(index=False).encode('utf-8-sig'),
-        file_name=f"{st.session_state.username}_attendance_{today_str}.csv",
-        mime='text/csv'
-    )
-
-# --- Admin Interface ---
-def admin_interface():
-    st.title("📊 Admin Dashboard - Attendance Analytics")
-    log_file = "attendance_log.csv"
-
-    if not os.path.exists(log_file):
-        st.warning("🚫 No attendance data found.")
-        return
-
-    df = pd.read_csv(log_file)
-
-    # Filters
-    with st.expander("🔍 Filter Options", expanded=True):
-        col1, col2 = st.columns(2)
-        employee_list = ["All"] + sorted(df["Name"].unique().tolist())
-        selected_employee = col1.selectbox("👤 Select Employee", employee_list)
-        selected_date = col2.date_input("📅 Select Date (optional)", value=None)
-
-    # Apply filters
-    filtered_df = df.copy()
-    if selected_employee != "All":
-        filtered_df = filtered_df[filtered_df["Name"] == selected_employee]
-    if selected_date:
-        filtered_df = filtered_df[filtered_df["Date"] == selected_date.strftime("%Y-%m-%d")]
-
-    # Display Filtered Data
-    st.markdown("### 🗂️ Filtered Attendance Records")
-    st.dataframe(filtered_df, use_container_width=True)
-
-    # Missing Check Out
-    st.markdown("### 🕵️ Employees Missing Check Out")
-    missing_checkout = []
-    for name in df["Name"].unique():
-        emp_df = df[(df["Name"] == name) & (df["Date"] == datetime.now().strftime("%Y-%m-%d"))]
-        if "Check In" in emp_df["Action"].values and "Check Out" not in emp_df["Action"].values:
-            missing_checkout.append(name)
-    if missing_checkout:
-        st.error("🚨 The following employees didn't Check Out today:")
-        st.write(missing_checkout)
+def classify_note(note):
+    note = normalize(note)
+    patterns = {
+        "TERMINAL ID - WRONG DATE": ["TERMINAL ID WRONG DATE"],
+        "NO IMAGE FOR THE DEVICE": ["NO IMAGE FOR THE DEVICE"],
+        "IMAGE FOR THE DEVICE ONLY": ["IMAGE FOR THE DEVICE ONLY"],
+        "WRONG DATE": ["WRONG DATE"],
+        "TERMINAL ID": ["TERMINAL ID"],
+        "NO J.O": ["NO JO", "NO J O"],
+        "DONE": ["DONE"],
+        "NO RETAILERS SIGNATURE": ["NO RETAILERS SIGNATURE", "NO RETAILER SIGNATURE", "NO RETAILERS SIGNATURE", "NO RETAILER'S SIGNATURE"],
+        "UNCLEAR IMAGE": ["UNCLEAR IMAGE"],
+        "NO ENGINEER SIGNATURE": ["NO ENGINEER SIGNATURE"],
+        "NO SIGNATURE": ["NO SIGNATURE","NO SIGNATURES"],
+        "PENDING": ["PENDING"],
+        "NO INFORMATIONS": ["NO INFORMATION", "NO INFORMATIONS"],
+        "MISSING INFORMATION": ["MISSING INFORMATION"],
+        "NO BILL": ["NO BILL"],
+        "NOT ACTIVE": ["NOT ACTIVE"],
+        "NO RECEIPT": ["NO RECEIPT"],
+        "ANOTHER TERMINAL RECEIPT": ["ANOTHER TERMINAL RECEIPT"],
+        "UNCLEAR RECEIPT": ["UNCLEAR RECEIPT"],
+        "WRONG RECEIPT": ["WRONG RECEIPT"],
+        "REJECTED RECEIPT": ["REJECTED RECEIPT"],
+        "MULTIPLE ISSUES":["MULTIPLE ISSUES"]
+    }
+    if "+" in note:
+        return "MULTIPLE ISSUES"
+    matched_labels = []
+    for label, keywords in patterns.items():
+        for keyword in keywords:
+            if keyword in note:
+                matched_labels.append(label)
+                break
+    if len(matched_labels) == 0:
+        return "MISSING INFORMATION"
+    elif len(matched_labels) == 1:
+        return matched_labels[0]
     else:
-        st.success("✅ All employees checked out today.")
+        return "MULTIPLE ISSUES"
 
-    # Attendance by Date Chart
-    st.markdown("### 📈 Attendance Count by Date")
-    attendance_count = df[df["Action"] == "Check In"].groupby("Date").count().reset_index()[["Date", "Action"]]
-    attendance_count.columns = ["Date", "Check In Count"]
-    fig = px.bar(attendance_count, x="Date", y="Check In Count", color="Check In Count", title="Daily Attendance")
-    st.plotly_chart(fig, use_container_width=True)
+def problem_severity(note_type):
+    critical = ["WRONG DATE", "TERMINAL ID - WRONG DATE", "REJECTED RECEIPT"]
+    high = ["NO IMAGE", "UNCLEAR IMAGE", "NO RECEIPT"]
+    medium = ["NO SIGNATURE", "NO ENGINEER SIGNATURE"]
+    low = ["NO J.O", "PENDING"]
+    if note_type in critical: return "Critical"
+    elif note_type in high: return "High"
+    elif note_type in medium: return "Medium"
+    elif note_type in low: return "Low"
+    else: return "Unclassified"
+def suggest_solutions(note_type):
+    solutions = {
+        "WRONG DATE": "Verify device timestamp and sync with server.",
+        "TERMINAL ID - WRONG DATE": "Recheck terminal ID entry and date configuration.",
+        "NO IMAGE FOR THE DEVICE": "Capture and upload image of the device.",
+        "NO RETAILERS SIGNATURE": "Ensure the retailer signs the form.",
+        "NO ENGINEER SIGNATURE": "Engineer must provide a signature before submission.",
+        "NO SIGNATURE": "Capture necessary signatures from all parties.",
+        "UNCLEAR IMAGE": "Retake photo with better clarity and lighting.",
+        "NOT ACTIVE": "Check activation process and retry.",
+        "NO BILL": "Attach a valid billing document.",
+        "NO RECEIPT": "Upload a clear image of the transaction receipt.",
+        "ANOTHER TERMINAL RECEIPT": "Ensure the correct terminal's receipt is uploaded.",
+        "WRONG RECEIPT": "Verify and re-upload the correct receipt.",
+        "REJECTED RECEIPT": "Follow up on why receipt was rejected and correct it.",
+        "MULTIPLE ISSUES": "Resolve all mentioned issues and update note accordingly.",
+        "NO J.O": "Provide the Job Order number or details.",
+        "PENDING": "Complete and finalize the pending task.",
+        "MISSING INFORMATION": "Review note and provide complete details.",
+    }
+    return solutions.get(note_type, "No solution available.")
 
-    # Export Full Attendance
-    st.markdown("### 📤 Export Full Attendance")
-    st.download_button(
-        label="📥 Download All Data (CSV)",
-        data=df.to_csv(index=False).encode("utf-8-sig"),
-        file_name="full_attendance_log.csv",
-        mime="text/csv"
-    )
 
-    # Quick Stats
-    st.markdown("### 📊 Quick Stats")
-    today = datetime.now().strftime("%Y-%m-%d")
-    today_df = df[df["Date"] == today]
-    employees_today = today_df["Name"].nunique()
-    checkin_count = today_df[today_df["Action"] == "Check In"].shape[0]
-    checkout_count = today_df[today_df["Action"] == "Check Out"].shape[0]
-    st.info(f"""
-    👥 Employees today: **{employees_today}**  
-    ✅ Check Ins: **{checkin_count}**  
-    📤 Check Outs: **{checkout_count}**
-    """)
+def generate_alerts(df):
+    alerts = []
+    critical_percent = (df['Problem_Severity'] == 'Critical').mean() * 100
+    if critical_percent > 50:
+        alerts.append(f"⚠️ High critical problems: {critical_percent:.1f}%")
+    tech_problems = df.groupby('Technician_Name')['Problem_Severity'].apply(
+        lambda x: (x != 'Low').mean() * 100)
+    for tech, percent in tech_problems.items():
+        if percent > 20:
+            alerts.append(f"👨‍🔧 Technician {tech} has high problem rate: {percent:.1f}%")
+    return alerts
 
-# --- Main Logic ---
-if not st.session_state.logged_in:
-    login_ui()
-else:
-    st.sidebar.markdown(f"👤 **User:** {st.session_state.username}")
-    st.sidebar.markdown(f"🔐 **Role:** {st.session_state.role}")
-    logout_button()
+def text_analysis(notes):
+    all_words = ' '.join(notes.dropna().astype(str)).upper().split()
+    word_counts = Counter(all_words)
+    return pd.DataFrame(word_counts.most_common(20), columns=['Word', 'Count'])
 
-    if st.session_state.role == "Admin":
-        admin_interface()
+ARCHIVE_DIR = "uploaded_archive"
+os.makedirs(ARCHIVE_DIR, exist_ok=True)
+
+if uploaded_file:
+    # Create unique filename with hash and upload timestamp
+    uploaded_bytes = uploaded_file.read()
+    uploaded_file.seek(0)
+    file_hash = hashlib.md5(uploaded_bytes).hexdigest()
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    archive_filename = f"{timestamp}_{file_hash}.xlsx"
+    archive_path = os.path.join(ARCHIVE_DIR, archive_filename)
+
+    # Save a copy of the file
+    with open(archive_path, "wb") as f:
+        f.write(uploaded_bytes)
+
+    try:
+        df = pd.read_excel(uploaded_file, sheet_name="Sheet2")
+    except:
+        df = pd.read_excel(uploaded_file)
+
+    if not all(col in df.columns for col in required_cols):
+        st.error(f"❌ Missing required columns. Available: {list(df.columns)}")
     else:
-        employee_interface()
+        df['Note_Type'] = df['NOTE'].apply(classify_note)
+        df['Problem_Severity'] = df['Note_Type'].apply(problem_severity)
+        df['Suggested_Solution'] = df['Note_Type'].apply(suggest_solutions)
+        st.success("✅ File processed successfully!")
+
+        note_counts = df['Note_Type'].value_counts().reset_index()
+        note_counts.columns = ["Note_Type", "Count"]
+
+       
+        if 'Note_Type' in df.columns:
+            filtered_df_not_done = df[df['Note_Type'] != 'DONE']
+            total_notes = len(filtered_df_not_done)
+            note_type_counts = filtered_df_not_done['Note_Type'].value_counts()
+
+            if total_notes > 0:
+                with st.expander("❗Note Types Overview", expanded=False):
+                    for note_type, count in note_type_counts.items():
+                        percent = (count / total_notes) * 100
+                        color_box = "#f8d7da" if percent > 5 else "#d4edda"
+                        color_border = "#f5c6cb" if percent > 5 else "#c3e6cb"
+                        color_text = "#721c24" if percent > 5 else "#155724"
+                        icon = "🔴" if percent > 5 else "🟢"
+
+                        st.markdown(f"""
+                        <div style='background-color:{color_box}; color:{color_text}; padding:8px 15px;
+                                    border-left: 6px solid {color_border}; border-radius: 6px;
+                                    font-size:14px; margin-bottom:8px'>
+                        {icon} <strong>{note_type}</strong>: {percent:.2f}%
+                        </div>
+                        """, unsafe_allow_html=True)
+
+        alerts = generate_alerts(df)
+        if alerts:
+            with st.expander("🚨 Alerts", expanded=False):
+                for alert in alerts:
+                    st.markdown(f"""
+                    <div style='background-color:#fff3cd; color:#856404; padding:8px 15px;
+                                border-left: 6px solid #ffeeba; border-radius: 6px;
+                                font-size:14px; margin-bottom:8px'>
+                    {alert}
+                    </div>
+                    """, unsafe_allow_html=True)
+
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+            "📊 Note Type Summary", "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians",
+            "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes", 
+            "✍️ Signature Issues", "🔍 Deep Problem Analysis"])
+
+        with tab1:
+            st.markdown("### 🔢 Count of Each Note Type")
+            st.dataframe(note_counts, use_container_width=True)
+            fig_bar = px.bar(note_counts, x="Note_Type", y="Count", title="Note Type Frequency")
+            st.plotly_chart(fig_bar, use_container_width=True)
+
+        with tab2:
+            st.markdown("### 📈 Notes per Technician")
+            tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
+            st.bar_chart(tech_counts)
+
+        with tab3:
+            st.markdown("### 🚨 Technician With Most Wrong Notes!")
+            filtered_df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
+            tech_counts_filtered = filtered_df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
+            top_5_technicians = tech_counts_filtered.head(5)
+            top_5_data = filtered_df[filtered_df['Technician_Name'].isin(top_5_technicians.index.tolist())]
+            technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
+            technician_notes_count = top_5_technicians.reset_index()
+            technician_notes_count.columns = ['Technician_Name', 'Notes_Count']
+            tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
+            st.dataframe(technician_notes_count, use_container_width=True)
+
+        with tab4:
+            st.markdown("### 🥧 Note Types Distribution")
+            fig = px.pie(note_counts, names='Note_Type', values='Count', title='Note Type Distribution')
+            fig.update_traces(textinfo='percent+label')
+            st.plotly_chart(fig)
+
+        with tab5:
+            st.markdown("### ✅'DONE' Notes")
+            done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
+            done_terminals_counts = done_terminals['Technician_Name'].value_counts()
+            done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
+            done_terminals_summary = done_terminals_counts.head(5).reset_index()
+            done_terminals_summary.columns = ['Technician_Name', 'DONE_Notes_Count']
+            st.dataframe(done_terminals_summary, use_container_width=True)
+
+        with tab6:
+            st.markdown("### 📑 Detailed Notes for Top 5 Technicians")
+            for tech in top_5_technicians.index:
+                st.markdown(f"#### 🧑 Technician: {tech}")
+                technician_data = top_5_data[top_5_data['Technician_Name'] == tech]
+                technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
+                st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
+
+        with tab7:
+            st.markdown("## ✍️ Signature Issues Analysis")
+            signature_issues_df = df[df['NOTE'].str.upper().str.contains("SIGNATURE", na=False)]
+
+            if signature_issues_df.empty:
+                st.success("✅ No signature-related issues found!")
+            else:
+                st.markdown("### 📋 Summary Table")
+                sig_group = signature_issues_df.groupby('Technician_Name')['NOTE'].count().reset_index(name='Signature_Issues')
+                total_tech = df.groupby('Technician_Name')['NOTE'].count().reset_index(name='Total_Notes')
+                sig_merged = pd.merge(sig_group, total_tech, on='Technician_Name')
+                sig_merged['Signature_Issue_Rate (%)'] = (sig_merged['Signature_Issues'] / sig_merged['Total_Notes']) * 100
+                st.dataframe(sig_merged, use_container_width=True)
+
+                st.markdown("### 📊 Bar Chart")
+                fig_sig_bar = px.bar(sig_merged, x='Technician_Name', y='Signature_Issues', color='Signature_Issue_Rate (%)', title='Signature Issues per Technician')
+                st.plotly_chart(fig_sig_bar, use_container_width=True)
+
+                st.markdown("### 📈 Line Chart")
+                fig_sig_line = px.line(sig_merged, x='Technician_Name', y='Signature_Issue_Rate (%)', markers=True, title='Signature Issue Rate')
+                st.plotly_chart(fig_sig_line, use_container_width=True)
+
+                st.markdown("### 🗺️ Geo Map (Dummy Coordinates)")
+                df_map = signature_issues_df.copy()
+                df_map['lat'] = 24.7136 + (df_map.index % 10) * 0.03
+                df_map['lon'] = 46.6753 + (df_map.index % 10) * 0.03
+                st.map(df_map[['lat', 'lon']])
+
+                sig_output = io.BytesIO()
+                with pd.ExcelWriter(sig_output, engine='xlsxwriter') as writer:
+                    signature_issues_df.to_excel(writer, index=False, sheet_name="Signature Issues")
+                    sig_merged.to_excel(writer, index=False, sheet_name="Technician Summary")
+
+                st.download_button("📥 Download Signature Issues Report", sig_output.getvalue(), "signature_issues.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+        with tab8:
+            st.markdown("## 🔍 Deep Problem Analysis")
+            
+            # Common problems analysis
+            st.markdown("### 📌 Common Problems and Patterns")
+            common_problems = df[~df['Note_Type'].isin(['DONE'])]
+            
+            # Problem frequency
+            problem_freq = common_problems['Note_Type'].value_counts().reset_index()
+            problem_freq.columns = ["Problem", "Count"]
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.dataframe(problem_freq, use_container_width=True)
+            
+            with col2:
+                fig_problems = px.pie(problem_freq, names='Problem', values='Count', 
+                                     title='Problem Distribution')
+                st.plotly_chart(fig_problems, use_container_width=True)
+            
+            # Ticket type vs problem analysis
+            st.markdown("### 🎫 Ticket Type vs Problem Type")
+            ticket_problem = pd.crosstab(df['Ticket_Type'], df['Note_Type'])
+            st.dataframe(ticket_problem.style.background_gradient(cmap='Blues'), 
+                        use_container_width=True)
+            
+            # Suggested solutions
+            st.markdown("### 💡 Suggested Solutions for Common Problems")
+            solutions_df = df[['Note_Type', 'Suggested_Solution']].drop_duplicates()
+            st.dataframe(solutions_df, use_container_width=True)
+
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            for note_type in df['Note_Type'].unique():
+                subset = df[df['Note_Type'] == note_type]
+                subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
+            note_counts.to_excel(writer, sheet_name="Note Type Count", index=False)
+            tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
+            done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
+            solutions_df.to_excel(writer, sheet_name="Suggested Solutions", index=False)
+
+        st.download_button("📥 Download Summary Excel", output.getvalue(), "FULL_SUMMARY.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
