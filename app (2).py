@@ -1,13 +1,16 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import os
+import time
 
-# --- إعداد الصفحة ---
-st.set_page_config(page_title="🕘 Attendance Tracker", layout="centered")
+# ========== CONFIG ==========
+st.set_page_config(page_title="Smart Attendance", layout="centered")
+tz = pytz.timezone("Asia/Amman")
+LOG_FILE = "attendance_log.csv"
 
-# --- التنسيق (CSS) مع تأثير البلالين ---
+# ========== STYLING ==========
 st.markdown("""
 <style>
 html, body {
@@ -39,73 +42,67 @@ h1, h2 {
     border-radius: 10px;
     margin-top: 1rem;
 }
-.balloons {
-    animation: pop 1.2s ease-in-out forwards;
-}
-@keyframes pop {
-    0% { transform: scale(0.2); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
+.live-time {
+    font-size: 20px;
+    font-weight: bold;
+    color: #16a34a;
+    text-align: center;
+    margin-bottom: 1rem;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# --- الوقت المحلي ---
-tz = pytz.timezone("Asia/Amman")  # عدّل حسب منطقتك
-now = datetime.now(tz)
-today_str = now.strftime("%Y-%m-%d")
-current_time = now.strftime("%H:%M:%S")
+# ========== TIME DISPLAY ==========
+def get_live_time():
+    now = datetime.now(tz)
+    return now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S"), now
 
-# --- عنوان الصفحة ---
-st.title("🕘 Daily Attendance Tracker")
-st.subheader(f"📅 Today: {today_str} | ⏰ Time: {current_time}")
+today_str, current_time_str, now = get_live_time()
+st.markdown(f"<div class='live-time'>📅 {today_str} | ⏰ {current_time_str}</div>", unsafe_allow_html=True)
 
-# --- إدخال الاسم ---
+# ========== INPUT ==========
 employee_name = st.text_input("👤 Employee Name", max_chars=50)
+break_time = st.time_input("☕ Set Break Time (Optional)")
 
-# --- اسم ملف السجل ---
-LOG_FILE = "attendance_log.csv"
-
-# --- تحميل السجل أو إنشاؤه ---
+# ========== LOAD DATA ==========
 def load_log():
     if os.path.exists(LOG_FILE):
         return pd.read_csv(LOG_FILE)
     else:
         return pd.DataFrame(columns=["Name", "Action", "Date", "Time"])
 
-# --- حفظ سجل جديد ---
-def save_log(name, action):
+# ========== SAVE LOG ==========
+def save_log(name, action, time_override=None):
     log = load_log()
-    new_record = {
+    record_time = time_override if time_override else now.strftime("%H:%M:%S")
+    record = {
         "Name": name,
         "Action": action,
         "Date": today_str,
-        "Time": current_time
+        "Time": record_time
     }
-    log = pd.concat([log, pd.DataFrame([new_record])], ignore_index=True)
+    log = pd.concat([log, pd.DataFrame([record])], ignore_index=True)
     log.to_csv(LOG_FILE, index=False, encoding="utf-8-sig")
+    st.success(f"✅ {action} recorded at {record_time}")
+    st.markdown(f"<div class='record'>✅ <strong>{action}</strong> for <strong>{name}</strong> at <strong>{record_time}</strong></div>", unsafe_allow_html=True)
 
-    st.success(f"{action} recorded at {current_time}")
-    st.markdown(f"""<div class='record balloons'>
-        ✅ <strong>{action}</strong> for <strong>{name}</strong> on <strong>{today_str}</strong> at <strong>{current_time}</strong>
-    </div>""", unsafe_allow_html=True)
-
-# --- تحقق من Check In مكرر ---
-def already_checked_in(name):
-    log = load_log()
-    return not log[
-        (log["Name"].str.lower() == name.lower()) &
-        (log["Date"] == today_str) &
-        (log["Action"] == "Check In")
+# ========== VALIDATION ==========
+def already_logged(name, action):
+    df = load_log()
+    return not df[
+        (df["Name"].str.lower() == name.lower()) &
+        (df["Date"] == today_str) &
+        (df["Action"] == action)
     ].empty
 
-# --- أزرار تسجيل ---
+# ========== BUTTONS ==========
 col1, col2, col3 = st.columns(3)
 
 with col1:
     if st.button("📥 Check In"):
         if employee_name.strip():
-            if already_checked_in(employee_name.strip()):
-                st.warning("⚠️ You already checked in today.")
+            if already_logged(employee_name.strip(), "Check In"):
+                st.warning("⚠️ Already checked in today.")
             else:
                 save_log(employee_name.strip(), "Check In")
         else:
@@ -114,7 +111,10 @@ with col1:
 with col2:
     if st.button("☕ Break"):
         if employee_name.strip():
-            save_log(employee_name.strip(), "Break")
+            if already_logged(employee_name.strip(), "Break"):
+                st.warning("⚠️ Break already recorded today.")
+            else:
+                save_log(employee_name.strip(), "Break", break_time.strftime("%H:%M:%S"))
         else:
             st.warning("Please enter your name.")
 
@@ -125,18 +125,34 @@ with col3:
         else:
             st.warning("Please enter your name.")
 
-# --- تصدير إلى إكسل ---
-st.markdown("### 📦 Export Attendance")
+# ========== CALCULATE DURATION ==========
+def calculate_duration(name):
+    df = load_log()
+    records = df[(df["Name"].str.lower() == name.lower()) & (df["Date"] == today_str)]
+    if "Check In" in records["Action"].values and "Check Out" in records["Action"].values:
+        in_time = records[records["Action"] == "Check In"]["Time"].values[0]
+        out_time = records[records["Action"] == "Check Out"]["Time"].values[0]
+        fmt = "%H:%M:%S"
+        duration = datetime.strptime(out_time, fmt) - datetime.strptime(in_time, fmt)
+        return str(duration)
+    return None
+
+# ========== EXPORT ==========
+st.markdown("### 📦 Export Records")
 if os.path.exists(LOG_FILE):
-    df = pd.read_csv(LOG_FILE)
-    excel_file = df.to_csv(index=False).encode('utf-8-sig')
+    df = load_log()
     st.download_button(
         label="📥 Download CSV",
-        data=excel_file,
+        data=df.to_csv(index=False).encode("utf-8-sig"),
         file_name=f"attendance_{today_str}.csv",
-        mime='text/csv'
+        mime="text/csv"
     )
 
-    # --- عرض السجلات الأخيرة ---
-    st.markdown("### 🗂️ Recent Records")
+    st.markdown("### 🗂️ Last 10 Records")
     st.dataframe(df.tail(10), use_container_width=True)
+
+    if employee_name.strip():
+        work_duration = calculate_duration(employee_name.strip())
+        if work_duration:
+            st.info(f"⏳ Total Work Duration Today: **{work_duration}**")
+
