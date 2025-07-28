@@ -97,14 +97,14 @@ if not st.session_state.splash_shown:
 
     time.sleep(3)
     st.session_state.splash_shown = True
-    st.experimental_rerun()
+    st.rerun()  # ✅ هذا يعمل مع الإصدارات الحديثة من Streamlit
 
-# ========== Continue with your main application logic here ==========
-# 🟢 الآن حط باقي تطبيقك Streamlit اللي بيبدأ مثلاً بـ:
-# st.set_page_config(...)
-# uploaded_file = st.file_uploader(...)
-# df = pd.read_excel(...) 
-# ... إلخ
+# ========== Start Your Actual App Below ==========
+st.set_page_config(page_title="INTERSOFT Analyzer", layout="wide")
+st.markdown("<h1 style='text-align:center; color:#4ade80;'>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
+
+# 🟢 تابع هنا كودك التحليلي ورفع الملف وكل اللي اشتغلت عليه بالسابق...
+
 
 
 # ---------------------- 🧠 APP TITLE ----------------------
