@@ -28,7 +28,7 @@ html, body, [class*="css"] {
 h1 {
     font-size: 3rem;
     font-weight: 900;
-    color: #4ade80;
+    color: #ffffff;
     text-align: center;
     margin-bottom: 2rem;
 }
