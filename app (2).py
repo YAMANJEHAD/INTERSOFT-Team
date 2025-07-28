@@ -4,114 +4,69 @@ import io
 import plotly.express as px
 import streamlit.components.v1 as components
 from datetime import datetime
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
 from collections import Counter
 import os
 import hashlib
 import re
-import time
-from PIL import Image
 
-# ========== Splash Screen ==========
-if "splash_shown" not in st.session_state:
-    st.session_state.splash_shown = False
-
-if not st.session_state.splash_shown:
-    st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;800&display=swap');
-
-    .splash-container {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        background: linear-gradient(135deg, #0f172a, #1e293b);
-        animation: fadeIn 1s ease-in-out;
-    }
-
-    .splash-logo {
-        width: 120px;
-        opacity: 0;
-        animation: slideDown 1.2s ease-out forwards;
-    }
-
-    .splash-title {
-        font-size: 2.8rem;
-        font-weight: 800;
-        margin-top: 1rem;
-        color: #4ade80;
-        opacity: 0;
-        animation: fadeSlideUp 1.2s ease-out 0.6s forwards;
-    }
-
-    .splash-sub {
-        font-size: 1.1rem;
-        color: #e2e8f0;
-        margin-top: 0.5rem;
-        opacity: 0;
-        animation: fadeSlideUp 1s ease-out 1s forwards;
-    }
-
-    .loader {
-        border: 6px solid #f3f3f3;
-        border-top: 6px solid #4ade80;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        margin-top: 30px;
-        animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-
-    @keyframes fadeIn {
-        0% {opacity: 0;}
-        100% {opacity: 1;}
-    }
-
-    @keyframes slideDown {
-        0% { transform: translateY(-30px); opacity: 0; }
-        100% { transform: translateY(0); opacity: 1; }
-    }
-
-    @keyframes fadeSlideUp {
-        0% { transform: translateY(20px); opacity: 0; }
-        100% { transform: translateY(0); opacity: 1; }
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-    with st.container():
-        st.markdown(f"""
-        <div class="splash-container">
-            <img src="logoChip.png" class="splash-logo" />
-            <div class="splash-title">INTERSOFT Analyzer</div>
-            <div class="splash-sub">Your Smart Ticket Tracker</div>
-            <div class="loader"></div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    time.sleep(3)
-    st.session_state.splash_shown = True
-    st.rerun()  # ✅ هذا يعمل مع الإصدارات الحديثة من Streamlit
-
-# ========== Start Your Actual App Below ==========
 st.set_page_config(page_title="INTERSOFT Analyzer", layout="wide")
-st.markdown("<h1 style='text-align:center; color:#4ade80;'>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
 
-# 🟢 تابع هنا كودك التحليلي ورفع الملف وكل اللي اشتغلت عليه بالسابق...
+clock_html = """<div style="background: transparent;"><style>
+.clock-container {
+    font-family: 'Courier New', monospace;
+    font-size: 22px;
+    color: #fff;
+    background: linear-gradient(135deg, #1abc9c, #16a085);
+    padding: 12px 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: pulse 2s infinite;
+    position: fixed;
+    top: 15px;
+    right: 25px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+.clock-time { font-size: 22px; font-weight: bold; }
+.clock-date { font-size: 16px; margin-top: 4px; }
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0.4); }
+    70% { box-shadow: 0 0 0 15px rgba(26, 188, 156, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0); }
+}
+</style>
+<div class="clock-container">
+    <div class="clock-time" id="clock"></div>
+    <div class="clock-date" id="date"></div>
+</div>
+<script>
+function updateClock() {
+    const now = new Date();
+    const time = now.toLocaleTimeString();
+    const date = now.toLocaleDateString(undefined, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    document.getElementById('clock').innerText = time;
+    document.getElementById('date').innerText = date;
+}
+setInterval(updateClock, 1000);
+updateClock();
+</script>
+</div>"""
+components.html(clock_html, height=130, scrolling=False)
 
+st.markdown("<h1 style='color:#ffffff; text-align:center;'>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
 
-
-# ---------------------- 🧠 APP TITLE ----------------------
-st.markdown("<h1>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
 uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
-
 
 def normalize(text):
     text = str(text).upper()
@@ -277,7 +232,6 @@ if uploaded_file:
                     </div>
                     """, unsafe_allow_html=True)
 
-       
         tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
             "📊 Note Type Summary", "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians",
             "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes", 
@@ -395,19 +349,14 @@ if uploaded_file:
             solutions_df = df[['Note_Type', 'Suggested_Solution']].drop_duplicates()
             st.dataframe(solutions_df, use_container_width=True)
 
-      if not df.empty:
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name="Full Report")
-        # تقدر تضيف أي شيت ثاني هون
-    output.seek(0)
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            for note_type in df['Note_Type'].unique():
+                subset = df[df['Note_Type'] == note_type]
+                subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
+            note_counts.to_excel(writer, sheet_name="Note Type Count", index=False)
+            tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
+            done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
+            solutions_df.to_excel(writer, sheet_name="Suggested Solutions", index=False)
 
-    st.download_button(
-        label="📥 Download Summary Excel",
-        data=output.getvalue(),
-        file_name="FULL_SUMMARY.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-
-
-       
+        st.download_button("📥 Download Summary Excel", output.getvalue(), "FULL_SUMMARY.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
