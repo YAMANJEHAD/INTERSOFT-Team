@@ -271,6 +271,8 @@ if uploaded_file:
                     </div>
                     """, unsafe_allow_html=True)
 
+         st.download_button("📥 Download Summary Excel", output.getvalue(), "FULL_SUMMARY.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
         tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
             "📊 Note Type Summary", "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians",
             "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes", 
@@ -398,4 +400,4 @@ if uploaded_file:
             done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
             solutions_df.to_excel(writer, sheet_name="Suggested Solutions", index=False)
 
-        st.download_button("📥 Download Summary Excel", output.getvalue(), "FULL_SUMMARY.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+       
