@@ -395,17 +395,19 @@ if uploaded_file:
             solutions_df = df[['Note_Type', 'Suggested_Solution']].drop_duplicates()
             st.dataframe(solutions_df, use_container_width=True)
 
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            for note_type in df['Note_Type'].unique():
-                subset = df[df['Note_Type'] == note_type]
-                subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
-            note_counts.to_excel(writer, sheet_name="Note Type Count", index=False)
-            tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
-            done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
-            solutions_df.to_excel(writer, sheet_name="Suggested Solutions", index=False)
+      if not df.empty:
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name="Full Report")
+        # تقدر تضيف أي شيت ثاني هون
+    output.seek(0)
 
-st.download_button("📥 Download Summary Excel", output.getvalue(), "FULL_SUMMARY.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    st.download_button(
+        label="📥 Download Summary Excel",
+        data=output.getvalue(),
+        file_name="FULL_SUMMARY.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 
        
