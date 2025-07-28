@@ -12,46 +12,85 @@ import os
 import hashlib
 import re
 
+# ---------------------- 🌌 CUSTOM STYLING ----------------------
 st.set_page_config(page_title="INTERSOFT Analyzer", layout="wide")
 
-clock_html = """<div style="background: transparent;"><style>
-.clock-container {
-    font-family: 'Courier New', monospace;
-    font-size: 22px;
-    color: #fff;
-    background: linear-gradient(135deg, #1abc9c, #16a085);
-    padding: 12px 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    animation: pulse 2s infinite;
-    position: fixed;
-    top: 15px;
-    right: 25px;
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    color: #f8fafc;
 }
-.clock-time { font-size: 22px; font-weight: bold; }
-.clock-date { font-size: 16px; margin-top: 4px; }
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0.4); }
-    70% { box-shadow: 0 0 0 15px rgba(26, 188, 156, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(26, 188, 156, 0); }
+
+h1 {
+    font-size: 3rem;
+    font-weight: 900;
+    color: #4ade80;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.stTabs [data-baseweb="tab"] {
+    background-color: #1e293b;
+    color: #fff;
+    border-radius: 10px 10px 0 0;
+    padding: 0.8rem 1.5rem;
+    margin-right: 4px;
+    font-weight: 600;
+    border: 1px solid #334155;
+}
+.stTabs [aria-selected="true"] {
+    background-color: #4ade80 !important;
+    color: #1e293b !important;
+    font-weight: bold;
+}
+
+thead tr th {
+    background-color: #1f2937;
+    color: #f8fafc;
+    font-weight: bold;
+}
+
+.custom-box {
+    background-color: #1e293b;
+    padding: 15px 20px;
+    border-left: 6px solid #4ade80;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    color: #f8fafc;
 }
 </style>
-<div class="clock-container">
-    <div class="clock-time" id="clock"></div>
-    <div class="clock-date" id="date"></div>
+""", unsafe_allow_html=True)
+
+clock_html = """
+<div style="position: fixed; top: 20px; right: 25px; z-index: 9999;">
+    <div style="
+        font-family: 'Courier New', monospace;
+        font-size: 22px;
+        background-color: #1e293b;
+        color: #4ade80;
+        padding: 12px 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.4);
+        text-align: right;
+    ">
+        <div id="clock"></div>
+        <div id="date" style="font-size: 14px; color: #94a3b8;"></div>
+    </div>
 </div>
 <script>
 function updateClock() {
     const now = new Date();
     const time = now.toLocaleTimeString();
     const date = now.toLocaleDateString(undefined, {
-        weekday: 'long',
+        weekday: 'short',
         year: 'numeric',
-        month: 'long',
+        month: 'short',
         day: 'numeric'
     });
     document.getElementById('clock').innerText = time;
@@ -60,11 +99,11 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 </script>
-</div>"""
-components.html(clock_html, height=130, scrolling=False)
+"""
+components.html(clock_html, height=100)
 
-st.markdown("<h1 style='color:#ffffff; text-align:center;'>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
-
+# ---------------------- 🧠 APP TITLE ----------------------
+st.markdown("<h1>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
 uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
 
