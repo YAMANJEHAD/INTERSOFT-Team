@@ -106,7 +106,6 @@ components.html(clock_html, height=100)
 st.markdown("<h1>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
 uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
 required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
-st.download_button("📥 Download Summary Excel", output.getvalue(), "FULL_SUMMARY.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 
 def normalize(text):
@@ -400,5 +399,8 @@ if uploaded_file:
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
             done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
             solutions_df.to_excel(writer, sheet_name="Suggested Solutions", index=False)
+
+st.download_button("📥 Download Summary Excel", output.getvalue(), "FULL_SUMMARY.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
 
        
