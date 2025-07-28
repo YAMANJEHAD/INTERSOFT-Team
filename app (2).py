@@ -4,103 +4,108 @@ import io
 import plotly.express as px
 import streamlit.components.v1 as components
 from datetime import datetime
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.lib.utils import ImageReader
 from collections import Counter
 import os
 import hashlib
 import re
+import time
+from PIL import Image
 
-# ---------------------- 🌌 CUSTOM STYLING ----------------------
-st.set_page_config(page_title="INTERSOFT Analyzer", layout="wide")
+# ========== Splash Screen ==========
+if "splash_shown" not in st.session_state:
+    st.session_state.splash_shown = False
 
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+if not st.session_state.splash_shown:
+    st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;800&display=swap');
 
-html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
-    background: linear-gradient(135deg, #0f172a, #1e293b);
-    color: #f8fafc;
-}
+    .splash-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background: linear-gradient(135deg, #0f172a, #1e293b);
+        animation: fadeIn 1s ease-in-out;
+    }
 
-h1 {
-    font-size: 3rem;
-    font-weight: 900;
-    color: #ffffff;
-    text-align: center;
-    margin-bottom: 2rem;
-}
+    .splash-logo {
+        width: 120px;
+        opacity: 0;
+        animation: slideDown 1.2s ease-out forwards;
+    }
 
-.stTabs [data-baseweb="tab"] {
-    background-color: #1e293b;
-    color: #fff;
-    border-radius: 10px 10px 0 0;
-    padding: 0.8rem 1.5rem;
-    margin-right: 4px;
-    font-weight: 600;
-    border: 1px solid #334155;
-}
-.stTabs [aria-selected="true"] {
-    background-color: #4ade80 !important;
-    color: #1e293b !important;
-    font-weight: bold;
-}
-
-thead tr th {
-    background-color: #1f2937;
-    color: #f8fafc;
-    font-weight: bold;
-}
-
-.custom-box {
-    background-color: #1e293b;
-    padding: 15px 20px;
-    border-left: 6px solid #4ade80;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    font-size: 14px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    color: #f8fafc;
-}
-</style>
-""", unsafe_allow_html=True)
-
-clock_html = """
-<div style="position: fixed; top: 20px; right: 25px; z-index: 9999;">
-    <div style="
-        font-family: 'Courier New', monospace;
-        font-size: 22px;
-        background-color: #1e293b;
+    .splash-title {
+        font-size: 2.8rem;
+        font-weight: 800;
+        margin-top: 1rem;
         color: #4ade80;
-        padding: 12px 20px;
-        border-radius: 10px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.4);
-        text-align: right;
-    ">
-        <div id="clock"></div>
-        <div id="date" style="font-size: 14px; color: #94a3b8;"></div>
-    </div>
-</div>
-<script>
-function updateClock() {
-    const now = new Date();
-    const time = now.toLocaleTimeString();
-    const date = now.toLocaleDateString(undefined, {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
-    document.getElementById('clock').innerText = time;
-    document.getElementById('date').innerText = date;
-}
-setInterval(updateClock, 1000);
-updateClock();
-</script>
-"""
-components.html(clock_html, height=100)
+        opacity: 0;
+        animation: fadeSlideUp 1.2s ease-out 0.6s forwards;
+    }
+
+    .splash-sub {
+        font-size: 1.1rem;
+        color: #e2e8f0;
+        margin-top: 0.5rem;
+        opacity: 0;
+        animation: fadeSlideUp 1s ease-out 1s forwards;
+    }
+
+    .loader {
+        border: 6px solid #f3f3f3;
+        border-top: 6px solid #4ade80;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        margin-top: 30px;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+        0% {opacity: 0;}
+        100% {opacity: 1;}
+    }
+
+    @keyframes slideDown {
+        0% { transform: translateY(-30px); opacity: 0; }
+        100% { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes fadeSlideUp {
+        0% { transform: translateY(20px); opacity: 0; }
+        100% { transform: translateY(0); opacity: 1; }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    with st.container():
+        st.markdown(f"""
+        <div class="splash-container">
+            <img src="logoChip.png" class="splash-logo" />
+            <div class="splash-title">INTERSOFT Analyzer</div>
+            <div class="splash-sub">Your Smart Ticket Tracker</div>
+            <div class="loader"></div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    time.sleep(3)
+    st.session_state.splash_shown = True
+    st.experimental_rerun()
+
+# ========== Continue with your main application logic here ==========
+# 🟢 الآن حط باقي تطبيقك Streamlit اللي بيبدأ مثلاً بـ:
+# st.set_page_config(...)
+# uploaded_file = st.file_uploader(...)
+# df = pd.read_excel(...) 
+# ... إلخ
+
 
 # ---------------------- 🧠 APP TITLE ----------------------
 st.markdown("<h1>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
