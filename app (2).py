@@ -125,9 +125,17 @@ def classify_note(note):
 
 def classify_visit_cancelled(note):
     note = normalize(note)
-    if "NEED TO VISIT" in note or "NEEDS TO VISIT" in note:
+    # Handle common misspellings
+    visit_patterns = [
+        "NEED TO VISIT", "NEEDS TO VISIT", "NEED TO VIST", "NEEDTOVISIT", "NEED TO VISSIT",
+        "NEED VISIT", "NEEDTO VISIT", "NEED TOVISIT"
+    ]
+    cancel_patterns = [
+        "CANCELLED", "CANCELED", "CANCEL", "CANCELL", "CANCLED", "CANCELE"
+    ]
+    if any(pattern in note for pattern in visit_patterns):
         return "NEED TO VISIT"
-    elif "CANCELLED" in note or "CANCELED" in note:
+    elif any(pattern in note for pattern in cancel_patterns):
         return "CANCELLED"
     return None
 
@@ -221,11 +229,13 @@ with tab_upload:
         if not all(col in df.columns for col in required_cols):
             st.error(f"❌ Missing required columns. Available: {list(df.columns)}")
         else:
-            # Apply classifications immediately after loading
+            # Apply classifications and normalize BY column
             df['Note_Type'] = df['NOTE'].apply(classify_note)
             df['Problem_Severity'] = df['Note_Type'].apply(problem_severity)
             df['Suggested_Solution'] = df['Note_Type'].apply(suggest_solutions)
-            df['Visit_Cancelled'] = df['NOTE'].apply(classify_visit_cancelled)  # Create Visit_Cancelled column
+            df['Visit_Cancelled'] = df['NOTE'].apply(classify_visit_cancelled)
+            if 'BY' in df.columns:
+                df['BY'] = df['BY'].apply(normalize)  # Normalize BY column to handle case sensitivity
             st.session_state['df'] = df
             st.success("✅ File uploaded and processed successfully! Switch to other tabs to view analysis.")
 
@@ -260,7 +270,7 @@ if 'df' in st.session_state:
             fig_by = px.bar(by_analysis, x='BY', y='Count', title='Ticket Count per BY', color='BY')
             st.plotly_chart(fig_by, use_container_width=True)
 
-            # Detailed analysis for each BY value
+            # Detailed analysis for each unique BY value
             by_values = df['BY'].unique()
             for by_value in by_values:
                 if pd.notna(by_value):
