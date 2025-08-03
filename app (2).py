@@ -1,4 +1,4 @@
-```python
+
 import streamlit as st
 import pandas as pd
 import io
@@ -398,4 +398,4 @@ if uploaded_file:
             by_analysis.to_excel(writer, sheet_name="BY_Column_Analysis", index=False)
 
         st.download_button("📥 Download Summary Excel", output.getvalue(), "FULL_SUMMARY.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-```
+
