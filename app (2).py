@@ -191,7 +191,6 @@ def analyze_by_column(df):
     return by_counts
 
 def analyze_visit_cancelled(df):
-    df['Visit_Cancelled'] = df['NOTE'].apply(classify_visit_cancelled)
     vc_counts = df['Visit_Cancelled'].value_counts().reset_index()
     vc_counts.columns = ['Status', 'Count']
     vc_counts = vc_counts[vc_counts['Status'].notnull()]
@@ -222,16 +221,17 @@ with tab_upload:
         if not all(col in df.columns for col in required_cols):
             st.error(f"❌ Missing required columns. Available: {list(df.columns)}")
         else:
+            # Apply classifications immediately after loading
+            df['Note_Type'] = df['NOTE'].apply(classify_note)
+            df['Problem_Severity'] = df['Note_Type'].apply(problem_severity)
+            df['Suggested_Solution'] = df['Note_Type'].apply(suggest_solutions)
+            df['Visit_Cancelled'] = df['NOTE'].apply(classify_visit_cancelled)  # Create Visit_Cancelled column
             st.session_state['df'] = df
             st.success("✅ File uploaded and processed successfully! Switch to other tabs to view analysis.")
 
 # Process data if available
 if 'df' in st.session_state:
     df = st.session_state['df']
-    df['Note_Type'] = df['NOTE'].apply(classify_note)
-    df['Problem_Severity'] = df['Note_Type'].apply(problem_severity)
-    df['Suggested_Solution'] = df['Note_Type'].apply(suggest_solutions)
-    
     note_counts = df['Note_Type'].value_counts().reset_index()
     note_counts.columns = ["Note_Type", "Count"]
     
@@ -319,7 +319,7 @@ if 'df' in st.session_state:
                     st.markdown(f"#### 📑 Detailed Tickets for {by_value}")
                     st.dataframe(by_df[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type', 'Main_Area', 'Suggested_Solution']], use_container_width=True)
 
-    # Existing tabs (unchanged from your code)
+    # Existing tabs (unchanged)
     with tab1:
         st.markdown("### 🔢 Count of Each Note Type")
         st.dataframe(note_counts, use_container_width=True)
