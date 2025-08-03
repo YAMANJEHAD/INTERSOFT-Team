@@ -66,7 +66,7 @@ components.html(clock_html, height=130, scrolling=False)
 st.markdown("<h1 style='color:#ffffff; text-align:center;'>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
 
 uploaded_file = st.file_uploader("📁 Upload Excel File", type=["xlsx"])
-required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type']
+required_cols = ['NOTE', 'Terminal_Id', 'Technician_Name', 'Ticket_Type', 'BY']
 
 def normalize(text):
     text = str(text).upper()
@@ -77,6 +77,8 @@ def normalize(text):
 def classify_note(note):
     note = normalize(note)
     patterns = {
+        "NEED TO VISIT": ["NEED TO VISIT", "NEEDS TO VISIT"],
+        "CANCELLED": ["CANCELLED", "CANCELED"],
         "TERMINAL ID - WRONG DATE": ["TERMINAL ID WRONG DATE"],
         "NO IMAGE FOR THE DEVICE": ["NO IMAGE FOR THE DEVICE"],
         "IMAGE FOR THE DEVICE ONLY": ["IMAGE FOR THE DEVICE ONLY"],
@@ -98,7 +100,7 @@ def classify_note(note):
         "UNCLEAR RECEIPT": ["UNCLEAR RECEIPT"],
         "WRONG RECEIPT": ["WRONG RECEIPT"],
         "REJECTED RECEIPT": ["REJECTED RECEIPT"],
-        "MULTIPLE ISSUES":["MULTIPLE ISSUES"]
+        "MULTIPLE ISSUES": ["MULTIPLE ISSUES"]
     }
     if "+" in note:
         return "MULTIPLE ISSUES"
@@ -117,7 +119,7 @@ def classify_note(note):
 
 def problem_severity(note_type):
     critical = ["WRONG DATE", "TERMINAL ID - WRONG DATE", "REJECTED RECEIPT"]
-    high = ["NO IMAGE", "UNCLEAR IMAGE", "NO RECEIPT"]
+    high = ["NO IMAGE", "UNCLEAR IMAGE", "NO RECEIPT", "NEED TO VISIT", "CANCELLED"]
     medium = ["NO SIGNATURE", "NO ENGINEER SIGNATURE"]
     low = ["NO J.O", "PENDING"]
     if note_type in critical: return "Critical"
@@ -125,8 +127,11 @@ def problem_severity(note_type):
     elif note_type in medium: return "Medium"
     elif note_type in low: return "Low"
     else: return "Unclassified"
+
 def suggest_solutions(note_type):
     solutions = {
+        "NEED TO VISIT": "Schedule a visit to the terminal location.",
+        "CANCELLED": "Review cancellation reason and reschedule if necessary.",
         "WRONG DATE": "Verify device timestamp and sync with server.",
         "TERMINAL ID - WRONG DATE": "Recheck terminal ID entry and date configuration.",
         "NO IMAGE FOR THE DEVICE": "Capture and upload image of the device.",
@@ -147,7 +152,6 @@ def suggest_solutions(note_type):
     }
     return solutions.get(note_type, "No solution available.")
 
-
 def generate_alerts(df):
     alerts = []
     critical_percent = (df['Problem_Severity'] == 'Critical').mean() * 100
@@ -165,11 +169,17 @@ def text_analysis(notes):
     word_counts = Counter(all_words)
     return pd.DataFrame(word_counts.most_common(20), columns=['Word', 'Count'])
 
+def analyze_by_column(df):
+    if 'BY' not in df.columns:
+        return pd.DataFrame(columns=['BY', 'Count'])
+    by_counts = df['BY'].value_counts().reset_index()
+    by_counts.columns = ['BY', 'Count']
+    return by_counts
+
 ARCHIVE_DIR = "uploaded_archive"
 os.makedirs(ARCHIVE_DIR, exist_ok=True)
 
 if uploaded_file:
-    # Create unique filename with hash and upload timestamp
     uploaded_bytes = uploaded_file.read()
     uploaded_file.seek(0)
     file_hash = hashlib.md5(uploaded_bytes).hexdigest()
@@ -177,7 +187,6 @@ if uploaded_file:
     archive_filename = f"{timestamp}_{file_hash}.xlsx"
     archive_path = os.path.join(ARCHIVE_DIR, archive_filename)
 
-    # Save a copy of the file
     with open(archive_path, "wb") as f:
         f.write(uploaded_bytes)
 
@@ -197,7 +206,6 @@ if uploaded_file:
         note_counts = df['Note_Type'].value_counts().reset_index()
         note_counts.columns = ["Note_Type", "Count"]
 
-       
         if 'Note_Type' in df.columns:
             filtered_df_not_done = df[df['Note_Type'] != 'DONE']
             total_notes = len(filtered_df_not_done)
@@ -232,10 +240,10 @@ if uploaded_file:
                     </div>
                     """, unsafe_allow_html=True)
 
-        tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
             "📊 Note Type Summary", "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians",
             "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes", 
-            "✍️ Signature Issues", "🔍 Deep Problem Analysis"])
+            "✍️ Signature Issues", "🔍 Deep Problem Analysis", "👤 BY Column Analysis"])
 
         with tab1:
             st.markdown("### 🔢 Count of Each Note Type")
@@ -320,12 +328,8 @@ if uploaded_file:
 
         with tab8:
             st.markdown("## 🔍 Deep Problem Analysis")
-            
-            # Common problems analysis
             st.markdown("### 📌 Common Problems and Patterns")
             common_problems = df[~df['Note_Type'].isin(['DONE'])]
-            
-            # Problem frequency
             problem_freq = common_problems['Note_Type'].value_counts().reset_index()
             problem_freq.columns = ["Problem", "Count"]
             
@@ -338,25 +342,35 @@ if uploaded_file:
                                      title='Problem Distribution')
                 st.plotly_chart(fig_problems, use_container_width=True)
             
-            # Ticket type vs problem analysis
             st.markdown("### 🎫 Ticket Type vs Problem Type")
             ticket_problem = pd.crosstab(df['Ticket_Type'], df['Note_Type'])
             st.dataframe(ticket_problem.style.background_gradient(cmap='Blues'), 
                         use_container_width=True)
             
-            # Suggested solutions
             st.markdown("### 💡 Suggested Solutions for Common Problems")
             solutions_df = df[['Note_Type', 'Suggested_Solution']].drop_duplicates()
             st.dataframe(solutions_df, use_container_width=True)
+
+        with tab9:
+            st.markdown("## 👤 BY Column Analysis")
+            by_analysis = analyze_by_column(df)
+            if by_analysis.empty:
+                st.warning("⚠️ No 'BY' column found in the uploaded file.")
+            else:
+                st.markdown("### 📊 Technician Activity by 'BY' Column")
+                st.dataframe(by_analysis, use_container_width=True)
+                fig_by = px.bar(by_analysis, x='BY', y='Count', title='Activity Count per Technician (BY Column)')
+                st.plotly_chart(fig_by, use_container_width=True)
 
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for note_type in df['Note_Type'].unique():
                 subset = df[df['Note_Type'] == note_type]
-                subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type']].to_excel(writer, sheet_name=note_type[:31], index=False)
+                subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type', 'BY']].to_excel(writer, sheet_name=note_type[:31], index=False)
             note_counts.to_excel(writer, sheet_name="Note Type Count", index=False)
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
             done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
             solutions_df.to_excel(writer, sheet_name="Suggested Solutions", index=False)
+            by_analysis.to_excel(writer, sheet_name="BY_Column_Analysis", index=False)
 
         st.download_button("📥 Download Summary Excel", output.getvalue(), "FULL_SUMMARY.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
