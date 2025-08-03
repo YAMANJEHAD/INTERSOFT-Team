@@ -66,10 +66,11 @@ components.html(clock_html, height=130, scrolling=False)
 st.markdown("<h1 style='color:#ffffff; text-align:center;'>📊 INTERSOFT Analyzer</h1>", unsafe_allow_html=True)
 
 # Define tabs
-tab_upload, tab_by_analysis, tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
-    "📁 Upload File", "👤 BY Column Analysis", "📊 Note Type Summary", "👨‍🔧 Notes per Technician",
-    "🚨 Top 5 Technicians", "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes",
-    "✍️ Signature Issues", "🔍 Deep Problem Analysis", "🚪 Visit & Cancelled Analysis"
+tab_upload, tab_duplicate_analysis, tab_by_analysis, tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
+    "📁 Upload File", "🔄 Duplicate Analysis", "👤 BY Column Analysis", "📊 Note Type Summary", 
+    "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians", "🥧 Note Type Distribution", 
+    "✅ DONE Terminals", "📑 Detailed Notes", "✍️ Signature Issues", "🔍 Deep Problem Analysis", 
+    "🚪 Visit & Cancelled Analysis"
 ])
 
 # Required columns
@@ -125,7 +126,6 @@ def classify_note(note):
 
 def classify_visit_cancelled(note):
     note = normalize(note)
-    # Handle common misspellings
     visit_patterns = [
         "NEED TO VISIT", "NEEDS TO VISIT", "NEED TO VIST", "NEEDTOVISIT", "NEED TO VISSIT",
         "NEED VISIT", "NEEDTO VISIT", "NEED TOVISIT"
@@ -204,6 +204,21 @@ def analyze_visit_cancelled(df):
     vc_counts = vc_counts[vc_counts['Status'].notnull()]
     return vc_counts
 
+def analyze_duplicates(df):
+    duplicate_cols = ['Ticket_Id', 'Terminal_Id']
+    duplicate_data = {'Ticket_Id': pd.DataFrame(), 'Terminal_Id': pd.DataFrame()}
+    summary = {'Ticket_Id': 0, 'Terminal_Id': 0}
+    
+    for col in duplicate_cols:
+        if col in df.columns:
+            # Find duplicates based on the column
+            duplicates = df[df[col].duplicated(keep=False)]
+            if not duplicates.empty:
+                duplicate_data[col] = duplicates[['Ticket_Id', 'Terminal_Id', 'Technician_Name', 'Main_Area', 'Address', 'Note_Type', 'BY'] if 'Address' in df.columns else ['Ticket_Id', 'Terminal_Id', 'Technician_Name', 'Main_Area', 'Note_Type', 'BY']]
+                summary[col] = len(duplicates[col].unique())
+    
+    return duplicate_data, summary
+
 # File upload tab
 with tab_upload:
     st.markdown("### 📁 Upload Excel File")
@@ -238,6 +253,42 @@ with tab_upload:
                 df['BY'] = df['BY'].apply(normalize)  # Normalize BY column to handle case sensitivity
             st.session_state['df'] = df
             st.success("✅ File uploaded and processed successfully! Switch to other tabs to view analysis.")
+
+# Duplicate Analysis Tab
+if 'df' in st.session_state:
+    df = st.session_state['df']
+    with tab_duplicate_analysis:
+        st.markdown("## 🔄 Duplicate Analysis")
+        duplicate_data, summary = analyze_duplicates(df)
+        
+        st.markdown("### 📊 Duplicate Summary")
+        summary_df = pd.DataFrame({
+            'Column': ['Ticket_Id', 'Terminal_Id'],
+            'Duplicate Count': [summary['Ticket_Id'], summary['Terminal_Id']]
+        })
+        st.dataframe(summary_df, use_container_width=True)
+        fig_summary = px.bar(summary_df, x='Column', y='Duplicate Count', title='Number of Duplicates by Column', color='Column')
+        st.plotly_chart(fig_summary, use_container_width=True)
+        
+        if not duplicate_data['Ticket_Id'].empty:
+            st.markdown("### 🔢 Duplicate Ticket_Id Entries")
+            st.dataframe(duplicate_data['Ticket_Id'], use_container_width=True)
+        
+        if not duplicate_data['Terminal_Id'].empty:
+            st.markdown("### 🔢 Duplicate Terminal_Id Entries")
+            st.dataframe(duplicate_data['Terminal_Id'], use_container_width=True)
+        
+        # Download duplicates as Excel
+        if not (duplicate_data['Ticket_Id'].empty and duplicate_data['Terminal_Id'].empty):
+            output_duplicates = io.BytesIO()
+            with pd.ExcelWriter(output_duplicates, engine='xlsxwriter') as writer:
+                if not duplicate_data['Ticket_Id'].empty:
+                    duplicate_data['Ticket_Id'].to_excel(writer, sheet_name="Duplicate_Ticket_Id", index=False)
+                if not duplicate_data['Terminal_Id'].empty:
+                    duplicate_data['Terminal_Id'].to_excel(writer, sheet_name="Duplicate_Terminal_Id", index=False)
+            st.download_button("📥 Download Duplicate Report", output_duplicates.getvalue(), "duplicate_report.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        else:
+            st.success("✅ No duplicates found for Ticket_Id or Terminal_Id!")
 
 # Process data if available
 if 'df' in st.session_state:
@@ -327,7 +378,7 @@ if 'df' in st.session_state:
                     
                     # Detailed table
                     st.markdown(f"#### 📑 Detailed Tickets for {by_value}")
-                    st.dataframe(by_df[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type', 'Main_Area', 'Suggested_Solution']], use_container_width=True)
+                    st.dataframe(by_df[['Ticket_Id', 'Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type', 'Main_Area', 'Address', 'Suggested_Solution']] if 'Address' in by_df.columns else by_df[['Ticket_Id', 'Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type', 'Main_Area', 'Suggested_Solution']], use_container_width=True)
 
     # Existing tabs (unchanged)
     with tab1:
@@ -347,7 +398,7 @@ if 'df' in st.session_state:
         tech_counts_filtered = filtered_df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
         top_5_technicians = tech_counts_filtered.head(5)
         top_5_data = filtered_df[filtered_df['Technician_Name'].isin(top_5_technicians.index.tolist())]
-        technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']]
+        technician_notes_table = top_5_data[['Technician_Name', 'Note_Type', 'Ticket_Id', 'Terminal_Id', 'Ticket_Type']]
         technician_notes_count = top_5_technicians.reset_index()
         technician_notes_count.columns = ['Technician_Name', 'Notes_Count']
         tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
@@ -361,7 +412,7 @@ if 'df' in st.session_state:
 
     with tab5:
         st.markdown("### ✅'DONE' Notes")
-        done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Terminal_Id', 'Ticket_Type']]
+        done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Ticket_Id', 'Terminal_Id', 'Ticket_Type']]
         done_terminals_counts = done_terminals['Technician_Name'].value_counts()
         done_terminals_table = done_terminals[done_terminals['Technician_Name'].isin(done_terminals_counts.head(5).index)]
         done_terminals_summary = done_terminals_counts.head(5).reset_index()
@@ -374,7 +425,7 @@ if 'df' in st.session_state:
             st.markdown(f"#### 🧑 Technician: {tech}")
             technician_data = top_5_data[top_5_data['Technician_Name'] == tech]
             technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
-            st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
+            st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Ticket_Id', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
 
     with tab7:
         st.markdown("## ✍️ Signature Issues Analysis")
@@ -459,11 +510,15 @@ if 'df' in st.session_state:
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         for note_type in df['Note_Type'].unique():
             subset = df[df['Note_Type'] == note_type]
-            subset[['Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type', 'BY']].to_excel(writer, sheet_name=note_type[:31], index=False)
+            subset[['Ticket_Id', 'Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type', 'BY']].to_excel(writer, sheet_name=note_type[:31], index=False)
         note_counts.to_excel(writer, sheet_name="Note Type Count", index=False)
         tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
         done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
         solutions_df.to_excel(writer, sheet_name="Suggested Solutions", index=False)
         vc_analysis.to_excel(writer, sheet_name="Visit_Cancelled_Analysis", index=False)
         by_analysis.to_excel(writer, sheet_name="BY_Column_Analysis", index=False)
+        if not duplicate_data['Ticket_Id'].empty:
+            duplicate_data['Ticket_Id'].to_excel(writer, sheet_name="Duplicate_Ticket_Id", index=False)
+        if not duplicate_data['Terminal_Id'].empty:
+            duplicate_data['Terminal_Id'].to_excel(writer, sheet_name="Duplicate_Terminal_Id", index=False)
     st.download_button("📥 Download Summary Excel", output.getvalue(), "FULL_SUMMARY.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
