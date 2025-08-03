@@ -1,3 +1,4 @@
+```python
 import streamlit as st
 import pandas as pd
 import io
@@ -77,8 +78,6 @@ def normalize(text):
 def classify_note(note):
     note = normalize(note)
     patterns = {
-        "NEED TO VISIT": ["NEED TO VISIT", "NEEDS TO VISIT"],
-        "CANCELLED": ["CANCELLED", "CANCELED"],
         "TERMINAL ID - WRONG DATE": ["TERMINAL ID WRONG DATE"],
         "NO IMAGE FOR THE DEVICE": ["NO IMAGE FOR THE DEVICE"],
         "IMAGE FOR THE DEVICE ONLY": ["IMAGE FOR THE DEVICE ONLY"],
@@ -117,9 +116,17 @@ def classify_note(note):
     else:
         return "MULTIPLE ISSUES"
 
+def classify_visit_cancelled(note):
+    note = normalize(note)
+    if "NEED TO VISIT" in note or "NEEDS TO VISIT" in note:
+        return "NEED TO VISIT"
+    elif "CANCELLED" in note or "CANCELED" in note:
+        return "CANCELLED"
+    return None
+
 def problem_severity(note_type):
     critical = ["WRONG DATE", "TERMINAL ID - WRONG DATE", "REJECTED RECEIPT"]
-    high = ["NO IMAGE", "UNCLEAR IMAGE", "NO RECEIPT", "NEED TO VISIT", "CANCELLED"]
+    high = ["NO IMAGE", "UNCLEAR IMAGE", "NO RECEIPT"]
     medium = ["NO SIGNATURE", "NO ENGINEER SIGNATURE"]
     low = ["NO J.O", "PENDING"]
     if note_type in critical: return "Critical"
@@ -175,6 +182,13 @@ def analyze_by_column(df):
     by_counts = df['BY'].value_counts().reset_index()
     by_counts.columns = ['BY', 'Count']
     return by_counts
+
+def analyze_visit_cancelled(df):
+    df['Visit_Cancelled'] = df['NOTE'].apply(classify_visit_cancelled)
+    vc_counts = df['Visit_Cancelled'].value_counts().reset_index()
+    vc_counts.columns = ['Status', 'Count']
+    vc_counts = vc_counts[vc_counts['Status'].notnull()]
+    return vc_counts
 
 ARCHIVE_DIR = "uploaded_archive"
 os.makedirs(ARCHIVE_DIR, exist_ok=True)
@@ -243,7 +257,7 @@ if uploaded_file:
         tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
             "📊 Note Type Summary", "👨‍🔧 Notes per Technician", "🚨 Top 5 Technicians",
             "🥧 Note Type Distribution", "✅ DONE Terminals", "📑 Detailed Notes", 
-            "✍️ Signature Issues", "🔍 Deep Problem Analysis", "👤 BY Column Analysis"])
+            "✍️ Signature Issues", "🔍 Deep Problem Analysis", "🚪 Visit & Cancelled Analysis"])
 
         with tab1:
             st.markdown("### 🔢 Count of Each Note Type")
@@ -352,12 +366,21 @@ if uploaded_file:
             st.dataframe(solutions_df, use_container_width=True)
 
         with tab9:
-            st.markdown("## 👤 BY Column Analysis")
+            st.markdown("## 🚪 Visit & Cancelled Analysis")
+            vc_analysis = analyze_visit_cancelled(df)
+            if vc_analysis.empty:
+                st.warning("⚠️ No 'NEED TO VISIT' or 'CANCELLED' entries found in the NOTE column.")
+            else:
+                st.markdown("### 📊 Visit & Cancelled Counts")
+                st.dataframe(vc_analysis, use_container_width=True)
+                fig_vc = px.bar(vc_analysis, x='Status', y='Count', title='NEED TO VISIT & CANCELLED Counts')
+                st.plotly_chart(fig_vc, use_container_width=True)
+
+            st.markdown("### 👤 BY Column Analysis")
             by_analysis = analyze_by_column(df)
             if by_analysis.empty:
                 st.warning("⚠️ No 'BY' column found in the uploaded file.")
             else:
-                st.markdown("### 📊 Technician Activity by 'BY' Column")
                 st.dataframe(by_analysis, use_container_width=True)
                 fig_by = px.bar(by_analysis, x='BY', y='Count', title='Activity Count per Technician (BY Column)')
                 st.plotly_chart(fig_by, use_container_width=True)
@@ -371,6 +394,8 @@ if uploaded_file:
             tech_note_group.to_excel(writer, sheet_name="Technician Notes Count", index=False)
             done_terminals_table.to_excel(writer, sheet_name="DONE_Terminals", index=False)
             solutions_df.to_excel(writer, sheet_name="Suggested Solutions", index=False)
+            vc_analysis.to_excel(writer, sheet_name="Visit_Cancelled_Analysis", index=False)
             by_analysis.to_excel(writer, sheet_name="BY_Column_Analysis", index=False)
 
         st.download_button("📥 Download Summary Excel", output.getvalue(), "FULL_SUMMARY.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+```
