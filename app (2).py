@@ -211,7 +211,6 @@ def analyze_duplicates(df):
     
     for col in duplicate_cols:
         if col in df.columns:
-            # Find duplicates based on the column
             duplicates = df[df[col].duplicated(keep=False)]
             if not duplicates.empty:
                 duplicate_data[col] = duplicates[['Ticket_Id', 'Terminal_Id', 'Technician_Name', 'Main_Area', 'Address', 'Note_Type', 'BY'] if 'Address' in df.columns else ['Ticket_Id', 'Terminal_Id', 'Technician_Name', 'Main_Area', 'Note_Type', 'BY']]
@@ -250,13 +249,35 @@ with tab_upload:
             df['Suggested_Solution'] = df['Note_Type'].apply(suggest_solutions)
             df['Visit_Cancelled'] = df['NOTE'].apply(classify_visit_cancelled)
             if 'BY' in df.columns:
-                df['BY'] = df['BY'].apply(normalize)  # Normalize BY column to handle case sensitivity
+                df['BY'] = df['BY'].apply(normalize)
+            # Validate Technician_Name and BY columns
+            if df['Technician_Name'].isna().all():
+                st.warning("⚠️ 'Technician_Name' column contains no valid data.")
+            if df['BY'].isna().all():
+                st.warning("⚠️ 'BY' column contains no valid data.")
             st.session_state['df'] = df
             st.success("✅ File uploaded and processed successfully! Switch to other tabs to view analysis.")
 
-# Duplicate Analysis Tab
+# Process data if available
 if 'df' in st.session_state:
     df = st.session_state['df']
+    note_counts = df['Note_Type'].value_counts().reset_index()
+    note_counts.columns = ["Note_Type", "Count"]
+    
+    # Alerts
+    alerts = generate_alerts(df)
+    if alerts:
+        with st.expander("🚨 Alerts", expanded=False):
+            for alert in alerts:
+                st.markdown(f"""
+                <div style='background-color:#fff3cd; color:#856404; padding:8px 15px;
+                            border-left: 6px solid #ffeeba; border-radius: 6px;
+                            font-size:14px; margin-bottom:8px'>
+                {alert}
+                </div>
+                """, unsafe_allow_html=True)
+
+    # Duplicate Analysis Tab
     with tab_duplicate_analysis:
         st.markdown("## 🔄 Duplicate Analysis")
         duplicate_data, summary = analyze_duplicates(df)
@@ -278,7 +299,6 @@ if 'df' in st.session_state:
             st.markdown("### 🔢 Duplicate Terminal_Id Entries")
             st.dataframe(duplicate_data['Terminal_Id'], use_container_width=True)
         
-        # Download duplicates as Excel
         if not (duplicate_data['Ticket_Id'].empty and duplicate_data['Terminal_Id'].empty):
             output_duplicates = io.BytesIO()
             with pd.ExcelWriter(output_duplicates, engine='xlsxwriter') as writer:
@@ -289,25 +309,6 @@ if 'df' in st.session_state:
             st.download_button("📥 Download Duplicate Report", output_duplicates.getvalue(), "duplicate_report.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         else:
             st.success("✅ No duplicates found for Ticket_Id or Terminal_Id!")
-
-# Process data if available
-if 'df' in st.session_state:
-    df = st.session_state['df']
-    note_counts = df['Note_Type'].value_counts().reset_index()
-    note_counts.columns = ["Note_Type", "Count"]
-    
-    # Alerts
-    alerts = generate_alerts(df)
-    if alerts:
-        with st.expander("🚨 Alerts", expanded=False):
-            for alert in alerts:
-                st.markdown(f"""
-                <div style='background-color:#fff3cd; color:#856404; padding:8px 15px;
-                            border-left: 6px solid #ffeeba; border-radius: 6px;
-                            font-size:14px; margin-bottom:8px'>
-                {alert}
-                </div>
-                """, unsafe_allow_html=True)
 
     # BY Column Analysis Tab
     with tab_by_analysis:
@@ -332,10 +333,19 @@ if 'df' in st.session_state:
                     total_tickets = len(by_df)
                     active_tickets = len(by_df[by_df['Visit_Cancelled'] == 'NEED TO VISIT'])
                     cancelled_tickets = len(by_df[by_df['Visit_Cancelled'] == 'CANCELLED'])
-                    top_tech = by_df['Technician_Name'].value_counts().index[0] if not by_df['Technician_Name'].empty else "N/A"
-                    top_tech_count = by_df['Technician_Name'].value_counts().iloc[0] if not by_df['Technician_Name'].empty else 0
-                    top_area = by_df['Main_Area'].value_counts().index[0] if 'Main_Area' in by_df.columns and not by_df['Main_Area'].empty else "N/A"
-                    top_area_count = by_df['Main_Area'].value_counts().iloc[0] if 'Main_Area' in by_df.columns and not by_df['Main_Area'].empty else 0
+                    
+                    # Safely handle top technician
+                    tech_counts = by_df['Technician_Name'].value_counts()
+                    top_tech = tech_counts.index[0] if not tech_counts.empty else "N/A"
+                    top_tech_count = tech_counts.iloc[0] if not tech_counts.empty else 0
+                    
+                    # Safely handle top area
+                    top_area = "N/A"
+                    top_area_count = 0
+                    if 'Main_Area' in by_df.columns and not by_df['Main_Area'].empty:
+                        area_counts = by_df['Main_Area'].value_counts()
+                        top_area = area_counts.index[0] if not area_counts.empty else "N/A"
+                        top_area_count = area_counts.iloc[0] if not area_counts.empty else 0
                     
                     st.markdown(f"""
                     - **Total Tickets**: {total_tickets}
@@ -380,18 +390,20 @@ if 'df' in st.session_state:
                     st.markdown(f"#### 📑 Detailed Tickets for {by_value}")
                     st.dataframe(by_df[['Ticket_Id', 'Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type', 'Main_Area', 'Address', 'Suggested_Solution']] if 'Address' in by_df.columns else by_df[['Ticket_Id', 'Terminal_Id', 'Technician_Name', 'Note_Type', 'Ticket_Type', 'Main_Area', 'Suggested_Solution']], use_container_width=True)
 
-    # Existing tabs (unchanged)
+    # Note Type Summary Tab
     with tab1:
         st.markdown("### 🔢 Count of Each Note Type")
         st.dataframe(note_counts, use_container_width=True)
         fig_bar = px.bar(note_counts, x="Note_Type", y="Count", title="Note Type Frequency")
         st.plotly_chart(fig_bar, use_container_width=True)
 
+    # Notes per Technician Tab
     with tab2:
         st.markdown("### 📈 Notes per Technician")
         tech_counts = df.groupby('Technician_Name')['Note_Type'].count().sort_values(ascending=False)
         st.bar_chart(tech_counts)
 
+    # Top 5 Technicians Tab
     with tab3:
         st.markdown("### 🚨 Technician With Most Wrong Notes!")
         filtered_df = df[~df['Note_Type'].isin(['DONE', 'NO J.O'])]
@@ -404,12 +416,14 @@ if 'df' in st.session_state:
         tech_note_group = df.groupby(['Technician_Name', 'Note_Type']).size().reset_index(name='Count')
         st.dataframe(technician_notes_count, use_container_width=True)
 
+    # Note Type Distribution Tab
     with tab4:
         st.markdown("### 🥧 Note Types Distribution")
         fig = px.pie(note_counts, names='Note_Type', values='Count', title='Note Type Distribution')
         fig.update_traces(textinfo='percent+label')
         st.plotly_chart(fig)
 
+    # DONE Terminals Tab
     with tab5:
         st.markdown("### ✅'DONE' Notes")
         done_terminals = df[df['Note_Type'] == 'DONE'][['Technician_Name', 'Ticket_Id', 'Terminal_Id', 'Ticket_Type']]
@@ -419,6 +433,7 @@ if 'df' in st.session_state:
         done_terminals_summary.columns = ['Technician_Name', 'DONE_Notes_Count']
         st.dataframe(done_terminals_summary, use_container_width=True)
 
+    # Detailed Notes Tab
     with tab6:
         st.markdown("### 📑 Detailed Notes for Top 5 Technicians")
         for tech in top_5_technicians.index:
@@ -427,6 +442,7 @@ if 'df' in st.session_state:
             technician_data_filtered = technician_data[~technician_data['Note_Type'].isin(['DONE', 'NO J.O'])]
             st.dataframe(technician_data_filtered[['Technician_Name', 'Note_Type', 'Ticket_Id', 'Terminal_Id', 'Ticket_Type']], use_container_width=True)
 
+    # Signature Issues Tab
     with tab7:
         st.markdown("## ✍️ Signature Issues Analysis")
         signature_issues_df = df[df['NOTE'].str.upper().str.contains("SIGNATURE", na=False)]
@@ -460,6 +476,7 @@ if 'df' in st.session_state:
                 sig_merged.to_excel(writer, index=False, sheet_name="Technician Summary")
             st.download_button("📥 Download Signature Issues Report", sig_output.getvalue(), "signature_issues.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
+    # Deep Problem Analysis Tab
     with tab8:
         st.markdown("## 🔍 Deep Problem Analysis")
         st.markdown("### 📌 Common Problems and Patterns")
@@ -485,6 +502,7 @@ if 'df' in st.session_state:
         solutions_df = df[['Note_Type', 'Suggested_Solution']].drop_duplicates()
         st.dataframe(solutions_df, use_container_width=True)
 
+    # Visit & Cancelled Analysis Tab
     with tab9:
         st.markdown("## 🚪 Visit & Cancelled Analysis")
         vc_analysis = analyze_visit_cancelled(df)
